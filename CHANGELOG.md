@@ -1,3 +1,9 @@
+# Release 1.7.7
+
+- Bug fix
+
+This update includes a bugfix related to the import of documents.
+
 # Release 1.7.6
 
 - Add children to check-in
