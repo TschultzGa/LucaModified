@@ -1,3 +1,10 @@
+# Release 2.1.0
+
+- Explanation screens 
+- Private meeting redesign
+
+With this update we introduce explanation screens within the app. With these screens you can learn what's new in luca on every update or get more information about existing features! Further, the private meeting got a new design - take a look!
+
 # Release 2.0.3
 
 - Support third vaccination certificates
