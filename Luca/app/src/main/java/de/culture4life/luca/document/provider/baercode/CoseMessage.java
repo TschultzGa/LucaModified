@@ -6,18 +6,25 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1OutputStream;
+import org.bouncycastle.asn1.DERSequence;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
-import de.culture4life.luca.crypto.CryptoManager;
 
 class CoseMessage {
 
@@ -56,7 +63,7 @@ class CoseMessage {
         Signature signatureChecker = Signature.getInstance(algorithms.get(algorithm));
         signatureChecker.initVerify(key);
         signatureChecker.update(encodedSigStructure);
-        return signatureChecker.verify(CryptoManager.toDERSignature(signature));
+        return signatureChecker.verify(toDERSignature(signature));
     }
 
     public byte[] decodeCypherText(@NonNull BaercodeKey baercodeKey) throws GeneralSecurityException, IOException {
@@ -98,6 +105,21 @@ class CoseMessage {
 
     public JsonNode getCoseSignMessage() {
         return coseSignMessage;
+    }
+
+    private static byte[] toDERSignature(byte[] tokenSignature) throws IOException {
+        byte[] r = Arrays.copyOfRange(tokenSignature, 0, tokenSignature.length / 2);
+        byte[] s = Arrays.copyOfRange(tokenSignature, tokenSignature.length / 2, tokenSignature.length);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ASN1OutputStream derOutputStream = ASN1OutputStream.create(byteArrayOutputStream, ASN1Encoding.DER);
+        ASN1EncodableVector v = new ASN1EncodableVector();
+
+        v.add(new ASN1Integer(new BigInteger(1, r)));
+        v.add(new ASN1Integer(new BigInteger(1, s)));
+        derOutputStream.writeObject(new DERSequence(v));
+
+        derOutputStream.close();
+        return byteArrayOutputStream.toByteArray();
     }
 
 }

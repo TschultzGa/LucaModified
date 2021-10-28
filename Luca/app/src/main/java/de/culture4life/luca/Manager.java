@@ -75,17 +75,21 @@ public abstract class Manager {
         });
     }
 
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName();
-    }
-
     public boolean isInitializing() {
         return isInitializing;
     }
 
     public boolean isInitialized() {
         return isInitialized;
+    }
+
+    public LucaApplication getApplication() {
+        return (LucaApplication) context;
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getSimpleName();
     }
 
 }

@@ -106,7 +106,7 @@ public class NetworkManager extends Manager {
         Interceptor cdnInterceptor = chain -> chain.proceed(replaceHostWithCdnIfRequired(chain.request()));
 
         CertificatePinner certificatePinner = new CertificatePinner.Builder()
-                .add("**.luca-app.de", "sha256/wjD2X9ht0iXPN2sSXiXd2aF6ar5cxHOmXZnnkAiwVpU=") // CN=*.luca-app.de,O=neXenio GmbH,L=Berlin,ST=Berlin,C=DE,2.5.4.5=#130c43534d303233353532353339
+                .add("**.luca-app.de", "sha256/7KDxgUAs56hlKzG00DbfJH46MLf0GlDZHsT5CwBrQ6E=") // D-TRUST Root Class 3 CA 2 2009
                 .build();
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder()

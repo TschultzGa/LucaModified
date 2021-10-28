@@ -24,16 +24,17 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun navigateBack() {
-        navigationController.popBackStack()
+        navigationController?.popBackStack()
     }
 
-    fun addChild(child: Child): Completable {
+    @JvmOverloads
+    fun addChild(child: Child, checkIn: Boolean = false): Completable {
         return childrenManager.containsChild(child)
             .flatMapCompletable { childExists ->
                 if (childExists) {
                     Completable.complete()
                 } else {
-                    childrenManager.addChild(child)
+                    childrenManager.addChild(child, checkIn)
                         .andThen(updateList())
                 }
             }

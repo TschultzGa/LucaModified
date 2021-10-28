@@ -55,6 +55,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
     protected final MutableLiveData<Set<ViewError>> errors = new MutableLiveData<>(new HashSet<>());
     protected final MutableLiveData<ViewEvent<? extends Set<String>>> requiredPermissions = new MutableLiveData<>();
 
+    @Nullable
     protected NavController navigationController;
 
     public BaseViewModel(@NonNull Application application) {
@@ -231,13 +232,16 @@ public abstract class BaseViewModel extends AndroidViewModel {
                     }
                 })
                 .flatMapCompletable(destinationId -> Completable.fromAction(() -> {
-                    if (!isCurrentDestinationId(destinationId)) {
+                    if (navigationController != null && !isCurrentDestinationId(destinationId)) {
                         navigationController.navigate(destinationId);
                     }
                 }));
     }
 
     protected boolean isCurrentDestinationId(@IdRes int destinationId) {
+        if (navigationController == null) {
+            return false;
+        }
         NavDestination currentDestination = navigationController.getCurrentDestination();
         return currentDestination != null && currentDestination.getId() == destinationId;
     }
@@ -263,7 +267,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
         return requiredPermissions;
     }
 
-    public void setNavigationController(NavController navigationController) {
+    public void setNavigationController(@Nullable NavController navigationController) {
         this.navigationController = navigationController;
     }
 

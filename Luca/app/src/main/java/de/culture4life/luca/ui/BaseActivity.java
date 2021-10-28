@@ -6,6 +6,7 @@ import androidx.annotation.CallSuper;
 import androidx.appcompat.app.AppCompatActivity;
 
 import de.culture4life.luca.LucaApplication;
+import de.culture4life.luca.Manager;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 
 public abstract class BaseActivity extends AppCompatActivity {
@@ -37,6 +38,15 @@ public abstract class BaseActivity extends AppCompatActivity {
     protected void onDestroy() {
         activityDisposable.dispose();
         super.onDestroy();
+    }
+
+    protected <ManagerType extends Manager> ManagerType getInitializedManager(ManagerType manager) {
+        initializeManager(manager);
+        return manager;
+    }
+
+    protected <ManagerType extends Manager> void initializeManager(ManagerType manager) {
+        manager.initialize(application).blockingAwait();
     }
 
     public void showActionBar() {

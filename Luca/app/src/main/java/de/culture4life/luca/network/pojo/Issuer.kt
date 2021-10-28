@@ -1,7 +1,7 @@
 package de.culture4life.luca.network.pojo
 
 import de.culture4life.luca.crypto.AsymmetricCipherProvider
-import de.culture4life.luca.crypto.CryptoManager
+import de.culture4life.luca.crypto.decodeFromBase64
 import java.security.PublicKey
 
 data class Issuer(
@@ -12,8 +12,7 @@ data class Issuer(
 ) {
 
     fun publicHDSKPToPublicKey(): PublicKey {
-        return CryptoManager.decodeFromString(publicHDSKP)
-            .flatMap { AsymmetricCipherProvider.decodePublicKey(it) }
+        return AsymmetricCipherProvider.decodePublicKey(publicHDSKP.decodeFromBase64())
             .blockingGet()
     }
 

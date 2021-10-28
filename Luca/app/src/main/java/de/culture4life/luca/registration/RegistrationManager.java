@@ -1,5 +1,8 @@
 package de.culture4life.luca.registration;
 
+import static de.culture4life.luca.crypto.HashProvider.TRIMMED_HASH_LENGTH;
+import static de.culture4life.luca.util.SerializationUtil.serializeToBase64;
+
 import android.content.Context;
 import android.util.Pair;
 
@@ -17,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.Manager;
+import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
 import de.culture4life.luca.crypto.DailyKeyPairPublicKeyWrapper;
@@ -33,9 +37,6 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import timber.log.Timber;
-
-import static de.culture4life.luca.crypto.HashProvider.TRIMMED_HASH_LENGTH;
-import static de.culture4life.luca.util.SerializationUtil.serializeToBase64;
 
 /**
  * Handles initial registration of a guest, after phone number verification appropriate secrets are
@@ -54,6 +55,7 @@ public class RegistrationManager extends Manager {
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
     private final CryptoManager cryptoManager;
+    private CheckInManager checkInManager;
 
     public RegistrationManager(@NonNull PreferencesManager preferencesManager, @NonNull NetworkManager networkManager, @NonNull CryptoManager cryptoManager) {
         this.preferencesManager = preferencesManager;
@@ -67,7 +69,10 @@ public class RegistrationManager extends Manager {
                 preferencesManager.initialize(context),
                 networkManager.initialize(context),
                 cryptoManager.initialize(context)
-        ).andThen(Completable.fromAction(() -> this.context = context));
+        ).andThen(Completable.fromAction(() -> {
+            this.context = context;
+            this.checkInManager = getApplication().getCheckInManager();
+        }));
     }
 
     /**
@@ -413,7 +418,8 @@ public class RegistrationManager extends Manager {
                                 .map(UUID::toString)
                                 .doOnSuccess(transferData::setUserId)
                                 .ignoreElement(),
-                        cryptoManager.restoreRecentTracingSecrets(TimeUnit.DAYS.toMillis(days))
+                        checkInManager.initialize(context)
+                                .andThen(checkInManager.restoreRecentTracingSecrets(TimeUnit.DAYS.toMillis(days)))
                                 .map(pair -> {
                                     TransferData.TraceSecretWrapper traceSecretWrapper = new TransferData.TraceSecretWrapper();
                                     traceSecretWrapper.setTimestamp(TimeUtil.convertToUnixTimestamp(pair.first).blockingGet());
@@ -441,7 +447,7 @@ public class RegistrationManager extends Manager {
                 .doOnSuccess(transferDataJson -> Timber.d("Serialized transfer data: %s", transferDataJson))
                 .map(transferDataJson -> transferDataJson.getBytes(StandardCharsets.UTF_8))
                 .flatMap(encodedContactData -> cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH)
-                        .flatMap(iv -> cryptoManager.getSharedDiffieHellmanSecret()
+                        .flatMap(iv -> cryptoManager.generateSharedDiffieHellmanSecret()
                                 .flatMap(cryptoManager::generateDataEncryptionSecret)
                                 .flatMap(CryptoManager::createKeyFromSecret)
                                 .map(dataEncryptionKey -> new Pair<>(dataEncryptionKey, iv)))
@@ -458,7 +464,7 @@ public class RegistrationManager extends Manager {
      * @return HMAC of passed data
      */
     public Single<byte[]> createTransferDataMac(byte[] encryptedTransferData) {
-        return cryptoManager.getSharedDiffieHellmanSecret()
+        return cryptoManager.generateSharedDiffieHellmanSecret()
                 .flatMap(cryptoManager::generateDataAuthenticationSecret)
                 .flatMap(CryptoManager::createKeyFromSecret)
                 .flatMap(dataAuthenticationKey -> cryptoManager.getMacProvider().sign(encryptedTransferData, dataAuthenticationKey));

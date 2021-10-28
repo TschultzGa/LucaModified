@@ -11,10 +11,13 @@ import de.culture4life.luca.ui.onboarding.OnboardingActivity;
 import de.culture4life.luca.ui.registration.RegistrationActivity;
 import de.culture4life.luca.ui.terms.UpdatedTermsActivity;
 import de.culture4life.luca.ui.terms.UpdatedTermsUtil;
+import de.culture4life.luca.ui.whatisnew.WhatIsNewActivity;
+import io.reactivex.rxjava3.core.Completable;
 import timber.log.Timber;
 
-public class SplashActivity extends BaseActivity {
 
+public class SplashActivity extends BaseActivity {
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.Theme_Luca_DayNight);
@@ -32,13 +35,18 @@ public class SplashActivity extends BaseActivity {
         }
 
         if (!hasSeenWelcomeScreenBefore()) {
-            navigate(OnboardingActivity.class);
+            activityDisposable.add(disableWhatIsNewScreenForTheCurrentVersion()
+                    .subscribe(() -> navigate(OnboardingActivity.class)));
         } else if (!hasCompletedRegistration()) {
             navigate(RegistrationActivity.class);
         } else {
             activityDisposable.add(UpdatedTermsUtil.Companion.areTermsAccepted(application).subscribe(accepted -> {
                 if (accepted) {
-                    navigate(MainActivity.class);
+                    if (shouldWhatIsNewBeShown()) {
+                        navigate(WhatIsNewActivity.class);
+                    } else {
+                        navigate(MainActivity.class);
+                    }
                 } else {
                     navigate(UpdatedTermsActivity.class);
                 }
@@ -61,8 +69,19 @@ public class SplashActivity extends BaseActivity {
                 .blockingGet();
     }
 
+    private Boolean shouldWhatIsNewBeShown() {
+        return getInitializedManager(application.getWhatIsNewManager())
+                .shouldWhatIsNewBeShown()
+                .blockingGet();
+    }
+
+    private Completable disableWhatIsNewScreenForTheCurrentVersion() {
+        return getInitializedManager(application.getWhatIsNewManager())
+                .disableWhatIsNewScreenForCurrentVersion();
+    }
+
     private boolean hasCompletedRegistration() {
-        return application.getRegistrationManager()
+        return getInitializedManager(application.getRegistrationManager())
                 .hasCompletedRegistration()
                 .onErrorReturnItem(false)
                 .blockingGet();

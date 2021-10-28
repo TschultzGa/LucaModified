@@ -19,7 +19,7 @@ class HealthDepartmentKeyViewModel(app: Application) : BaseViewModel(app) {
     fun getDailyKeyPairAndVerify(): Completable {
         return Completable.defer {
             if (dailyKeyPairLiveData.value == null) {
-                application.cryptoManager.dailyKeyPair
+                application.cryptoManager.getDailyKeyPair()
                     .doOnSuccess { setDailyKeyPairIssuer(it) }
                     .flatMapCompletable { application.cryptoManager.verifyDailyKeyPair(it) }
                     .doOnComplete { hasVerifiedDailyKeyPair.postValue(true) }

@@ -75,7 +75,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/dateTextView"
         app:layout_constraintTop_toTopOf="@id/dateTextView"
-        tools:text="01.02.2021" />
+        tools:text="@string/date_format" />
 
     <!-- issuer -->
     <TextView
@@ -88,7 +88,7 @@
         android:text="@string/key_health_department_issuer"
         app:layout_constraintEnd_toStartOf="@id/issuerValueTextView"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/dateTextView" />
+        app:layout_constraintTop_toBottomOf="@id/dateValueTextView" />
 
     <TextView
         android:id="@+id/issuerValueTextView"
@@ -99,7 +99,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/issuerTextView"
         app:layout_constraintTop_toTopOf="@id/issuerTextView"
-        tools:text="Health Department QS" />
+        tools:text="@string/dummy_heading" />
 
     <!-- signed -->
     <TextView
@@ -116,9 +116,10 @@
 
     <ImageView
         android:id="@+id/signedImageView"
-        android:layout_width="16dp"
-        android:layout_height="16dp"
-        android:src="@drawable/ic_key_signed"
+        android:layout_width="32dp"
+        android:layout_height="0dp"
+        android:scaleType="fitStart"
+        android:src="@drawable/ic_key_unsigned"
         app:layout_constraintBottom_toBottomOf="@id/signedTextView"
         app:layout_constraintStart_toEndOf="@id/signedTextView"
         app:layout_constraintTop_toTopOf="@id/signedTextView" />

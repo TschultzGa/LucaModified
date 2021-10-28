@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <integer-array name="what_is_new_pages_indices" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </integer-array>
+
+    <integer-array name="what_is_new_pages_images" translatable="false">
+        <item>@drawable/img_new_0_my_luca_children</item>
+        <item>@drawable/img_new_1_my_luca_warnings</item>
+        <item>@drawable/img_new_2_bring_children</item>
+        <item>@drawable/img_new_3_warnings</item>
+        <item>@drawable/img_new_4_check_in</item>
+        <item>@drawable/img_new_5_history</item>
+    </integer-array>
+
+    <string-array name="what_is_new_pages_headings">
+        <item>Extension of \"My luca\"</item>
+        <item>Extension of \"My luca\"</item>
+        <item>Bringing Children</item>
+        <item>Optimization of warnings</item>
+        <item>Faster check-in</item>
+        <item>Relocation of your history</item>
+    </string-array>
+
+    <string-array name="what_is_new_pages_descriptions">
+        <item>Add children\nYou can now use luca for your children as well.</item>
+        <item>Important notifications\nYou will receive any notifications or warnings here.</item>
+        <item>Add your children to check them in with you. You can even import documents for them, but make sure to input full and correct information.</item>
+        <item>Our different warning levels can inform you in more detail, when you were checked in somewhere at the same time as an infected person. Affected events are marked in your history.</item>
+        <item>When you press on \"Check-in\", luca now directly starts on the camera. Just activate the camera once and you\'re good to go. Access your personal QR code by clicking on the button below it.</item>
+        <item>You can now access your history via the icon in the top right corner of the \"Check-in\" tab.\n\nAs always, your data cannot be viewed until you generate your TAN and share it with the health department.</item>
+    </string-array>
+
+</resources>

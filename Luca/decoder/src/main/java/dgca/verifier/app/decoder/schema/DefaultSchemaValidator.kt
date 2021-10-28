@@ -24,9 +24,9 @@ package dgca.verifier.app.decoder.schema
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.fge.jsonschema.core.report.ProcessingReport
-import com.github.fge.jsonschema.main.JsonSchema
-import com.github.fge.jsonschema.main.JsonSchemaFactory
+import com.networknt.schema.JsonSchema
+import com.networknt.schema.JsonSchemaFactory
+import com.networknt.schema.SpecVersion
 import com.upokecenter.cbor.CBORObject
 import dgca.verifier.app.decoder.JSON_SCHEMA_V1
 import dgca.verifier.app.decoder.cwt.CwtHeaderKeys
@@ -50,12 +50,11 @@ class DefaultSchemaValidator : SchemaValidator {
             val schemaNode: JsonNode = mapper.readTree(JSON_SCHEMA_V1)
             val jsonNode: JsonNode = mapper.readTree(json)
 
-            val factory = JsonSchemaFactory.byDefault()
-            val schema: JsonSchema = factory.getJsonSchema(schemaNode)
+            val factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4)
+            val schema: JsonSchema = factory.getSchema(schemaNode)
 
-            val report: ProcessingReport = schema.validate(jsonNode)
-
-            isValid = report.isSuccess
+            val errors = schema.validate(jsonNode)
+            isValid = errors.isEmpty()
             verificationResult.isSchemaValid = isValid
 
         } catch (ex: Exception) {

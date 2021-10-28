@@ -15,6 +15,7 @@ import de.culture4life.luca.databinding.FragmentAccountBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.registration.RegistrationActivity
+import de.culture4life.luca.ui.whatisnew.WhatIsNewActivity
 import io.reactivex.rxjava3.core.Completable
 
 class AccountFragment : BaseFragment<AccountViewModel>() {
@@ -55,6 +56,7 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
         binding.deleteAccountTextView.setOnClickListener { showDeleteAccountDialog() }
         binding.faqTextView.setOnClickListener { application.openUrl(getString(R.string.url_faq)) }
         binding.supportTextView.setOnClickListener { viewModel.requestSupportMail() }
+        binding.whatIsNewTextView.setOnClickListener { showWhatIsNewPages() }
         binding.dataRequestTextView.setOnClickListener { showDataRequestMenu() }
         binding.privacyTextView.setOnClickListener { application.openUrl(getString(R.string.url_privacy_policy)) }
         binding.termsTextView.setOnClickListener { application.openUrl(getString(R.string.url_terms_and_conditions)) }
@@ -87,6 +89,13 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
                 .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() })
                 .show()
         }
+    }
+
+    private fun showWhatIsNewPages() {
+        val intent = Intent(context, WhatIsNewActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.putExtra(WhatIsNewActivity.SHOW_ONLY_UNSEEN_PAGES, false)
+        startActivity(intent)
     }
 
     private fun showDataRequestMenu() {

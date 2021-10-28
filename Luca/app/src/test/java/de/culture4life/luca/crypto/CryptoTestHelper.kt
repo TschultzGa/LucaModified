@@ -54,7 +54,7 @@ object CryptoTestHelper {
         val signingData = CryptoManager.concatenate(
             temp.getEncodedKeyId(),
             temp.getEncodedCreatedAt(),
-            CryptoManager.decodeFromString(temp.publicKey).blockingGet()
+            temp.publicKey.decodeFromBase64()
         ).blockingGet()
 
         val signature = signatureProvider.sign(signingData, hdskpKeyPair.private)

@@ -65,6 +65,7 @@
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/firstNameEditText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:imeOptions="actionNext"
@@ -83,6 +84,7 @@
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/lastNameEditText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:imeOptions="actionNext"
@@ -109,6 +111,7 @@
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/phoneNumberEditText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:imeOptions="actionNext"
@@ -157,6 +160,7 @@
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/postalCodeEditText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:imeOptions="actionNext"

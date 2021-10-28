@@ -9,6 +9,7 @@
     <ImageView
         android:id="@+id/backImageView"
         style="@style/BackButtonImageView"
+        android:contentDescription="@string/action_back"
         tools:ignore="MissingConstraints" />
 
     <TextView
@@ -23,12 +24,9 @@
 
     <ImageView
         android:id="@+id/deleteHistoryImageView"
-        android:layout_width="24dp"
-        android:layout_height="0dp"
-        android:layout_marginEnd="@dimen/spacing_default"
+        style="@style/MenuImageView"
         android:contentDescription="@string/menu_more_content_description"
         android:src="@drawable/ic_bin_icon_white"
-        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/headingTextView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/headingTextView" />

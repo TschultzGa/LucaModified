@@ -33,6 +33,7 @@
     <string name="action_add">Add</string>
     <string name="action_copy">Copy</string>
     <string name="action_change">Change</string>
+    <string name="action_back">Back</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Something went wrong</string>
@@ -133,6 +134,17 @@
     <string name="onboarding_completed_description">You can now share your encrypted contact data by presenting your QR code or by scanning a code from a place that uses luca.\n\nChecking in is possible at places that use luca or private meetings with other luca App users.</string>
     <string name="onboarding_completed_action">Done</string>
 
+    <!-- What is new -->
+    <string name="what_is_new_back">Back</string>
+    <string name="what_is_new_next">Next</string>
+    <string name="what_is_new_skip">Skip</string>
+    <string name="what_is_new_close">Close</string>
+    <string name="what_is_new_lets_go">Let\'s go</string>
+    <string name="what_is_new_intro_title">Hooray! A lot has happened at luca</string>
+    <string name="what_is_new_intro_body">Swipe right to see what\'s new.\n\nNo time right now? You can also find all the information in the "Account" tab.</string>
+    <string name="what_is_new_outro_title">That was it!</string>
+    <string name="what_is_new_outro_body">You can find all info and even more explanation screens in the news section of the "Account" tab.\n\nPS: Don\'t forget to check out!</string>
+
     <!-- Navigation -->
     <string name="navigation_check_in">Check-In</string>
     <string name="navigation_contact_data">Contact data</string>
@@ -175,13 +187,17 @@
     <string name="check_in_enable_camera_access_title">Enable camera access</string>
     <string name="check_in_enable_camera_access_description">luca needs access to your camera so that you can scan QR codes of documents, at locations or private meetings. Only the QR code data will be processed and no other data will be stored.</string>
     <string name="check_in_invalid_deeplink_error">The QR code you scanned is not a valid check-in link.\n\nQR code data:\n<xliff:g example="https://www.luca-app.de/" id="deeplink">%1$s</xliff:g></string>
+    <string name="check_in_voluntary_info_title">Voluntary Check-in</string>
+    <string name="check_in_voluntary_info_description">Checking into this location is optional. If you still want to help with contact tracing and be alerted in case of risk, you can check in voluntarily and even anonymously. Your contact information will not be shared with the health department if you check in anonymously.</string>
+    <string name="check_in_voluntary_info_checkbox">Optionally share contact information with the health department</string>
+    <string name="check_in_voluntary_info_action_button">Check in voluntarily</string>
 
     <!-- Private Meeting -->
     <string name="meeting_heading">Private Meeting</string>
     <string name="meeting_description">Let your guests scan the QR code to check into your meeting.</string>
     <string name="meeting_description_info">Private meetings are meant for small gatherings with friends and family. They are used as reminders and won\'t be shared with health authorities - that\'s why they display the full names of you and your guests.</string>
     <string name="meeting_duration_heading">Duration</string>
-    <string name="meeting_guests_label">Participants</string>
+    <string name="meeting_guests_label">Guests</string>
     <string name="meeting_create_action">Create a private meeting</string>
     <string name="meeting_create_modal_action">Start</string>
     <string name="meeting_create_modal_heading">Set up a private meeting</string>
@@ -298,6 +314,7 @@
     <string name="history_data_shared_description">You released your contact data and the last <xliff:g example="14" id="count">%1$d</xliff:g>&#160;days of your history for the health authorities.</string>
     <string name="history_clear_title">Do you really want to clear your history?</string>
     <string name="history_clear_description">Past entries won\'t be displayed in your app anymore, but will stay in the system for up to 28&#160;days and will be shared with the health authorities if you share your data.</string>
+    <string name="history_clear_content_description">Clear history entries</string>
     <string name="history_clear_action">Clear</string>
     <string name="history_children_title">Children: <xliff:g example="John Doe, Jane Doe" id="children">%1$s</xliff:g></string>
     <string name="history_children_description" translatable="false"><xliff:g example="- John Doe\n- Jane Doe" id="children">%1$s</xliff:g></string>
@@ -454,6 +471,7 @@
     <!-- Account tab -->
     <string name="account_tab_edit_contact_data">Edit contact data</string>
     <string name="account_tab_key_for_health_dep">Key for health departments</string>
+    <string name="account_tab_what_is_new">New app features</string>
     <string name="account_tab_data_request">Request data</string>
 
     <!-- Version details -->
@@ -499,7 +517,7 @@
     <string name="data_request_check_in_duration">Duration</string>
     <string name="data_request_check_in_trace_id">Trace ID</string>
     <string name="data_request_check_in_children">Children</string>
-    <string name="data_request_check_in_guests">Guests</string>
+    <string name="data_request_check_in_guests">@string/meeting_guests_label</string>
     <string name="data_request_check_in_additional_data">Additional data (<xliff:g example="Table number" id="additionalDataKey">%1$s</xliff:g>)</string>
     <string name="data_request_check_in_data_accessed">Health department requests</string>
 

@@ -1,5 +1,7 @@
 package de.culture4life.luca.meeting;
 
+import static de.culture4life.luca.history.HistoryManager.KEEP_DATA_DURATION;
+
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -10,6 +12,7 @@ import com.google.gson.JsonObject;
 
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -35,12 +38,11 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import timber.log.Timber;
 
-import static de.culture4life.luca.history.HistoryManager.KEEP_DATA_DURATION;
-
 public class MeetingManager extends Manager {
 
     public static final String KEY_CURRENT_MEETING_DATA = "current_meeting_data";
     public static final String KEY_ARCHIVED_MEETING_DATA = "archived_meeting_data";
+    public static final String ALIAS_MEETING_EPHEMERAL_KEY_PAIR = "meeting_ephemeral_key_pair";
 
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
@@ -104,7 +106,7 @@ public class MeetingManager extends Manager {
      */
 
     public Completable createPrivateMeeting() {
-        return cryptoManager.generateMeetingEphemeralKeyPair()
+        return generateMeetingEphemeralKeyPair()
                 .flatMapCompletable(keyPair -> createPrivateLocation((ECPublicKey) keyPair.getPublic())
                         .doOnSuccess(meetingData -> {
                             Timber.i("Created meeting data: %s", meetingData);
@@ -112,7 +114,7 @@ public class MeetingManager extends Manager {
                         })
                         .flatMapCompletable(meetingData -> Completable.mergeArray(
                                 persistCurrentMeetingData(meetingData),
-                                cryptoManager.persistMeetingEphemeralKeyPair(meetingData.getLocationId(), keyPair)
+                                persistMeetingEphemeralKeyPair(meetingData.getLocationId(), keyPair)
                         ).andThen(historyManager.addMeetingStartedItem(meetingData))));
     }
 
@@ -146,7 +148,7 @@ public class MeetingManager extends Manager {
                         })
                         .andThen(addMeetingToHistory(meetingData))
                         .andThen(addCurrentMeetingDataToArchive())
-                        .andThen(cryptoManager.deleteMeetingEphemeralKeyPair(meetingData.getLocationId())));
+                        .andThen(deleteMeetingEphemeralKeyPair(meetingData.getLocationId())));
     }
 
     private Completable addMeetingToHistory(@NonNull MeetingData meetingData) {
@@ -192,7 +194,7 @@ public class MeetingManager extends Manager {
                         .map(MeetingData::getLocationId)
                         .blockingGet();
 
-                PrivateKey meetingPrivateKey = cryptoManager.getMeetingEphemeralPrivateKey(meetingId).blockingGet();
+                PrivateKey meetingPrivateKey = getMeetingEphemeralKeyPair(meetingId).map(KeyPair::getPrivate).blockingGet();
                 PublicKey guestPublicKey = SerializationUtil.deserializeFromBase64(additionalData.getPublicKey())
                         .flatMap(AsymmetricCipherProvider::decodePublicKey)
                         .blockingGet();
@@ -268,6 +270,47 @@ public class MeetingManager extends Manager {
                 .flatMapCompletable(meetingsDataArchive -> preferencesManager.persist(KEY_ARCHIVED_MEETING_DATA, meetingsDataArchive))
                 .doOnComplete(() -> Timber.d("Deleted old archived meeting data"));
     }
+
+    /*
+        Meeting ephemeral key pair
+     */
+
+    protected Single<KeyPair> getMeetingEphemeralKeyPair(@NonNull UUID meetingId) {
+        return restoreMeetingEphemeralKeyPair(meetingId)
+                .switchIfEmpty(generateMeetingEphemeralKeyPair()
+                        .flatMap(keyPair -> persistMeetingEphemeralKeyPair(meetingId, keyPair)
+                                .andThen(Single.just(keyPair))));
+    }
+
+    protected Single<KeyPair> generateMeetingEphemeralKeyPair() {
+        return cryptoManager.getAsymmetricCipherProvider().generateKeyPair(ALIAS_MEETING_EPHEMERAL_KEY_PAIR, context)
+                .doOnSuccess(keyPair -> Timber.d("Generated new meeting ephemeral key pair: %s", keyPair.getPublic()));
+    }
+
+    protected Maybe<KeyPair> restoreMeetingEphemeralKeyPair(@NonNull UUID meetingId) {
+        return getMeetingEphemeralKeyPairAlias(meetingId)
+                .flatMapMaybe(cryptoManager.getAsymmetricCipherProvider()::getKeyPairIfAvailable);
+    }
+
+    protected Completable persistMeetingEphemeralKeyPair(@NonNull UUID meetingId, @NonNull KeyPair
+            keyPair) {
+        return getMeetingEphemeralKeyPairAlias(meetingId)
+                .flatMapCompletable(alias -> cryptoManager.getAsymmetricCipherProvider().setKeyPair(alias, keyPair))
+                .andThen(cryptoManager.persistKeyStoreToFile());
+    }
+
+    protected Completable deleteMeetingEphemeralKeyPair(@NonNull UUID meetingId) {
+        return getMeetingEphemeralKeyPairAlias(meetingId)
+                .flatMapCompletable(cryptoManager.getBouncyCastleKeyStore()::deleteEntry);
+    }
+
+    protected static Single<String> getMeetingEphemeralKeyPairAlias(@NonNull UUID meetingId) {
+        return Single.just(ALIAS_MEETING_EPHEMERAL_KEY_PAIR + "-" + meetingId.toString());
+    }
+
+    /*
+        Utilities
+     */
 
     public static String getReadableGuestName(@NonNull MeetingGuestData guestData) {
         String name;

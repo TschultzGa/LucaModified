@@ -76,9 +76,15 @@ class HealthDepartmentKeyFragment : BaseFragment<HealthDepartmentKeyViewModel>()
 
     private fun updateSignedIndicator(isSigned: Boolean) {
         if (isSigned) {
-            binding.signedImageView.setImageResource(R.drawable.ic_key_signed)
+            binding.signedImageView.apply {
+                setImageResource(R.drawable.ic_key_signed)
+                contentDescription = getString(R.string.action_yes)
+            }
         } else {
-            binding.signedImageView.setImageResource(R.drawable.ic_key_unsigned)
+            binding.signedImageView.apply {
+                setImageResource(R.drawable.ic_key_unsigned)
+                contentDescription = getString(R.string.action_no)
+            }
         }
     }
 

@@ -1,5 +1,10 @@
 package de.culture4life.luca.crypto;
 
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static de.culture4life.luca.crypto.AsymmetricCipherProviderTest.decodePrivateKey;
+import static de.culture4life.luca.crypto.AsymmetricCipherProviderTest.decodePublicKey;
+
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
@@ -8,7 +13,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.nexenio.rxkeystore.util.RxBase64;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,8 +23,6 @@ import org.robolectric.annotation.Config;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.interfaces.ECPublicKey;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.genuinity.GenuinityManager;
@@ -33,23 +35,16 @@ import de.culture4life.luca.network.pojo.Issuer;
 import de.culture4life.luca.preference.PreferencesManager;
 import io.reactivex.rxjava3.core.Single;
 
-import static de.culture4life.luca.crypto.AsymmetricCipherProviderTest.decodePrivateKey;
-import static de.culture4life.luca.crypto.AsymmetricCipherProviderTest.decodePublicKey;
-import static de.culture4life.luca.history.HistoryManager.SHARE_DATA_DURATION;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)
 public class CryptoManagerTest {
 
-    private static final UUID USER_ID = UUID.fromString("02fb635c-f6a5-48eb-8379-a83d611618f2");
+
     private static final String ENCODED_DAILY_KEY_PAIR_PUBLIC_KEY = "BAIDQ7/zTOcV+XXX5io9XZn1t4MUOAswVfZKd6Fpup/MwlNssx4mCEPcO34AIiV0TbL2ywOP3QoHs41cfvv7uTo=";
-    private static final String ENCODED_TRACE_SECRET = "dZrDSp83PCcVL5ZvsJypwA==";
     private static final String ENCODED_GUEST_KEY_PAIR_PRIVATE_KEY = "JwlHQ8w3GjM6T94PwgltA7PNvCk1xokk8HcqXG0CXBI=";
     private static final String ENCODED_GUEST_KEY_PAIR_PUBLIC_KEY = "BIMFVAOglk1B4PIlpaVspeWeFwO5eUusqxFAUUDFNJYGpbp9iu0jRHQAipDTVgFSudcm9tF5kh4+wILrAm3vHWg=";
     private static final String ENCODED_SHARED_DH_SECRET = "cSPbpq56ygtUX0TayiRw0KJpaeoNS/3dcNljtndAXaE=";
-    private static final String ENCODED_TRACE_ID = "Z0aw+vjwazzQHj21PxmWTQ==";
+
 
     private static final DailyKeyPair DAILY_KEY_PAIR = new DailyKeyPair(
             1,
@@ -90,49 +85,6 @@ public class CryptoManagerTest {
         doReturn(issuerResponse).when(lucaEndpointsV3).getIssuer(Mockito.anyString());
         Single<LucaEndpointsV3> fakeEndpoint = Single.just(lucaEndpointsV3);
         doReturn(fakeEndpoint).when(networkManager).getLucaEndpointsV3();
-    }
-
-    @Test
-    public void getTraceIdWrapper_generateNew_isNotEmpty() {
-        doReturn(Single.just(decodeSecret(ENCODED_TRACE_SECRET)))
-                .when(cryptoManager).getCurrentTracingSecret();
-        cryptoManager.getTraceIdWrapper(USER_ID)
-                .map(traceIdWrapper -> traceIdWrapper.getTraceId().length > 0)
-                .test()
-                .assertValue(true);
-    }
-
-    @Test
-    public void getTraceIdWrappers_afterGenerateTraceId_isNotEmpty() {
-        doReturn(Single.just(decodeSecret(ENCODED_TRACE_SECRET)))
-                .when(cryptoManager).getCurrentTracingSecret();
-        cryptoManager.generateTraceId(USER_ID, 1601481600L)
-                .ignoreElement()
-                .andThen(cryptoManager.getTraceIdWrappers())
-                .toList()
-                .test()
-                .assertValueCount(1);
-    }
-
-    @Test
-    public void getTraceIdWrappers_afterDeleteTraceData_isEmpty() {
-        cryptoManager.generateTraceId(USER_ID, 1601481600L)
-                .ignoreElement()
-                .andThen(cryptoManager.deleteTraceData())
-                .andThen(cryptoManager.getTraceIdWrappers())
-                .toList()
-                .test()
-                .assertEmpty();
-    }
-
-    @Test
-    public void generateTraceId() {
-        doReturn(Single.just(decodeSecret(ENCODED_TRACE_SECRET)))
-                .when(cryptoManager).getCurrentTracingSecret();
-        cryptoManager.generateTraceId(USER_ID, 1601481600L)
-                .flatMap(CryptoManager::encodeToString)
-                .test()
-                .assertValue(ENCODED_TRACE_ID);
     }
 
     @Ignore("Hardcoded key expired")
@@ -356,22 +308,6 @@ public class CryptoManagerTest {
     }
 
     @Test
-    public void generateScannerEphemeralKeyPair_publicKey_usesEc() {
-        cryptoManager.generateScannerEphemeralKeyPair()
-                .map(keyPair -> keyPair.getPublic().getAlgorithm())
-                .test()
-                .assertValue("EC");
-    }
-
-    @Test
-    public void generateMeetingEphemeralKeyPair_publicKey_usesEc() {
-        cryptoManager.generateMeetingEphemeralKeyPair()
-                .map(keyPair -> keyPair.getPublic().getAlgorithm())
-                .test()
-                .assertValue("EC");
-    }
-
-    @Test
     public void encodeToString_decodeFromString_isSameAsInput() {
         String input = "abc123!§$%&/()=,.-*";
         CryptoManager.encodeToString(input.getBytes(StandardCharsets.UTF_8))
@@ -379,15 +315,6 @@ public class CryptoManagerTest {
                 .map(bytes -> new String(bytes, StandardCharsets.UTF_8))
                 .test()
                 .assertResult(input);
-    }
-
-    @Test
-    public void testGenerateRecentStartOfDayTimestamps() {
-        List<Long> test = cryptoManager.generateRecentStartOfDayTimestamps(SHARE_DATA_DURATION).toList().blockingGet();
-        for (int i = 0; i < test.size() - 1; i++) {
-            long diff = test.get(i) - test.get(i + 1);
-            Assert.assertEquals(diff, TimeUnit.DAYS.toMillis(1));
-        }
     }
 
     @Test

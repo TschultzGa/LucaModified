@@ -120,7 +120,7 @@ public class PreferencesManager extends Manager implements PreferencesProvider {
                 .flatMapCompletable(preferencesProvider -> preferencesProvider.deleteAll()
                         .andThen(Completable.defer(() -> {
                             if (preferencesProvider instanceof EncryptedSharedPreferencesProvider) {
-                                return ((EncryptedSharedPreferencesProvider) preferencesProvider).deletePreferencesFile(context);
+                                return ((EncryptedSharedPreferencesProvider) preferencesProvider).resetSharedPreferences(context);
                             } else {
                                 return Completable.complete();
                             }

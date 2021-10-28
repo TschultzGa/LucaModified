@@ -25,6 +25,9 @@ public class LocationResponseData {
     @SerializedName("isPrivate")
     private boolean isPrivate;
 
+    @SerializedName("isContactDataMandatory")
+    private boolean isContactDataMandatory = true;
+
     public String getLocationId() {
         return locationId;
     }
@@ -81,6 +84,14 @@ public class LocationResponseData {
         this.isPrivate = isPrivate;
     }
 
+    public boolean isContactDataMandatory() {
+        return isContactDataMandatory;
+    }
+
+    public void setIsContactDataMandatory(boolean isMandatory) {
+        this.isContactDataMandatory = isMandatory;
+    }
+
     @Override
     public String toString() {
         return "LocationResponseData{" +
@@ -91,6 +102,7 @@ public class LocationResponseData {
                 ", longitude=" + longitude +
                 ", radius=" + radius +
                 ", isPrivate=" + isPrivate +
+                ", isContactDataMandatory=" + isContactDataMandatory +
                 '}';
     }
 

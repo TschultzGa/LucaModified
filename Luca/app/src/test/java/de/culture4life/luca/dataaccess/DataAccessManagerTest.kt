@@ -20,7 +20,7 @@ import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito
+import org.mockito.Mockito.*
 import org.robolectric.annotation.Config
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -36,27 +36,30 @@ class DataAccessManagerTest : LucaUnitTest() {
     private val registrationManager = RegistrationManager(preferencesManager, networkManager, cryptoManager)
     private val childrenManager = ChildrenManager(preferencesManager, registrationManager)
     private val historyManager = HistoryManager(preferencesManager, childrenManager)
-    private val notificationManager = Mockito.spy(LucaNotificationManager())
-    private val checkInManager by lazy {
-        Mockito.spy(
-            CheckInManager(
+    private val notificationManager = spy(LucaNotificationManager())
+    private val checkInManager = spy(
+        CheckInManager(
+            preferencesManager,
+            networkManager,
+            GeofenceManager(),
+            LocationManager(),
+            historyManager,
+            cryptoManager,
+            notificationManager
+        )
+    )
+    private val dataAccessManager = spy(
+        getInitializedManager(
+            DataAccessManager(
                 preferencesManager,
                 networkManager,
-                GeofenceManager(),
-                LocationManager(),
+                notificationManager,
+                checkInManager,
                 historyManager,
-                cryptoManager,
-                notificationManager
+                cryptoManager
             )
         )
-    }
-    private val dataAccessManager by lazy {
-        Mockito.spy(
-            DataAccessManager(preferencesManager, networkManager, notificationManager, checkInManager, historyManager, cryptoManager)
-        ).apply {
-            initialize(application).blockingAwait()
-        }
-    }
+    )
     private val previouslyAccessedTraceData = AccessedTraceData().apply {
         isNew = true
         traceId = "qiqA2+SpnoioxRMWb7IDsw=="
@@ -66,8 +69,8 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun update_successful_updatesLastUpdateTimestamp() {
-        Mockito.`when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
-        Mockito.`when`(dataAccessManager.fetchNewRecentlyAccessedTraceData()).thenReturn(Observable.empty())
+        `when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
+        `when`(dataAccessManager.fetchNewRecentlyAccessedTraceData()).thenReturn(Observable.empty())
         val previousDuration = dataAccessManager.durationSinceLastUpdate.blockingGet()
         dataAccessManager.update()
             .andThen(dataAccessManager.durationSinceLastUpdate)
@@ -77,7 +80,7 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun update_unsuccessful_doesNotUpdateLastUpdateTimestamp() {
-        Mockito.`when`(dataAccessManager.fetchNewRecentlyAccessedTraceData()).thenReturn(Observable.error(RuntimeException()))
+        `when`(dataAccessManager.fetchNewRecentlyAccessedTraceData()).thenReturn(Observable.error(RuntimeException()))
         val previousDuration = dataAccessManager.durationSinceLastUpdate.blockingGet()
         val duration = dataAccessManager.update().onErrorComplete()
             .andThen(dataAccessManager.durationSinceLastUpdate)
@@ -87,8 +90,8 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun durationSinceLastUpdate_justUpdated_emitsLowDuration() {
-        Mockito.`when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
-        Mockito.`when`(dataAccessManager.fetchNewRecentlyAccessedTraceData()).thenReturn(Observable.empty())
+        `when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
+        `when`(dataAccessManager.fetchNewRecentlyAccessedTraceData()).thenReturn(Observable.empty())
         dataAccessManager.update()
             .andThen(dataAccessManager.durationSinceLastUpdate)
             .test()
@@ -104,7 +107,7 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun nextRecommendedUpdateDelay_justUpdated_emitsUpdateInterval() {
-        Mockito.`when`(dataAccessManager.durationSinceLastUpdate).thenReturn(Single.just(0L))
+        `when`(dataAccessManager.durationSinceLastUpdate).thenReturn(Single.just(0L))
         dataAccessManager.nextRecommendedUpdateDelay
             .test()
             .assertValue(DataAccessManager.UPDATE_INTERVAL)
@@ -112,7 +115,7 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun nextRecommendedUpdateDelay_neverUpdated_emitsLowDelay() {
-        Mockito.`when`(dataAccessManager.durationSinceLastUpdate).thenReturn(Single.just(System.currentTimeMillis()))
+        `when`(dataAccessManager.durationSinceLastUpdate).thenReturn(Single.just(System.currentTimeMillis()))
         dataAccessManager.nextRecommendedUpdateDelay
             .test()
             .assertValue(0L)
@@ -129,37 +132,37 @@ class DataAccessManagerTest : LucaUnitTest() {
             .test()
             .await()
             .assertComplete()
-        Mockito.verify(dataAccessManager, Mockito.times(1))
+        verify(dataAccessManager, times(1))
             .addToAccessedData(ArgumentMatchers.any())
-        Mockito.verify(dataAccessManager, Mockito.times(1)).addHistoryItems(ArgumentMatchers.any())
-        Mockito.verify(dataAccessManager, Mockito.times(1))
+        verify(dataAccessManager, times(1)).addHistoryItems(ArgumentMatchers.any())
+        verify(dataAccessManager, times(1))
             .notifyUserAboutDataAccess(ArgumentMatchers.any())
     }
 
     @Test
     @Throws(InterruptedException::class)
     fun processNewRecentlyAccessedTraceData_noDataAvailable_performsNothing() {
-        Mockito.`when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
+        `when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
         dataAccessManager.processNewRecentlyAccessedTraceData(emptyList())
             .test()
             .await()
             .assertComplete()
-        Mockito.verify(dataAccessManager, Mockito.never()).addToAccessedData(ArgumentMatchers.any())
-        Mockito.verify(dataAccessManager, Mockito.never()).addHistoryItems(ArgumentMatchers.any())
-        Mockito.verify(dataAccessManager, Mockito.never())
+        verify(dataAccessManager, never()).addToAccessedData(ArgumentMatchers.any())
+        verify(dataAccessManager, never()).addHistoryItems(ArgumentMatchers.any())
+        verify(dataAccessManager, never())
             .notifyUserAboutDataAccess(ArgumentMatchers.any())
     }
 
     @Test
     fun notifyUserAboutDataAccess_validData_showsNotification() {
-        Mockito.`when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
+        `when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
         val newAccessedTraceData = AccessedTraceData().apply {
             hashedTraceId = "LLJMzA/HqlS77qkpUGNJrA=="
         }
         dataAccessManager.notifyUserAboutDataAccess(listOf(newAccessedTraceData))
             .test()
             .assertComplete()
-        Mockito.verify(notificationManager, Mockito.times(1))
+        verify(notificationManager, times(1))
             .showNotification(
                 ArgumentMatchers.eq(LucaNotificationManager.NOTIFICATION_ID_DATA_ACCESS),
                 ArgumentMatchers.any()
@@ -169,7 +172,7 @@ class DataAccessManagerTest : LucaUnitTest() {
     @Test
     fun recentTraceIds_checkInsAvailable_emitsTraceIdsFromCheckIns() {
         val traceId = "9bZZ5Ak465V60PXv92aMFA=="
-        Mockito.doReturn(Observable.just(traceId))
+        doReturn(Observable.just(traceId))
             .`when`(checkInManager)
             .archivedTraceIds
         dataAccessManager.recentTraceIds
@@ -180,9 +183,9 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun fetchRecentlyAccessedTraceData_noRecentTraceIds_completesEmpty() {
-        Mockito.`when`(dataAccessManager.fetchHealthDepartments()).thenReturn(Observable.just(createDummyHealthDepartment()))
-        Mockito.`when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.just(createDummyChunk()))
-        Mockito.doReturn(Observable.empty<Any>()).`when`(dataAccessManager).recentTraceIds
+        `when`(dataAccessManager.fetchHealthDepartments()).thenReturn(Observable.just(createDummyHealthDepartment()))
+        `when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.just(createDummyChunk()))
+        doReturn(Observable.empty<Any>()).`when`(dataAccessManager).recentTraceIds
         dataAccessManager.fetchRecentlyAccessedTraceData()
             .test()
             .assertNoValues()
@@ -191,8 +194,8 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun fetchRecentlyAccessedTraceData_noRecentAccessedHashedTraceIds_completesEmpty() {
-        Mockito.`when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.empty())
-        Mockito.`when`(dataAccessManager.recentTraceIds).thenReturn(Observable.just("hCvt6FNlhomxbBmL50PYDw=="))
+        `when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.empty())
+        `when`(dataAccessManager.recentTraceIds).thenReturn(Observable.just("hCvt6FNlhomxbBmL50PYDw=="))
         dataAccessManager.fetchRecentlyAccessedTraceData()
             .test()
             .assertNoValues()
@@ -202,15 +205,15 @@ class DataAccessManagerTest : LucaUnitTest() {
     @Test
     fun fetchRecentlyAccessedTraceData_noDataAccessed_completesEmpty() {
         val healthDepartment = createDummyHealthDepartment()
-        Mockito.`when`(dataAccessManager.fetchHealthDepartments()).thenReturn(Observable.just(healthDepartment))
+        `when`(dataAccessManager.fetchHealthDepartments()).thenReturn(Observable.just(healthDepartment))
         val chunk = createDummyChunk()
         chunk.hashedTraceIds.add(
             dataAccessManager.getHashedTraceId(
                 healthDepartment.id, 1, "99FmQcylJT5e/cyHOjT6Hw==", chunk.hashLength
             ).blockingGet()
         )
-        Mockito.`when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.just(chunk))
-        Mockito.`when`(dataAccessManager.recentTraceIds).thenReturn(Observable.just("hCvt6FNlhomxbBmL50PYDw=="))
+        `when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.just(chunk))
+        `when`(dataAccessManager.recentTraceIds).thenReturn(Observable.just("hCvt6FNlhomxbBmL50PYDw=="))
         dataAccessManager.fetchRecentlyAccessedTraceData()
             .test()
             .assertNoValues()
@@ -220,7 +223,7 @@ class DataAccessManagerTest : LucaUnitTest() {
     @Test
     fun fetchRecentlyAccessedTraceData_someDataAccessed_emitsAccessedData() {
         val healthDepartment = createDummyHealthDepartment()
-        Mockito.`when`(dataAccessManager.fetchHealthDepartments()).thenReturn(Observable.just(healthDepartment))
+        `when`(dataAccessManager.fetchHealthDepartments()).thenReturn(Observable.just(healthDepartment))
         val chunk = createDummyChunk()
         chunk.hashedTraceIds.add(
             dataAccessManager.getHashedTraceId(
@@ -232,8 +235,8 @@ class DataAccessManagerTest : LucaUnitTest() {
                 healthDepartment.id, 1, "99FmQcylJT5e/cyHOjT6Hw==", chunk.hashLength
             ).blockingGet()
         )
-        Mockito.`when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.just(chunk))
-        Mockito.`when`(dataAccessManager.recentTraceIds).thenReturn(Observable.just("9bZZ5Ak465V60PXv92aMFA==", "hCvt6FNlhomxbBmL50PYDw=="))
+        `when`(dataAccessManager.fetchUnprocessedChunks()).thenReturn(Observable.just(chunk))
+        `when`(dataAccessManager.recentTraceIds).thenReturn(Observable.just("9bZZ5Ak465V60PXv92aMFA==", "hCvt6FNlhomxbBmL50PYDw=="))
         dataAccessManager.fetchRecentlyAccessedTraceData()
             .map { it.traceId }
             .test()
@@ -247,9 +250,9 @@ class DataAccessManagerTest : LucaUnitTest() {
             traceId = "LLJMzA/HqlS77qkpUGNJrA=="
             hashedTraceId = "SOME_HASH_VALUE"
         }
-        Mockito.`when`(dataAccessManager.fetchRecentlyAccessedTraceData())
+        `when`(dataAccessManager.fetchRecentlyAccessedTraceData())
             .thenReturn(Observable.just(previouslyAccessedTraceData, newAccessedTraceData))
-        Mockito.`when`(dataAccessManager.previouslyAccessedTraceData).thenReturn(Observable.just(previouslyAccessedTraceData))
+        `when`(dataAccessManager.previouslyAccessedTraceData).thenReturn(Observable.just(previouslyAccessedTraceData))
         dataAccessManager.fetchNewRecentlyAccessedTraceData()
             .test()
             .assertValues(newAccessedTraceData)
@@ -263,9 +266,9 @@ class DataAccessManagerTest : LucaUnitTest() {
             hashedTraceId = "HASH_VALUE_FOR_WARNING_LEVEL_2"
             warningLevel = 2
         }
-        Mockito.`when`(dataAccessManager.fetchRecentlyAccessedTraceData())
+        `when`(dataAccessManager.fetchRecentlyAccessedTraceData())
             .thenReturn(Observable.just(previouslyAccessedTraceData, newAccessedTraceData))
-        Mockito.`when`(dataAccessManager.previouslyAccessedTraceData).thenReturn(Observable.just(previouslyAccessedTraceData))
+        `when`(dataAccessManager.previouslyAccessedTraceData).thenReturn(Observable.just(previouslyAccessedTraceData))
         dataAccessManager.fetchNewRecentlyAccessedTraceData()
             .test()
             .assertValues(newAccessedTraceData)
@@ -455,18 +458,18 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun updateIfNecessary_withCheckIns_callsUpdate() {
-        Mockito.`when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
-        Mockito.`when`(dataAccessManager.fetchRecentlyAccessedTraceData()).thenReturn(Observable.empty())
-        Mockito.`when`(checkInManager.archivedTraceIds).thenReturn(Observable.just("anything"))
+        `when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
+        `when`(dataAccessManager.fetchRecentlyAccessedTraceData()).thenReturn(Observable.empty())
+        `when`(checkInManager.archivedTraceIds).thenReturn(Observable.just("anything"))
         dataAccessManager.updateIfNecessary().blockingAwait()
-        Mockito.verify(dataAccessManager, Mockito.times(1)).update()
+        verify(dataAccessManager, times(1)).update()
     }
 
     @Test
     fun updateIfNecessary_withoutCheckIns_doesNotCallUpdate() {
-        Mockito.`when`(checkInManager.archivedTraceIds).thenReturn(Observable.empty())
+        `when`(checkInManager.archivedTraceIds).thenReturn(Observable.empty())
         dataAccessManager.updateIfNecessary().blockingAwait()
-        Mockito.verify(dataAccessManager, Mockito.never()).update()
+        verify(dataAccessManager, never()).update()
     }
 
     private fun createDummyHealthDepartment(): NotifyingHealthDepartment {

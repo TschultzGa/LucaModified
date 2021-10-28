@@ -31,6 +31,7 @@
     <string name="action_add">Hinzufügen</string>
     <string name="action_copy">Kopieren</string>
     <string name="action_change">Wechseln</string>
+    <string name="action_back">Zurück</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Etwas lief schief</string>
@@ -131,6 +132,17 @@
     <string name="onboarding_completed_description">Du kannst jetzt deine Kontaktdaten verschlüsselt übermitteln. Zeige deinen QR-Code vor oder scanne den Code eines luca-Standorts, der dir gezeigt wird.\n\nCheck-ins sind bei luca-Standorten und bei privaten Treffen mit anderen luca Nutzer:innen möglich.</string>
     <string name="onboarding_completed_action">Fertig</string>
 
+    <!-- What is new -->
+    <string name="what_is_new_back">Zurück</string>
+    <string name="what_is_new_next">Weiter</string>
+    <string name="what_is_new_skip">Überspringen</string>
+    <string name="what_is_new_close">Schließen</string>
+    <string name="what_is_new_lets_go">Los geht\'s</string>
+    <string name="what_is_new_intro_title">Hurra! Bei luca hat sich einiges getan!</string>
+    <string name="what_is_new_intro_body">Wische nach rechts und schaue dir die Neuigkeiten an.\n\nGerade keine Zeit? Im Account Tab findest du alle Infos zusammengefasst.</string>
+    <string name="what_is_new_outro_title">Das war\'s auch schon!</string>
+    <string name="what_is_new_outro_body">Alle Infos und weitere Erklärscreens findest du im Anleitungsbereich im „Account“-Tab.\n\nPS: Auschecken nicht vergessen!</string>
+
     <!-- Navigation -->
     <string name="navigation_check_in">Einchecken</string>
     <string name="navigation_contact_data">Kontaktdaten</string>
@@ -173,13 +185,17 @@
     <string name="check_in_enable_camera_access_title">Kamera aktivieren</string>
     <string name="check_in_enable_camera_access_description">luca benötigt Zugriff auf deine Kamera, um QR-Codes von Testergebnissen, Locations oder Privaten Meetings scannen zu können. Nur die Daten im QR-Code werden verarbeitet und keine anderen Daten werden gespeichert.</string>
     <string name="check_in_invalid_deeplink_error">Der von dir gescannte QR-Code ist kein valider Check-in Link.\n\nInhalt des QR-Codes:\n<xliff:g example="https://www.luca-app.de/" id="deeplink">%1$s</xliff:g></string>
+    <string name="check_in_voluntary_info_title">Freiwilliger Check-in</string>
+    <string name="check_in_voluntary_info_description">Der Check-in an diesem Standort ist freiwillig. Wenn du trotzdem bei der Kontaktnachverfolgung helfen und im Risikofall gewarnt werden möchtest, kannst du dich freiwillig und sogar anonym einchecken. Beim anonymen Check-in werden deine Kontaktdaten nicht mit dem Gesundheitsamt geteilt.</string>
+    <string name="check_in_voluntary_info_checkbox">Freiwillig Kontaktdaten für das Gesundheitsamt freigeben</string>
+    <string name="check_in_voluntary_info_action_button">Freiwillig einchecken</string>
 
     <!-- Private Meeting -->
     <string name="meeting_heading">Privates Treffen</string>
     <string name="meeting_description">Lass deine Freunde und Familie den QR-Code scannen, um sie bei deinem Treffen einzuchecken.</string>
     <string name="meeting_description_info">Private Treffen sind für kleine Zusammenkünfte mit Freunden und Familie gedacht. Sie sind nur Gedächtnisstützen und werden nicht mit dem Gesundheitsamt geteilt. Deshalb werden hier Vor- und Nachnamen von dir und deinen Gästen angezeigt.</string>
     <string name="meeting_duration_heading">Dauer</string>
-    <string name="meeting_guests_label">Teilnehmer</string>
+    <string name="meeting_guests_label">Gäste</string>
     <string name="meeting_create_action">Privates Treffen erstellen</string>
     <string name="meeting_create_modal_action">Starten</string>
     <string name="meeting_create_modal_heading">Privates Treffen erstellen</string>
@@ -295,6 +311,7 @@
     <string name="history_data_shared_description">Du hast deine Kontaktdaten und Historie der letzten <xliff:g example="14" id="count">%1$d</xliff:g>&#160;Tage für das Gesundheitsamt freigegeben.</string>
     <string name="history_clear_title">Möchtest du deine Historie wirklich leeren?</string>
     <string name="history_clear_description">Vergangene Einträge werden in deiner App nicht mehr angezeigt, bleiben aber noch bis zu 28&#160;Tage im System und werden bei einer Datenfreigabe mit dem Gesundheitsamt geteilt.</string>
+    <string name="history_clear_content_description">Lösche Historien Einträge</string>
     <string name="history_clear_action">Leeren</string>
     <string name="history_children_title">Kinder: <xliff:g example="John Doe, Jane Doe" id="children">%1$s</xliff:g></string>
 
@@ -448,6 +465,7 @@
     <!-- Account tab -->
     <string name="account_tab_edit_contact_data">Kontaktdaten bearbeiten</string>
     <string name="account_tab_key_for_health_dep">Schlüssel für Gesundheitsämter</string>
+    <string name="account_tab_what_is_new">Neuerungen in der App</string>
     <string name="account_tab_data_request">Daten anfragen</string>
 
     <!-- Version details -->
@@ -493,7 +511,7 @@
     <string name="data_request_check_in_duration">Dauer</string>
     <string name="data_request_check_in_trace_id">Trace ID</string>
     <string name="data_request_check_in_children">Kinder</string>
-    <string name="data_request_check_in_guests">Gäste</string>
+    <string name="data_request_check_in_guests">@string/meeting_guests_label</string>
     <string name="data_request_check_in_additional_data">Extra Daten (<xliff:g example="Table number" id="additionalDataKey">%1$s</xliff:g>)</string>
     <string name="data_request_check_in_data_accessed">Anfragen von Gesundheitsämtern</string>
 

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="what_is_new_pages_headings">
+        <item>Erweiterung von „Mein luca“</item>
+        <item>Erweiterung von „Mein luca“</item>
+        <item>Mitnahme von Kindern</item>
+        <item>Optimierung der Warnhinweise</item>
+        <item>Schnellerer Check-in</item>
+        <item>Umzug der Historie</item>
+    </string-array>
+
+    <string-array name="what_is_new_pages_descriptions">
+        <item>Kinder mitnehmen\nDu kannst luca jetzt auch für deine Kinder mit nutzen.\n\nWichtige Benachrichtigungen\nHier erhältst du alle Benachrichtigungen und Warnmeldungen.</item>
+        <item>Wichtige Benachrichtigungen\nHier erhältst du alle Benachrichtigungen und Warnmeldungen.</item>
+        <item>Nach dem Hinzufügen kannst du sie bequem beim Check-in mitnehmen und auch Dokumente für sie hinterlegen. Achte dabei auf vollständige und korrekte Angaben.</item>
+        <item>Mit unterschiedlichen Warnmeldungen kannst du gezielt informiert werden, wenn du zeitgleich mit einer infizierten Person eingecheckt warst. Betroffene Ereignisse werden in der Historie markiert.</item>
+        <item>Wenn du dich Einchecken möchtest, startet luca jetzt direkt auf der Kamera. Einfach einmalig den Kamerazugriff aktivieren und los geht\'s. Deinen persönlichen QR-Code erhältst du über den Button darunter.</item>
+        <item>Die Historie findest du jetzt oben rechts im „Check-in“-Tab über das Uhr-Icon.\n\nÜbrigens: Wie gewohnt können deine Daten nicht eingesehen werden, bis du deine TAN eigenständig mit dem Gesundheitsamt teilst.</item>
+    </string-array>
+
+</resources>

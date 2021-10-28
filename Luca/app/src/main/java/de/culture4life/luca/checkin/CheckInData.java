@@ -56,6 +56,10 @@ public class CheckInData {
     @Expose
     private boolean isPrivateMeeting;
 
+    @SerializedName("isContactDataMandatory")
+    @Expose
+    private boolean isContactDataMandatory;
+
     @Nullable
     public String getLocationDisplayName() {
         if (locationGroupName != null && locationAreaName != null) {
@@ -159,6 +163,14 @@ public class CheckInData {
 
     public void setPrivateMeeting(boolean privateMeeting) {
         isPrivateMeeting = privateMeeting;
+    }
+
+    public boolean isContactDataMandatory() {
+        return isContactDataMandatory;
+    }
+
+    public void setContactDataMandatory(boolean contactDataMandatory) {
+        isContactDataMandatory = contactDataMandatory;
     }
 
     @Override

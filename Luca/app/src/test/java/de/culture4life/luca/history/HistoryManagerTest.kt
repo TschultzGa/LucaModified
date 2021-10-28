@@ -26,9 +26,7 @@ class HistoryManagerTest : LucaUnitTest() {
     private val cryptoManager = CryptoManager(preferencesManager, networkManager, genuinityManager)
     private val registrationManager = RegistrationManager(preferencesManager, networkManager, cryptoManager)
     private val childrenManager = ChildrenManager(preferencesManager, registrationManager)
-    private val historyManager by lazy { HistoryManager(preferencesManager, childrenManager).apply {
-        initialize(application).blockingAwait()
-    }}
+    private val historyManager = getInitializedManager(HistoryManager(preferencesManager, childrenManager))
     private val checkInData = CheckInData().apply {
         traceId = "asdf"
         locationId = UUID.randomUUID()

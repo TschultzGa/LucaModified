@@ -27,6 +27,8 @@
     <color name="appointment">#9badbf</color>
 
     <color name="camera_box_background">#ff2a2a2a</color>
+    
+    <color name="what_is_new_image_background">#ff405066</color>
 
     <color name="primaryColor">#a0c8ff</color>
     <color name="primaryLightColor">#d3fbff</color>

@@ -14,6 +14,7 @@ data class HistoryListItem(
     @DrawableRes var descriptionIconResourceId: Int = 0,
     var accessedTraceData: List<AccessedTraceData> = listOf(),
     var isPrivateMeeting: Boolean = false,
+    var isContactDataMandatory: Boolean = true,
     var guests: List<String> = listOf()
 ) {
 

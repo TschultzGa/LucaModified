@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
+
 import de.culture4life.luca.R;
 import de.culture4life.luca.crypto.DailyKeyUnavailableException;
 import de.culture4life.luca.util.ThrowableUtil;
@@ -143,6 +145,8 @@ public class ViewError {
             return context.getString(R.string.error_no_internet_connection_title);
         } else if (ThrowableUtil.isCause(DailyKeyUnavailableException.class, throwable)) {
             return context.getString(R.string.error_no_daily_key_available_title);
+        } else if (throwable instanceof SSLPeerUnverifiedException) {
+            return context.getString(R.string.error_certificate_pinning_title);
         } else {
             String type = throwable.getClass().getSimpleName();
             return context.getString(R.string.error_specific_title, type);
@@ -154,6 +158,8 @@ public class ViewError {
             return context.getString(R.string.error_no_internet_connection_description);
         } else if (ThrowableUtil.isCause(DailyKeyUnavailableException.class, throwable)) {
             return context.getString(R.string.error_no_daily_key_available_description);
+        } else if (throwable instanceof SSLPeerUnverifiedException) {
+            return context.getString(R.string.error_certificate_pinning_description);
         } else {
             String description = getMessagesFromThrowableAndCauses(throwable);
             if (description != null) {

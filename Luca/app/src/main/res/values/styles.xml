@@ -346,7 +346,7 @@
         <item name="android:layout_marginEnd">@dimen/spacing_default</item>
         <item name="android:scaleType">fitCenter</item>
         <item name="android:src">@drawable/ic_more_menu_vertical</item>
-        <item name="tint">?attr/colorOnSurface</item>
+        <item name="tint">@color/primaryColor</item>
     </style>
 
 </resources>

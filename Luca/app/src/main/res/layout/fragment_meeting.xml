@@ -17,16 +17,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageView
-        android:id="@+id/menuImageView"
-        style="@style/MenuImageView"
-        android:contentDescription="@string/menu_more_content_description"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/headingTextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/headingTextView"
-        app:tint="@android:color/black" />
-
     <View
         android:id="@+id/headingSeparatorView"
         style="@style/HeaderSeparatorView"

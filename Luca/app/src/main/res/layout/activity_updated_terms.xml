@@ -22,7 +22,8 @@
         android:contentDescription="@string/menu_more_content_description"
         app:layout_constraintBottom_toBottomOf="@id/appNameTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/appNameTextView" />
+        app:layout_constraintTop_toTopOf="@id/appNameTextView"
+        app:tint="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/headingTextView"

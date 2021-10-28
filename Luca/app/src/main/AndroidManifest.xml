@@ -79,6 +79,11 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
 
+        <activity
+            android:name=".ui.whatisnew.WhatIsNewActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".service.LucaService"
             android:exported="false" />

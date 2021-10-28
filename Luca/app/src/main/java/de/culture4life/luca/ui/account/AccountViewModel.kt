@@ -30,7 +30,7 @@ import timber.log.Timber
 class AccountViewModel(application: Application) : BaseViewModel(application) {
 
     fun openHealthDepartmentKeyView() {
-        navigationController.navigate(R.id.action_accountFragment_to_healthDepartmentKeyFragment)
+        navigationController?.navigate(R.id.action_accountFragment_to_healthDepartmentKeyFragment)
     }
 
     fun requestSupportMail() {

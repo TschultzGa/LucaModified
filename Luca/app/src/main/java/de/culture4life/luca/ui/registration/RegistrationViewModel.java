@@ -250,9 +250,7 @@ public class RegistrationViewModel extends BaseViewModel {
                             .withResolveAction(Completable.fromAction(this::onRegistrationRequested))
                             .withResolveLabel(R.string.action_retry)
                             .build();
-                    if (isCurrentDestinationId(R.id.registrationFragment)) {
-                        addError(registrationError);
-                    }
+                    addError(registrationError);
                 })
                 .doFinally(() -> {
                     updateAsSideEffect(isLoading, false);

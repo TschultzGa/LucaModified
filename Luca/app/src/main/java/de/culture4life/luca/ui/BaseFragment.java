@@ -25,7 +25,6 @@ import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.appcompat.widget.PopupMenu;
 import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
@@ -76,9 +75,6 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     @Nullable
     protected Snackbar errorSnackbar;
-
-    @Nullable
-    protected ImageView menuImageView;
 
     protected boolean initialized;
 
@@ -203,7 +199,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     @CallSuper
     protected Completable initializeViews() {
-        return Completable.mergeArray(setupMenu(), setupBackButton());
+        return setupBackButton();
     }
 
     protected Completable setupBackButton() {
@@ -214,21 +210,6 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
             }
             backImageView.setOnClickListener(view -> {
                 navigationController.popBackStack();
-            });
-        });
-    }
-
-    protected Completable setupMenu() {
-        return Completable.fromAction(() -> {
-            menuImageView = getView().findViewById(R.id.menuImageView);
-            if (menuImageView == null) {
-                return;
-            }
-            menuImageView.setOnClickListener(view -> {
-                PopupMenu popupMenu = new PopupMenu(getContext(), menuImageView);
-                popupMenu.getMenuInflater().inflate(R.menu.main_menu, popupMenu.getMenu());
-                popupMenu.setOnMenuItemClickListener(this::onMenuItemClick);
-                popupMenu.show();
             });
         });
     }

@@ -1,5 +1,7 @@
 package de.culture4life.luca.history;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import androidx.annotation.IntDef;
 
 import com.google.gson.Gson;
@@ -13,8 +15,6 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.lang.annotation.Retention;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 public class HistoryItem {
 
@@ -122,6 +122,8 @@ public class HistoryItem {
 
         private static Class<? extends HistoryItem> getItemClass(@Type int type) {
             switch (type) {
+                case TYPE_CHECK_IN:
+                    return CheckInItem.class;
                 case TYPE_CHECK_OUT:
                     return CheckOutItem.class;
                 case TYPE_MEETING_ENDED:

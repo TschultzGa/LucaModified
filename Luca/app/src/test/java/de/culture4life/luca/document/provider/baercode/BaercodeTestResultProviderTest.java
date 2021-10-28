@@ -8,30 +8,37 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.io.IOException;
 import java.security.cert.CertificateException;
 
 import de.culture4life.luca.BuildConfig;
+import de.culture4life.luca.LucaUnitTest;
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.DocumentParsingException;
+import de.culture4life.luca.document.DocumentVerificationException;
 import de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest;
 
+/**
+ * If these tests fail with a {@link DocumentVerificationException}, replace the baercode certificate
+ * located at {@code Luca/app/src/test/assets/baercode.crt} with the currently available certificate
+ * at {@link BaercodeDocumentProvider#CERTIFICATE_ENDPOINT}.
+ */
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)
-public class BaercodeTestResultProviderTest {
+public class BaercodeTestResultProviderTest extends LucaUnitTest {
 
     public static final String TEST_QR_CODE = "AQDYYoRAoFhh0INDoQEBogVMFnI1NzZeP4hdCzyUBFA6HnF//LdNKAVQZFIRi/WfWDgvkxDKHFEhncX1JInQo+47n+3ztTTL0g5PgH3W44ITWYYrWENt1EOFPztiHlLI2uLVtOBeBtK2a4GDRKEBOCOhBFA6HnF//LdNKAVQZFIRi/WfWIQAMHvSF47oSzyfgtBcKnvmOoZMHy81b5X5ro3spLag8wE6bGQ8GSPQHmFsd0qcypv1/9AvlN3NrnXidmPOvyMN5KMBpHceFAn+NWUSn0h00whyipngxhfxkF87DIAAlA7Z4OM8Qv9KGa9QvkOkR83NScsmoM8sSXaIBhaf8ivyMBG8NY4=";
     public static final String VACCINATION_QR_CODE = "AQDYYoRAoFhq0INDoQEBogRQ/J8iPKUgNWz56bQAYJ7W7gVMzlQhxrJxgejMrolUWEFlGpItxX7R7yQ0iBsl5T1apMKWLkylIBHhIsgDqpcXrUxOCYcRl4lN6om0Jct6gr/cNgIBhuiE2/pwXDwXOoVhI4GDRKEBOCOhBFD8nyI8pSA1bPnptABgntbuWIQBi/c1phTOBmFtUsdatXDvr4efTD1E+/DLwC/JygORC7qcbYHs895n8nrtq2xJ2rKqSt1JmDg8Y3bdzOhD2fi/ebQBRtYLJ9y7inJffsCiFWLFhkIdX2OFncDVKigBegIsy4jWzYe7aIpIg2OCMwMcePGbYt6mDbetK5WTCQfVFPg6nFE=";
+
     private BaercodeDocumentProvider provider;
 
     @Before
     public void setUp() throws IOException, CertificateException {
-        provider = new BaercodeDocumentProvider(RuntimeEnvironment.systemContext);
-        provider.baercodeBundle = BaercodeBundle.getTestBundle();
-        provider.baercodeCertificate = new BaercodeCertificate(BaercodeCertificateTest.getFileContent("src/test/assets/baercode.crt"));
+        provider = new BaercodeDocumentProvider(application);
+        BaercodeDocumentProvider.baercodeBundle = BaercodeBundle.getTestBundle();
+        BaercodeDocumentProvider.baercodeCertificate = new BaercodeCertificate(BaercodeCertificateTest.getFileContent("src/test/assets/baercode.crt"));
     }
 
     @Test

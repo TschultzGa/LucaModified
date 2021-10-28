@@ -21,7 +21,7 @@ class ChildListAdapter(
     context: Context,
     resource: Int,
     private val viewModel: ChildrenViewModel,
-    private val darkStyle: Boolean,
+    private val isCheckedIn: Boolean,
     private val removeChildListener: (Child) -> Unit,
     private val addChildListener: View.OnClickListener
 ) : ArrayAdapter<ChildListItem>(context, resource) {
@@ -63,28 +63,23 @@ class ChildListAdapter(
         getItem(position)?.let { childItem ->
             binding.includeChildCheckBox.apply {
                 isChecked = childItem.isCheckedIn
-                isVisible = !darkStyle
-                setOnClickListener {
-                    toggleCheckIn(childItem)
-                }
+                isVisible = isCheckedIn
+                setOnClickListener { toggleCheckIn(childItem) }
             }
 
             binding.childNameTextView.apply {
                 text = childItem.child.getFullName()
-                setTextColor(if (darkStyle) Color.WHITE else Color.BLACK)
-                if (!darkStyle) {
+                setTextColor(if (isCheckedIn) Color.BLACK else Color.WHITE)
+                if (isCheckedIn) {
                     setOnClickListener {
                         toggleCheckIn(childItem)
                         binding.includeChildCheckBox.toggle()
-
                     }
                 }
             }
 
             binding.removeChildImageView.apply {
-                setOnClickListener {
-                    removeChildListener(childItem.child)
-                }
+                setOnClickListener { removeChildListener(childItem.child) }
             }
         }
         return binding.root
@@ -94,13 +89,12 @@ class ChildListAdapter(
         convertView: View?,
         container: ViewGroup
     ): View {
-        val view =
-            convertView ?: layoutInflater.inflate(R.layout.add_child_button, container, false)
+        val view = convertView ?: layoutInflater.inflate(R.layout.add_child_button, container, false)
 
         val addChildTextView = view.findViewById<TextView>(R.id.addChildTextView)
         val addChildLinearLayout = view.findViewById<LinearLayout>(R.id.addChildLayout)
 
-        if (darkStyle) {
+        if (!isCheckedIn) {
             addChildTextView.setTextColor(Color.WHITE)
         }
 

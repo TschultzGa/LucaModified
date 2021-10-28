@@ -56,10 +56,11 @@ public class HistoryManager extends Manager {
     public Completable addCheckInItem(@NonNull CheckInData checkInData) {
         return Single.just(checkInData)
                 .map(data -> {
-                    HistoryItem item = new HistoryItem(HistoryItem.TYPE_CHECK_IN);
+                    CheckInItem item = new CheckInItem();
                     item.setRelatedId(checkInData.getTraceId());
                     item.setTimestamp(checkInData.getTimestamp());
                     item.setDisplayName(checkInData.getLocationDisplayName());
+                    item.setContactDataMandatory(checkInData.isContactDataMandatory());
                     return item;
                 })
                 .flatMapCompletable(this::addItem);

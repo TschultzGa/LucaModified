@@ -13,6 +13,7 @@ import static de.culture4life.luca.util.SerializationUtil.serializeToBase64;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.Location;
+import android.util.Pair;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -50,6 +51,8 @@ import de.culture4life.luca.R;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
 import de.culture4life.luca.crypto.TraceIdWrapper;
+import de.culture4life.luca.crypto.TraceIdWrapperList;
+import de.culture4life.luca.crypto.WrappedSecret;
 import de.culture4life.luca.history.HistoryManager;
 import de.culture4life.luca.location.GeofenceException;
 import de.culture4life.luca.location.GeofenceManager;
@@ -91,6 +94,9 @@ public class CheckInManager extends Manager {
     private static final String KEY_ARCHIVED_CHECK_IN_DATA = "archived_check_in_data";
     private static final String KEY_ADDITIONAL_CHECK_IN_PROPERTIES_DATA = "additional_check_in_properties";
     private static final String KEY_LAST_CHECK_IN_DATA_UPDATE_TIMESTAMP = "last_check_in_data_update_timestamp";
+    private static final String KEY_TRACE_ID_WRAPPERS = "tracing_id_wrappers";
+    private static final String KEY_PREFIX_TRACING_SECRET = "tracing_secret_";
+    private static final String ALIAS_SCANNER_EPHEMERAL_KEY_PAIR = "scanner_ephemeral_key_pair";
 
     private static final String CHECK_IN_DATA_UPDATE_TAG = "check_in_update";
     private static final long CHECK_IN_DATA_UPDATE_INTERVAL = BuildConfig.DEBUG ? PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS : TimeUnit.HOURS.toMillis(6);
@@ -345,8 +351,8 @@ public class CheckInManager extends Manager {
             String serialisedTraceId = serializeToBase64(qrCodeData.getTraceId()).blockingGet();
             checkInRequestData.setTraceId(serialisedTraceId);
 
-            KeyPair scannerEphemeralKeyPair = cryptoManager.generateScannerEphemeralKeyPair().blockingGet();
-            cryptoManager.persistScannerEphemeralKeyPair(scannerEphemeralKeyPair).blockingAwait();
+            KeyPair scannerEphemeralKeyPair = generateScannerEphemeralKeyPair().blockingGet();
+            persistScannerEphemeralKeyPair(scannerEphemeralKeyPair).blockingAwait();
 
             String serializedScannerPublicKey = AsymmetricCipherProvider.encode((ECPublicKey) scannerEphemeralKeyPair.getPublic())
                     .flatMap(SerializationUtil::serializeToBase64).blockingGet();
@@ -499,7 +505,7 @@ public class CheckInManager extends Manager {
             String encodedIv = serializeToBase64(iv).blockingGet();
             additionalCheckInProperties.setIv(encodedIv);
 
-            KeyPair scannerEphemeralKeyPair = cryptoManager.getScannerEphemeralKeyPair().blockingGet();
+            KeyPair scannerEphemeralKeyPair = getScannerEphemeralKeyPair().blockingGet();
             byte[] encryptedProperties = encryptAdditionalCheckInProperties(properties, iv, scannerEphemeralKeyPair.getPrivate(), locationPublicKey).blockingGet();
             String serializedEncryptedProperties = serializeToBase64(encryptedProperties).blockingGet();
             additionalCheckInProperties.setEncryptedProperties(serializedEncryptedProperties);
@@ -780,10 +786,11 @@ public class CheckInManager extends Manager {
                                 .firstElement()));
     }
 
-    public Maybe<byte[]> getCheckedInTraceId() {
-        return getCheckInDataIfAvailable()
-                .map(CheckInData::getTraceId)
-                .flatMapSingle(SerializationUtil::deserializeFromBase64);
+    public Single<LocationResponseData> getLocationDataFromScannerId(@NonNull String scannerId) {
+        return networkManager.getLucaEndpointsV3()
+                .flatMap(lucaEndpointsV3 -> lucaEndpointsV3.getScanner(scannerId)
+                        .map(jsonObject -> jsonObject.get("locationId").getAsString())
+                        .flatMap(lucaEndpointsV3::getLocation));
     }
 
     /*
@@ -814,6 +821,7 @@ public class CheckInManager extends Manager {
                                 checkInData.setTimestamp(TimeUtil.convertFromUnixTimestamp(traceData.getCheckInTimestamp()).blockingGet());
                                 checkInData.setLocationId(UUID.fromString(traceData.getLocationId()));
                                 checkInData.setPrivateMeeting(location.isPrivate());
+                                checkInData.setContactDataMandatory(location.isContactDataMandatory());
 
                                 if (location.getGroupName() == null && location.getAreaName() == null) {
                                     // private meeting location
@@ -856,10 +864,45 @@ public class CheckInManager extends Manager {
 
     private Completable removeCheckInData() {
         return Completable.mergeArray(
-                deleteRecentTraceIds(),
+                deleteTraceData(),
                 preferencesManager.delete(KEY_CHECK_IN_DATA)
         ).andThen(Completable.fromAction(() -> checkInData = null))
                 .doOnComplete(() -> Timber.d("Removed check-in data"));
+    }
+
+    /*
+        Archive
+     */
+
+    public Completable addCheckInDataToArchive(@NonNull CheckInData checkInData) {
+        return getArchivedCheckInData()
+                .mergeWith(Observable.just(checkInData))
+                .toList()
+                .map(ArchivedCheckInData::new)
+                .flatMapCompletable(archivedCheckInData -> preferencesManager.persist(KEY_ARCHIVED_CHECK_IN_DATA, archivedCheckInData))
+                .doOnComplete(() -> Timber.i("Added check-in data to archive: %s", checkInData));
+    }
+
+    public Observable<CheckInData> getArchivedCheckInData() {
+        return preferencesManager.restoreIfAvailable(KEY_ARCHIVED_CHECK_IN_DATA, ArchivedCheckInData.class)
+                .map(ArchivedCheckInData::getCheckIns)
+                .defaultIfEmpty(new ArrayList<>())
+                .flatMapObservable(Observable::fromIterable);
+    }
+
+    public Maybe<CheckInData> getArchivedCheckInData(@NonNull String traceId) {
+        return getArchivedCheckInData()
+                .filter(archivedCheckInData -> traceId.equals(archivedCheckInData.getTraceId()))
+                .firstElement();
+    }
+
+    public Completable deleteOldArchivedCheckInData() {
+        return getArchivedCheckInData()
+                .filter(checkInData -> checkInData.getTimestamp() > System.currentTimeMillis() - KEEP_DATA_DURATION)
+                .toList()
+                .map(ArchivedCheckInData::new)
+                .flatMapCompletable(archivedCheckInData -> preferencesManager.persist(KEY_ARCHIVED_CHECK_IN_DATA, archivedCheckInData))
+                .doOnComplete(() -> Timber.d("Deleted old archived check-in data"));
     }
 
     /*
@@ -910,6 +953,12 @@ public class CheckInManager extends Manager {
                 .sorted((first, second) -> Long.compare(first.getCheckInTimestamp(), second.getCheckInTimestamp()));
     }
 
+    public Maybe<byte[]> getCheckedInTraceId() {
+        return getCheckInDataIfAvailable()
+                .map(CheckInData::getTraceId)
+                .flatMapSingle(SerializationUtil::deserializeFromBase64);
+    }
+
     public Single<Boolean> hasRecentTraceIds(boolean useOlderTraceIds) {
         return getRecentTraceIds(useOlderTraceIds)
                 .isEmpty()
@@ -917,7 +966,7 @@ public class CheckInManager extends Manager {
     }
 
     private Observable<byte[]> getRecentTraceIds(boolean useOlderTraceIds) {
-        return cryptoManager.getTraceIdWrappers()
+        return getTraceIdWrappers()
                 .filter(traceIdWrapper -> {
                     long creationTimestamp = TimeUtil.convertFromUnixTimestamp(traceIdWrapper.getTimestamp()).blockingGet();
                     long age = System.currentTimeMillis() - creationTimestamp;
@@ -930,49 +979,183 @@ public class CheckInManager extends Manager {
                 .map(TraceIdWrapper::getTraceId);
     }
 
-    public Completable deleteRecentTraceIds() {
-        return cryptoManager.deleteTraceData();
-    }
-
     public Observable<String> getArchivedTraceIds() {
         return getArchivedCheckInData()
                 .map(CheckInData::getTraceId);
     }
 
     /*
-        Archive
+        Trace IDs
      */
 
-    public Completable addCheckInDataToArchive(@NonNull CheckInData checkInData) {
-        return getArchivedCheckInData()
-                .mergeWith(Observable.just(checkInData))
+    /**
+     * Generate and persist a trace ID from given user ID.
+     */
+    public Single<TraceIdWrapper> getTraceIdWrapper(@NonNull UUID userId) {
+        return generateTraceIdWrapper(userId)
+                .flatMap(traceIdWrapper -> persistTraceIdWrapper(traceIdWrapper)
+                        .andThen(Single.just(traceIdWrapper)));
+    }
+
+    private Single<TraceIdWrapper> generateTraceIdWrapper(@NonNull UUID userId) {
+        return TimeUtil.getCurrentUnixTimestamp()
+                .flatMap(TimeUtil::roundUnixTimestampDownToMinute)
+                .flatMap(roundedUnixTimestamp -> generateTraceId(userId, roundedUnixTimestamp)
+                        .map(traceId -> new TraceIdWrapper(roundedUnixTimestamp, traceId)));
+    }
+
+    public Single<byte[]> generateTraceId(@NonNull UUID userId, long roundedUnixTimestamp) {
+        return Single.zip(CryptoManager.encode(userId), TimeUtil.encodeUnixTimestamp(roundedUnixTimestamp), Pair::new)
+                .flatMap(encodedDataPair -> CryptoManager.concatenate(encodedDataPair.first, encodedDataPair.second))
+                .flatMap(encodedData -> getCurrentTracingSecret()
+                        .flatMap(CryptoManager::createKeyFromSecret)
+                        .flatMap(traceKey -> cryptoManager.getMacProvider().sign(encodedData, traceKey)))
+                .flatMap(traceId -> CryptoManager.trim(traceId, TRIMMED_HASH_LENGTH))
+                .doOnSuccess(traceId -> Timber.d("Generated new trace ID: %s", SerializationUtil.serializeToBase64(traceId).blockingGet()));
+    }
+
+    /**
+     * Get current {@link TraceIdWrapper}s ordered by timestamp.
+     */
+    public Observable<TraceIdWrapper> getTraceIdWrappers() {
+        return restoreTraceIdWrappers();
+    }
+
+    /**
+     * Restore {@link TraceIdWrapperList} from {@link PreferencesManager} and sort by timestamp.
+     */
+    private Observable<TraceIdWrapper> restoreTraceIdWrappers() {
+        return preferencesManager.restoreIfAvailable(KEY_TRACE_ID_WRAPPERS, TraceIdWrapperList.class)
+                .flatMapObservable(Observable::fromIterable)
+                .sorted((first, second) -> Long.compare(first.getTimestamp(), second.getTimestamp()));
+    }
+
+    /**
+     * Persist given {@link TraceIdWrapper}, appending it to the list of stored ones.
+     */
+    private Completable persistTraceIdWrapper(@NonNull TraceIdWrapper traceIdWrapper) {
+        return getTraceIdWrappers()
+                .mergeWith(Observable.just(traceIdWrapper))
                 .toList()
-                .map(ArchivedCheckInData::new)
-                .flatMapCompletable(archivedCheckInData -> preferencesManager.persist(KEY_ARCHIVED_CHECK_IN_DATA, archivedCheckInData))
-                .doOnComplete(() -> Timber.i("Added check-in data to archive: %s", checkInData));
+                .map(TraceIdWrapperList::new)
+                .flatMapCompletable(traceIdWrappers -> preferencesManager.persist(KEY_TRACE_ID_WRAPPERS, traceIdWrappers));
     }
 
-    public Observable<CheckInData> getArchivedCheckInData() {
-        return preferencesManager.restoreIfAvailable(KEY_ARCHIVED_CHECK_IN_DATA, ArchivedCheckInData.class)
-                .map(ArchivedCheckInData::getCheckIns)
-                .defaultIfEmpty(new ArrayList<>())
-                .flatMapObservable(Observable::fromIterable);
+    /**
+     * Delete all trace IDs and their associated user ephemeral key pair.
+     *
+     * @see CryptoManager#deleteGuestEphemeralKeyPair
+     */
+    public Completable deleteTraceData() {
+        return getTraceIdWrappers()
+                .map(TraceIdWrapper::getTraceId)
+                .flatMapCompletable(cryptoManager::deleteGuestEphemeralKeyPair)
+                .andThen(preferencesManager.delete(KEY_TRACE_ID_WRAPPERS));
     }
 
-    public Maybe<CheckInData> getArchivedCheckInData(@NonNull String traceId) {
-        return getArchivedCheckInData()
-                .filter(archivedCheckInData -> traceId.equals(archivedCheckInData.getTraceId()))
+    /*
+        Tracing secrets
+     */
+
+    /**
+     * Get or create tracing secret - a randomly generated seed used to derive trace IDs when
+     * checking in using the Guest App. It is stored locally on the Guest App until it is shared
+     * with the Health Department during contact tracing. Moreover, the tracing secret is rotated on
+     * a regular basis in order to limit the number of trace IDs that can be reconstructed when the
+     * secret is shared
+     * <br>
+     * Rotation of the daily tracing secret is ensured by the method either restoring today's secret
+     * or generating (and persisting) a new one for today.
+     *
+     * @see <a href="https://www.luca-app.de/securityoverview/properties/secrets.html#term-tracing-secret">Security
+     * Overview: Secrets</a>
+     * @see <a href="https://luca-app.de/securityoverview/processes/guest_registration.html#rotating-the-tracing-secret">Security
+     * Overview: Rotating the Tracing Secret</a>
+     */
+    public Single<byte[]> getCurrentTracingSecret() {
+        return restoreCurrentTracingSecret()
+                .switchIfEmpty(generateTracingSecret()
+                        .observeOn(Schedulers.io())
+                        .flatMap(secret -> persistCurrentTracingSecret(secret)
+                                .andThen(Single.just(secret))));
+    }
+
+    private Single<byte[]> generateTracingSecret() {
+        return cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH)
+                .doOnSuccess(bytes -> Timber.d("Generated new tracing secret"));
+    }
+
+    /**
+     * Restore only the recent most tracing secret, meaning today's secret.
+     *
+     * @return today's tracing secret if available
+     */
+    private Maybe<byte[]> restoreCurrentTracingSecret() {
+        return restoreRecentTracingSecrets(0)
+                .map(pair -> pair.second)
                 .firstElement();
     }
 
-    public Completable deleteOldArchivedCheckInData() {
-        return getArchivedCheckInData()
-                .filter(checkInData -> checkInData.getTimestamp() > System.currentTimeMillis() - KEEP_DATA_DURATION)
-                .toList()
-                .map(ArchivedCheckInData::new)
-                .flatMapCompletable(archivedCheckInData -> preferencesManager.persist(KEY_ARCHIVED_CHECK_IN_DATA, archivedCheckInData))
-                .doOnComplete(() -> Timber.d("Deleted old archived check-in data"));
+    /**
+     * Persist given tracing secret to preferences, encrypted as a {@link WrappedSecret}.
+     */
+    private Completable persistCurrentTracingSecret(@NonNull byte[] secret) {
+        return TimeUtil.getStartOfCurrentDayTimestamp()
+                .map(startOfDayTimestamp -> KEY_PREFIX_TRACING_SECRET + startOfDayTimestamp)
+                .flatMapCompletable(preferenceKey -> cryptoManager.persistWrappedSecret(preferenceKey, secret));
     }
+
+    public Observable<Pair<Long, byte[]>> restoreRecentTracingSecrets(long duration) {
+        return generateRecentStartOfDayTimestamps(duration)
+                .flatMapMaybe(startOfDayTimestamp -> cryptoManager.restoreWrappedSecretIfAvailable(KEY_PREFIX_TRACING_SECRET + startOfDayTimestamp)
+                        .map(secret -> new Pair<>(startOfDayTimestamp, secret)));
+    }
+
+    public Observable<Long> generateRecentStartOfDayTimestamps(long duration) {
+        return TimeUtil.getStartOfCurrentDayTimestamp()
+                .flatMapObservable(firstStartOfDayTimestamp -> Observable.range(0, (int) TimeUnit.MILLISECONDS.toDays(duration) + 1)
+                        .map(dayIndex -> firstStartOfDayTimestamp - TimeUnit.DAYS.toMillis(dayIndex)));
+    }
+
+    /*
+        Scanner ephemeral key pair
+     */
+
+    /**
+     * Get previously persisted scanner ephemeral key - used during self check-in to complete
+     * re-encryption of {@link CheckInRequestData} usually performed by the Scanner Frontend.
+     *
+     * @see <a href="https://luca-app.de/securityoverview/processes/guest_self_checkin.html">Security
+     * Overview: Check-In via a Printed QR Code</a>
+     */
+    public Single<KeyPair> getScannerEphemeralKeyPair() {
+        return cryptoManager.getAsymmetricCipherProvider().getKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR);
+    }
+
+    /**
+     * Generate a new scanner ephemeral key - used during self check-in to re-encrypt {@link
+     * CheckInRequestData}.
+     *
+     * @see CheckInManager#generateCheckInData(QrCodeData, UUID)
+     */
+    public Single<KeyPair> generateScannerEphemeralKeyPair() {
+        return cryptoManager.getAsymmetricCipherProvider().generateKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR, context)
+                .doOnSuccess(keyPair -> Timber.d("Generated new scanner ephemeral key pair: %s", keyPair.getPublic()));
+    }
+
+    /**
+     * Persist given scanner ephemeral keypair to BC keystore.
+     *
+     * @param keyPair ephemeral scanner key to persist
+     */
+    public Completable persistScannerEphemeralKeyPair(@NonNull KeyPair keyPair) {
+        return cryptoManager.getAsymmetricCipherProvider().setKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR, keyPair)
+                .andThen(cryptoManager.persistKeyStoreToFile());
+    }
+
+    /*
+        Utilities
+     */
 
     public static boolean isSelfCheckInUrl(@NonNull String url) {
         return CheckInViewModel.getScannerIdFromUrl(url)
@@ -996,13 +1179,6 @@ public class CheckInManager extends Manager {
 
     public void setMeetingAdditionalData(@Nullable MeetingAdditionalData meetingAdditionalData) {
         this.meetingAdditionalData = meetingAdditionalData;
-    }
-
-    public Single<LocationResponseData> getLocationDataFromScannerId(@NonNull String scannerId) {
-        return networkManager.getLucaEndpointsV3()
-                .flatMap(lucaEndpointsV3 -> lucaEndpointsV3.getScanner(scannerId)
-                        .map(jsonObject -> jsonObject.get("locationId").getAsString())
-                        .flatMap(lucaEndpointsV3::getLocation));
     }
 
 }

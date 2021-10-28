@@ -25,7 +25,7 @@ public class CheckOutItem extends HistoryItem {
 
     @Override
     public String toString() {
-        return "CheckInItem{" +
+        return "CheckOutItem{" +
                 "children=" + children +
                 "} " + super.toString();
     }

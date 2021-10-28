@@ -473,7 +473,7 @@ public class DataAccessManager extends Manager {
 
     protected Observable<NotifyingHealthDepartment> fetchHealthDepartments() {
         return getOrFetchNotificationConfig()
-                .map(notificationConfig -> notificationConfig.getHealthDepartments())
+                .map(NotificationConfig::getHealthDepartments)
                 .doOnSuccess(healthDepartments -> Timber.d("Fetched %d health departments", healthDepartments.size()))
                 .doOnError(throwable -> Timber.e("Unable to get health departments: %s", throwable.toString()))
                 .flatMapObservable(Observable::fromIterable);

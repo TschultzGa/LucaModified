@@ -21,14 +21,14 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
     private var bottomSheet: AddChildDialogFragment? = null
     private lateinit var binding: FragmentAddingChildrenBinding
     private lateinit var childListAdapter: ChildListAdapter
-    private var darkStyle = true
+    private var isCheckedIn = false
 
     override fun getViewModelClass(): Class<ChildrenViewModel> = ChildrenViewModel::class.java
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            darkStyle = !it.getBoolean(CHECK_IN, false)
+            isCheckedIn = it.getBoolean(CHECK_IN, false)
         }
     }
 
@@ -39,7 +39,7 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
     }
 
     private fun setupDesign() {
-        if (darkStyle) {
+        if (!isCheckedIn) {
             with(binding) {
                 layout.setBackgroundColor(Color.BLACK)
                 backImageView.setColorFilter(Color.WHITE)
@@ -51,7 +51,6 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
             }
         }
     }
-
 
     override fun initializeViews(): Completable {
         return super.initializeViews()
@@ -66,6 +65,14 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
         viewModel.restoreChildren().subscribe()
     }
 
+    override fun addChild(child: Child) {
+        viewDisposable.add(
+            viewModel.addChild(child, isCheckedIn)
+                .onErrorComplete()
+                .doFinally { bottomSheet?.dismiss() }
+                .subscribe())
+    }
+
     private fun initializeAddChildViews() {
         with(binding) {
             backImageView.setOnClickListener { viewModel.navigateBack() }
@@ -78,7 +85,7 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
             requireContext(),
             binding.childListView.id,
             viewModel,
-            darkStyle,
+            isCheckedIn,
             { showRemoveChildDialog(it) },
             { showAddChildDialog() }
         )
@@ -125,14 +132,6 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
 
     companion object {
         const val CHECK_IN = "checkIn"
-    }
-
-    override fun addChild(child: Child) {
-        viewDisposable.add(
-            viewModel.addChild(child)
-                .onErrorComplete()
-                .doFinally { bottomSheet?.dismiss() }
-                .subscribe())
     }
 
 }

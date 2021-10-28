@@ -16,28 +16,11 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/historyTextView"
-        style="@style/TextAppearance.Luca.Headline2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingStart="@dimen/spacing_default"
-        android:paddingTop="@dimen/spacing_large"
-        android:paddingEnd="@dimen/spacing_large"
-        android:paddingBottom="2dp"
-        android:text="@string/navigation_history"
-        android:textAllCaps="true"
-        android:textSize="@dimen/font_size_small"
-        app:layout_constraintBottom_toBottomOf="@id/headingTextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:ignore="RtlSymmetry" />
-
-
     <ImageView
-        android:id="@+id/menuImageView"
+        android:id="@+id/historyImageView"
         style="@style/MenuImageView"
-        android:contentDescription="@string/menu_more_content_description"
-        android:visibility="gone"
+        android:contentDescription="@string/navigation_history"
+        android:src="@drawable/ic_history"
         app:layout_constraintBottom_toBottomOf="@id/headingTextView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/headingTextView" />

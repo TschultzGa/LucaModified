@@ -14,20 +14,6 @@ class ChildrenManager(
     private val registrationManager: RegistrationManager
 ) : Manager() {
 
-    companion object {
-        const val LEGACY_KEY_CHILDREN = "children"
-        private const val KEY_CHILDREN = "children2"
-        private const val KEY_CHECKED_IN_CHILDREN = "checked_in_children"
-
-        fun isValidChildName(childName: String): Boolean {
-            return StringSanitizeUtil.sanitize(childName).trim().isNotEmpty()
-        }
-
-        fun isValidChildName(child: Child): Boolean {
-            return isValidChildName(child.firstName) && isValidChildName(child.lastName)
-        }
-    }
-
     override fun doInitialize(context: Context): Completable {
         return preferencesManager.initialize(context)
             .andThen(registrationManager.initialize(context))
@@ -37,9 +23,19 @@ class ChildrenManager(
     /**
      * Add a child
      */
-    fun addChild(child: Child): Completable {
+
+    @JvmOverloads
+    fun addChild(child: Child, checkIn: Boolean = false): Completable {
         return getChildren()
             .map { children -> children.apply { add(child) } }
+            .flatMap {
+                if (checkIn) {
+                    checkIn(child)
+                        .andThen(Single.just(it))
+                } else {
+                    Single.just(it)
+                }
+            }
             .flatMapCompletable(this::persistChildren)
     }
 
@@ -155,6 +151,20 @@ class ChildrenManager(
             } else {
                 Completable.complete()
             }
+        }
+    }
+
+    companion object {
+        const val LEGACY_KEY_CHILDREN = "children"
+        private const val KEY_CHILDREN = "children2"
+        private const val KEY_CHECKED_IN_CHILDREN = "checked_in_children"
+
+        fun isValidChildName(childName: String): Boolean {
+            return StringSanitizeUtil.sanitize(childName).trim().isNotEmpty()
+        }
+
+        fun isValidChildName(child: Child): Boolean {
+            return isValidChildName(child.firstName) && isValidChildName(child.lastName)
         }
     }
 

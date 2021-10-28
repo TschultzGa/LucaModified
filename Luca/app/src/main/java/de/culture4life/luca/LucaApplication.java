@@ -1,7 +1,5 @@
 package de.culture4life.luca;
 
-import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -50,6 +48,7 @@ import de.culture4life.luca.registration.RegistrationManager;
 import de.culture4life.luca.service.LucaService;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.dialog.BaseDialogFragment;
+import de.culture4life.luca.whatisnew.WhatIsNewManager;
 import hu.akarnokd.rxjava3.debug.RxJavaAssemblyTracking;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
@@ -60,6 +59,8 @@ import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import rxdogtag2.RxDogTag;
 import timber.log.Timber;
+
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 public class LucaApplication extends MultiDexApplication {
 
@@ -81,6 +82,7 @@ public class LucaApplication extends MultiDexApplication {
     private final DataAccessManager dataAccessManager;
     private final DocumentManager documentManager;
     private final GeofenceManager geofenceManager;
+    private final WhatIsNewManager whatIsNewManager;
 
     private final CompositeDisposable applicationDisposable;
 
@@ -116,6 +118,7 @@ public class LucaApplication extends MultiDexApplication {
         checkInManager = new CheckInManager(preferencesManager, networkManager, geofenceManager, locationManager, historyManager, cryptoManager, notificationManager);
         dataAccessManager = new DataAccessManager(preferencesManager, networkManager, notificationManager, checkInManager, historyManager, cryptoManager);
         documentManager = new DocumentManager(preferencesManager, networkManager, historyManager, cryptoManager, registrationManager, childrenManager);
+        whatIsNewManager = new WhatIsNewManager(preferencesManager);
 
         applicationDisposable = new CompositeDisposable();
 
@@ -188,7 +191,8 @@ public class LucaApplication extends MultiDexApplication {
                 historyManager.initialize(this).subscribeOn(Schedulers.io()),
                 dataAccessManager.initialize(this).subscribeOn(Schedulers.io()),
                 documentManager.initialize(this).subscribeOn(Schedulers.io()),
-                geofenceManager.initialize(this).subscribeOn(Schedulers.io())
+                geofenceManager.initialize(this).subscribeOn(Schedulers.io()),
+                whatIsNewManager.initialize(this).subscribeOn(Schedulers.io())
         ).andThen(Completable.mergeArray(
                 invokeRotatingBackendPublicKeyUpdate(),
                 invokeAccessedDataUpdate(),
@@ -201,8 +205,6 @@ public class LucaApplication extends MultiDexApplication {
                 .doOnError(throwable -> {
                     if (throwable instanceof SSLPeerUnverifiedException) {
                         showErrorAsDialog(new ViewError.Builder(this)
-                                .withTitle(R.string.error_certificate_pinning_title)
-                                .withDescription(R.string.error_certificate_pinning_description)
                                 .withCause(throwable)
                                 .removeWhenShown()
                                 .build());
@@ -361,8 +363,8 @@ public class LucaApplication extends MultiDexApplication {
     public Completable deleteAccount() {
         return documentManager.unredeemAndDeleteAllDocuments()
                 .andThen(registrationManager.deleteRegistrationOnBackend())
-                .andThen(preferencesManager.deleteAll())
-                .andThen(cryptoManager.deleteAllKeyStoreEntries());
+                .andThen(cryptoManager.deleteAllKeyStoreEntries())
+                .andThen(preferencesManager.deleteAll());
     }
 
     public Completable handleDeepLink(Uri uri) {
@@ -500,6 +502,10 @@ public class LucaApplication extends MultiDexApplication {
 
     public GeofenceManager getGeofenceManager() {
         return geofenceManager;
+    }
+
+    public WhatIsNewManager getWhatIsNewManager() {
+        return whatIsNewManager;
     }
 
     public Maybe<String> getDeepLink() {

@@ -30,7 +30,7 @@ class CheckInUpdateWorker(
                                     if (isCheckedIn) {
                                         Completable.complete()
                                     } else {
-                                        checkInManager.deleteRecentTraceIds()
+                                        checkInManager.deleteTraceData()
                                     }
                                 })
                     }

@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import de.culture4life.luca.R;
 import de.culture4life.luca.dataaccess.AccessedTraceData;
 import de.culture4life.luca.dataaccess.DataAccessManager;
+import de.culture4life.luca.history.CheckInItem;
 import de.culture4life.luca.history.CheckOutItem;
 import de.culture4life.luca.history.DataSharedItem;
 import de.culture4life.luca.history.HistoryItem;
@@ -177,6 +178,7 @@ public class HistoryViewModel extends BaseViewModel {
             merged.setAccessedTraceData(end.getAccessedTraceData());
             merged.setPrivateMeeting(end.isPrivateMeeting());
             merged.setGuests(end.getGuests());
+            merged.setContactDataMandatory(start.isContactDataMandatory());
             return merged;
         });
     }
@@ -187,9 +189,12 @@ public class HistoryViewModel extends BaseViewModel {
             item.setTimestamp(historyItem.getTimestamp());
             item.setTime(application.getString(R.string.history_time, TimeUtil.getReadableTime(application, historyItem.getTimestamp())));
             item.setRelatedId(historyItem.getRelatedId());
+
             switch (historyItem.getType()) {
                 case HistoryItem.TYPE_CHECK_IN: {
-                    item.setTitle(historyItem.getDisplayName());
+                    CheckInItem checkInItem = (CheckInItem) historyItem;
+                    item.setTitle(checkInItem.getDisplayName());
+                    item.setContactDataMandatory(checkInItem.isContactDataMandatory());
                     break;
                 }
                 case HistoryItem.TYPE_CHECK_OUT: {

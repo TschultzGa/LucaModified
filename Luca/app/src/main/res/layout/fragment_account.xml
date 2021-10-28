@@ -100,6 +100,13 @@
                         android:text="@string/menu_support" />
 
                     <TextView
+                        android:id="@+id/whatIsNewTextView"
+                        style="@style/AccountTabButton.BottomStroke"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/account_tab_what_is_new" />
+
+                    <TextView
                         android:id="@+id/dataRequestTextView"
                         style="@style/AccountTabButton.BottomStroke"
                         android:layout_width="match_parent"
