@@ -19,22 +19,22 @@
         <item>@drawable/img_new_5_history</item>
     </integer-array>
 
-    <string-array name="what_is_new_pages_headings">
-        <item>Extension of \"My luca\"</item>
-        <item>Extension of \"My luca\"</item>
-        <item>Bringing Children</item>
-        <item>Optimization of warnings</item>
-        <item>Faster check-in</item>
-        <item>Relocation of your history</item>
+    <string-array name="what_is_new_pages_headings" translatable="false">
+        <item>@string/what_is_new_0_heading</item>
+        <item>@string/what_is_new_1_heading</item>
+        <item>@string/what_is_new_2_heading</item>
+        <item>@string/what_is_new_3_heading</item>
+        <item>@string/what_is_new_4_heading</item>
+        <item>@string/what_is_new_5_heading</item>
     </string-array>
 
-    <string-array name="what_is_new_pages_descriptions">
-        <item>Add children\nYou can now use luca for your children as well.</item>
-        <item>Important notifications\nYou will receive any notifications or warnings here.</item>
-        <item>Add your children to check them in with you. You can even import documents for them, but make sure to input full and correct information.</item>
-        <item>Our different warning levels can inform you in more detail, when you were checked in somewhere at the same time as an infected person. Affected events are marked in your history.</item>
-        <item>When you press on \"Check-in\", luca now directly starts on the camera. Just activate the camera once and you\'re good to go. Access your personal QR code by clicking on the button below it.</item>
-        <item>You can now access your history via the icon in the top right corner of the \"Check-in\" tab.\n\nAs always, your data cannot be viewed until you generate your TAN and share it with the health department.</item>
+    <string-array name="what_is_new_pages_descriptions" translatable="false">
+        <item>@string/what_is_new_0_description</item>
+        <item>@string/what_is_new_1_description</item>
+        <item>@string/what_is_new_2_description</item>
+        <item>@string/what_is_new_3_description</item>
+        <item>@string/what_is_new_4_description</item>
+        <item>@string/what_is_new_5_description</item>
     </string-array>
 
 </resources>

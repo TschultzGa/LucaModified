@@ -101,7 +101,7 @@ public class BaercodeTestResultProviderTest extends LucaUnitTest {
 
     @Test
     public void localBundle_isExpired() {
-        Assert.assertTrue(provider.baercodeBundle.isExpired());
+        Assert.assertTrue(BaercodeDocumentProvider.baercodeBundle.isExpired());
     }
 
     @Test

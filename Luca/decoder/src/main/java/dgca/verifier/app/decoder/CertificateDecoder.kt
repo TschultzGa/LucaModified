@@ -54,4 +54,5 @@ interface CertificateDecoder {
      * Returns success result with {@link CertificateModel} or descriptive error model.
      */
     fun decodeCertificate(qrCodeText: String): CertificateDecodingResult
+
 }

@@ -1,5 +1,18 @@
 package de.culture4life.luca.document;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static de.culture4life.luca.document.provider.appointment.AppointmentProviderTest.VALID_APPOINTMENT;
+import static de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest.EXPIRED_TEST_RESULT_TICKET_IO;
+import static de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest.UNVERIFIED_TEST_RESULT;
+import static de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest.VALID_TEST_RESULT_TICKET_IO;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -16,7 +29,9 @@ import de.culture4life.luca.LucaUnitTest;
 import de.culture4life.luca.children.Child;
 import de.culture4life.luca.children.ChildrenManager;
 import de.culture4life.luca.crypto.CryptoManager;
+import de.culture4life.luca.document.provider.ProvidedDocument;
 import de.culture4life.luca.document.provider.appointment.Appointment;
+import de.culture4life.luca.document.provider.eudcc.EudccDocumentProvider;
 import de.culture4life.luca.document.provider.eudcc.EudccDocumentProviderTest;
 import de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocument;
 import de.culture4life.luca.genuinity.GenuinityManager;
@@ -31,19 +46,6 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
-
-import static de.culture4life.luca.document.provider.appointment.AppointmentProviderTest.VALID_APPOINTMENT;
-import static de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest.EXPIRED_TEST_RESULT_TICKET_IO;
-import static de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest.UNVERIFIED_TEST_RESULT;
-import static de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocumentProviderTest.VALID_TEST_RESULT_TICKET_IO;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)
@@ -155,6 +157,10 @@ public class DocumentManagerTest extends LucaUnitTest {
         registrationData.setLastName("Parent");
         doReturn(Single.just(registrationData)).when(registrationManager).getOrCreateRegistrationData();
 
+        EudccDocumentProvider eudccDocumentProvider = spy(new EudccDocumentProvider(application));
+        doReturn(Completable.complete()).when(eudccDocumentProvider).verify(EudccDocumentProviderTest.EUDCC_FULLY_VACCINATED);
+        documentManager.setEudccDocumentProvider(eudccDocumentProvider);
+
         Document validDocument = childrenManager.addChild(new Child("Erika Dörte", "Dießner Musterfrau"))
                 .andThen(documentManager.parseAndValidateEncodedDocument(EudccDocumentProviderTest.EUDCC_FULLY_VACCINATED))
                 .blockingGet();
@@ -169,6 +175,23 @@ public class DocumentManagerTest extends LucaUnitTest {
 
         verify(documentManager, times(1)).unredeemDocument(any(Document.class));
         verify(documentManager, times(1)).redeemDocument(any(Document.class));
+    }
+
+    @Test
+    public void reVerifyDocuments_previouslyVerifiedNowUnverifiable_updatesVerifiedStatus() {
+        EudccDocumentProvider eudccDocumentProvider = spy(new EudccDocumentProvider(application));
+        doReturn(Completable.error(new DocumentVerificationException(DocumentVerificationException.Reason.INVALID_SIGNATURE)))
+                .when(eudccDocumentProvider).verify(EudccDocumentProviderTest.EUDCC_FULLY_VACCINATED);
+        documentManager.setEudccDocumentProvider(eudccDocumentProvider);
+
+        eudccDocumentProvider.parse(EudccDocumentProviderTest.EUDCC_FULLY_VACCINATED)
+                .map(ProvidedDocument::getDocument)
+                .doOnSuccess(document -> document.setVerified(true))
+                .flatMapCompletable(document -> documentManager.addDocument(document))
+                .andThen(documentManager.reVerifyDocuments())
+                .andThen(documentManager.getOrRestoreDocuments())
+                .test()
+                .assertValue(document -> !document.isVerified());
     }
 
     @Test

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Update the library project from https://github.com/eu-digital-green-certificates
+
+git clone git@github.com:eu-digital-green-certificates/dgca-app-core-android.git /tmp/dgca-app-core-android
+rm -rf decoder/src/main/
+cp -r /tmp/dgca-app-core-android/decoder/src/main/ decoder/src/main
+rm -rf /tmp/dgca-app-core-android/
+git checkout decoder/src/main/java/dgca/verifier/app/decoder/JsonSchema.kt

@@ -23,7 +23,6 @@
 package dgca.verifier.app.decoder
 
 import COSE.HeaderKeys
-import android.text.TextUtils
 import com.upokecenter.cbor.CBORObject
 import dgca.verifier.app.decoder.base45.Base45Decoder
 import dgca.verifier.app.decoder.cbor.DefaultGreenCertificateMapper
@@ -31,7 +30,6 @@ import dgca.verifier.app.decoder.cbor.GreenCertificateMapper
 import dgca.verifier.app.decoder.cwt.CwtHeaderKeys
 import dgca.verifier.app.decoder.model.CoseData
 import dgca.verifier.app.decoder.model.GreenCertificate
-import java.time.Instant
 import java.util.zip.InflaterInputStream
 
 @ExperimentalUnsignedTypes
@@ -71,51 +69,41 @@ class DefaultCertificateDecoder(private val base45Decoder: Base45Decoder, privat
         return CertificateDecodingResult.Success(greenCertificate)
     }
 
+
+    private fun ByteArray.decompressBase45DecodedData(): ByteArray {
+        // ZLIB magic headers
+        return if (this.size >= 2 && this[0] == 0x78.toByte() && (
+                        this[1] == 0x01.toByte() || // Level 1
+                                this[1] == 0x5E.toByte() || // Level 2 - 5
+                                this[1] == 0x9C.toByte() || // Level 6
+                                this[1] == 0xDA.toByte()
+                        )
+        ) {
+            InflaterInputStream(this.inputStream()).readBytes()
+        } else this
+    }
+
+    private fun ByteArray.decodeCose(): CoseData {
+        val messageObject = CBORObject.DecodeFromBytes(this)
+        val content = messageObject[2].GetByteString()
+        val rgbProtected = messageObject[0].GetByteString()
+        val rgbUnprotected = messageObject[1]
+        val key = HeaderKeys.KID.AsCBOR()
+
+        if (!CBORObject.DecodeFromBytes(rgbProtected).keys.contains(key)) {
+            val objunprotected = rgbUnprotected.get(key).GetByteString()
+            return CoseData(content, objunprotected)
+        }
+        val objProtected = CBORObject.DecodeFromBytes(rgbProtected).get(key).GetByteString()
+        return CoseData(content, objProtected)
+    }
+
     private fun ByteArray.decodeGreenCertificate(): GreenCertificate {
         val map = CBORObject.DecodeFromBytes(this)
-
-        val issuingCountry = map[CwtHeaderKeys.ISSUING_COUNTRY.asCBOR()].AsString()
-        if (TextUtils.isEmpty(issuingCountry)) throw IllegalArgumentException("Issuing country not correct: $issuingCountry")
-
-        val issuedAt = Instant.ofEpochSecond(map[CwtHeaderKeys.ISSUED_AT.asCBOR()].AsInt64())
-        if (issuedAt.isAfter(Instant.now())) throw IllegalArgumentException("IssuedAt not correct: $issuedAt")
-
-        val expirationTime = Instant.ofEpochSecond(map[CwtHeaderKeys.EXPIRATION.asCBOR()].AsInt64())
-        if (expirationTime.isBefore(Instant.now())) throw IllegalArgumentException("Expiration not correct: $expirationTime")
-
         val hcert = map[CwtHeaderKeys.HCERT.asCBOR()]
         val cborObject = hcert[CBORObject.FromObject(1)]
 
         return greenCertificateMapper
                 .readValue(cborObject)
     }
-}
-
-
-fun ByteArray.decompressBase45DecodedData(): ByteArray {
-    // ZLIB magic headers
-    return if (this.size >= 2 && this[0] == 0x78.toByte() && (
-                this[1] == 0x01.toByte() || // Level 1
-                        this[1] == 0x5E.toByte() || // Level 2 - 5
-                        this[1] == 0x9C.toByte() || // Level 6
-                        this[1] == 0xDA.toByte()
-                )
-    ) {
-        InflaterInputStream(this.inputStream()).readBytes()
-    } else this
-}
-
-fun ByteArray.decodeCose(): CoseData {
-    val messageObject = CBORObject.DecodeFromBytes(this)
-    val content = messageObject[2].GetByteString()
-    val rgbProtected = messageObject[0].GetByteString()
-    val rgbUnprotected = messageObject[1]
-    val key = HeaderKeys.KID.AsCBOR()
-
-    if (!CBORObject.DecodeFromBytes(rgbProtected).keys.contains(key)) {
-        val objunprotected = rgbUnprotected.get(key).GetByteString()
-        return CoseData(content, objunprotected)
-    }
-    val objProtected = CBORObject.DecodeFromBytes(rgbProtected).get(key).GetByteString()
-    return CoseData(content, objProtected)
 }

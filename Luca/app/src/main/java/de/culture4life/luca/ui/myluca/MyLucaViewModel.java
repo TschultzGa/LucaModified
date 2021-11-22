@@ -31,6 +31,7 @@ import de.culture4life.luca.document.DocumentExpiredException;
 import de.culture4life.luca.document.DocumentManager;
 import de.culture4life.luca.document.DocumentParsingException;
 import de.culture4life.luca.document.DocumentVerificationException;
+import de.culture4life.luca.document.Documents;
 import de.culture4life.luca.document.TestResultPositiveException;
 import de.culture4life.luca.genuinity.GenuinityManager;
 import de.culture4life.luca.meeting.MeetingManager;
@@ -117,7 +118,8 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     public Completable keepDataUpdated() {
         return Completable.mergeArray(
                 super.keepDataUpdated(),
-                keepIsGenuineTimeUpdated()
+                keepIsGenuineTimeUpdated(),
+                keepDocumentsUpdated()
         );
     }
 
@@ -132,6 +134,7 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
 
     public Completable invokeListUpdate() {
         return Completable.fromAction(() -> modelDisposable.add(updateListItems()
+                .doOnError(throwable -> Timber.w("Unable to load list items: %s", throwable.toString()))
                 .onErrorComplete()
                 .subscribeOn(Schedulers.io())
                 .subscribe()));
@@ -146,8 +149,11 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     private Observable<MyLucaListItem> loadListItems() {
         return Completable.defer(() -> BuildConfig.DEBUG ? Completable.complete() : documentManager.deleteExpiredDocuments())
                 .andThen(documentManager.getOrRestoreDocuments())
+                .flatMapSingle(document -> documentManager.adjustValidityStartTimestampIfRequired(document)
+                        .andThen(Single.just(document)))
                 .flatMapMaybe(this::createListItem)
-                .sorted((first, second) -> Long.compare(second.getTimestamp(), first.getTimestamp()));
+                .sorted((first, second) -> Long.compare(second.getTimestamp(), first.getTimestamp()))
+                .doOnSubscribe(disposable -> Timber.d("Loading list items"));
     }
 
     private Maybe<MyLucaListItem> createListItem(@NonNull Document document) {
@@ -250,6 +256,12 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     /*
         Documents
      */
+
+    private Completable keepDocumentsUpdated() {
+        return preferencesManager.getChanges(DocumentManager.KEY_DOCUMENTS, Documents.class)
+                .delay(1, TimeUnit.SECONDS)
+                .flatMapCompletable(documents -> invokeListUpdate());
+    }
 
     private Completable parseAndValidateDocument(@NonNull String encodedDocument) {
         return documentManager.parseAndValidateEncodedDocument(encodedDocument)

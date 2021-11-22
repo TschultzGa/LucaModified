@@ -97,6 +97,7 @@ public class CheckInManager extends Manager {
     private static final String KEY_TRACE_ID_WRAPPERS = "tracing_id_wrappers";
     private static final String KEY_PREFIX_TRACING_SECRET = "tracing_secret_";
     private static final String ALIAS_SCANNER_EPHEMERAL_KEY_PAIR = "scanner_ephemeral_key_pair";
+    public static final String KEY_INCLUDE_ENTRY_POLICY = "include_entry_policy";
 
     private static final String CHECK_IN_DATA_UPDATE_TAG = "check_in_update";
     private static final long CHECK_IN_DATA_UPDATE_INTERVAL = BuildConfig.DEBUG ? PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS : TimeUnit.HOURS.toMillis(6);

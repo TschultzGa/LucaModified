@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.Manager;
 import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
@@ -85,7 +86,7 @@ public class RegistrationManager extends Manager {
                         .flatMapCompletable(data -> networkManager.getLucaEndpointsV3()
                                 .flatMapCompletable(endpoint -> endpoint.deleteUser(userId.toString(), data))
                                 .onErrorResumeNext(throwable -> {
-                                    if (NetworkManager.isHttpException(throwable, 403)) {
+                                    if (NetworkManager.isHttpException(throwable, 403) && !LucaApplication.IS_USING_STAGING_ENVIRONMENT) {
                                         // The deletion failed because the signature verification failed.
                                         // However, this is an unrecoverable error that prevents the user
                                         // from deleting the account manually, thus we treat it as success.

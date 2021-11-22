@@ -375,6 +375,14 @@ open class CryptoManager constructor(
             .andThen(persistKeyStoreToFile())
     }
 
+    /**
+     * Deletes the current guest keypair from [.bouncyCastleKeyStore], if available.
+     */
+    public fun deleteGuestKeyPair(): Completable {
+        return bouncyCastleKeyStore.deleteEntry(ALIAS_GUEST_KEY_PAIR)
+            .andThen(persistKeyStoreToFile())
+    }
+
     /*
         Guest ephemeral key pair
      */

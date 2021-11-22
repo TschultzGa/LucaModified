@@ -1,3 +1,10 @@
+# Release 2.2.0
+
+- 2G/3G Status in QR code
+- Verification of EU Digital COVID certificates
+
+With this version, it is possible to share your 2G/3G status in your check-in QR code. Operators can not only checkin when scanning your QR code, but also check your 2G/3G status simultaneously if you want. The status can only be added if luca could verify the corresponding certificate.
+
 # Release 2.1.0
 
 - Explanation screens 

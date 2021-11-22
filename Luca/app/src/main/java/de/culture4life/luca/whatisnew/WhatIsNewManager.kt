@@ -89,16 +89,16 @@ class WhatIsNewManager(
     private fun getIntroPage(): WhatIsNewPage {
         return WhatIsNewPage(
             image = R.drawable.g_rocket,
-            heading = context.getString(R.string.what_is_new_intro_title),
-            description = context.getString(R.string.what_is_new_intro_body)
+            heading = context.getString(R.string.what_is_new_intro_heading),
+            description = context.getString(R.string.what_is_new_intro_description)
         )
     }
 
     private fun getOutroPage(): WhatIsNewPage {
         return WhatIsNewPage(
             image = R.drawable.g_flag,
-            heading = context.getString(R.string.what_is_new_outro_title),
-            description = context.getString(R.string.what_is_new_outro_body)
+            heading = context.getString(R.string.what_is_new_outro_heading),
+            description = context.getString(R.string.what_is_new_outro_description)
         )
     }
 

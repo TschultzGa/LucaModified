@@ -14,9 +14,15 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.BottomSheetQrCodeBinding
+import de.culture4life.luca.ui.dialog.BaseDialogFragment
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Single
+import timber.log.Timber
 
 
 class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
@@ -39,7 +45,15 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = BottomSheetQrCodeBinding.inflate(inflater)
-        initializeViews()
+
+        initializeViewModel()
+            .observeOn(AndroidSchedulers.mainThread())
+            .andThen(initializeViews())
+            .subscribe(
+                { Timber.d("Initialized %s with %s", this, sharedViewModel) },
+                { Timber.e("Unable to initialize %s with %s: %s", this, sharedViewModel, it.toString()) }
+            )
+
         return binding.root
     }
 
@@ -62,18 +76,39 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
         super.onDismiss(dialog)
     }
 
-    private fun initializeViews() {
-        qrCodeBitmap?.let {
-            setQrCodeBitmap(it)
-        }
+    private fun initializeViewModel(): Completable {
+        return Single.fromCallable { ViewModelProvider(requireActivity()).get(QrCodeBottomSheetViewModel::class.java) }
+            .flatMapCompletable { it.initialize() }
+    }
 
-        setIsLoading(isLoading)
+    private fun initializeViews(): Completable {
+        return Completable.fromAction {
+            qrCodeBitmap?.let {
+                setQrCodeBitmap(it)
+            }
 
-        if (BuildConfig.DEBUG) {
-            // simulate check in when clicking on the QR code in debug builds
-            binding.qrCodeImageView.setOnClickListener { sharedViewModel.onDebuggingCheckInRequested() }
+            setIsLoading(isLoading)
+
+            binding.includeEntryPolicyInfoImageView.setOnClickListener { showIncludeEntryPolicyInfoDialog() }
+            binding.includeEntryPolicySwitch.setOnClickListener {
+                if (binding.includeEntryPolicySwitch.isChecked) {
+                    showIncludeEntryPolicyConsentDialog()
+                } else {
+                    sharedViewModel.onIncludeEntryPolicyToggled(false)
+                }
+            }
+            sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner, { binding.includeEntryPolicySwitch.isChecked = it })
+
+            sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner, { showDocumentsUnavailableError() })
+
+
+            if (BuildConfig.DEBUG) {
+                // simulate check in when clicking on the QR code in debug builds
+                binding.qrCodeImageView.setOnClickListener { sharedViewModel.onDebuggingCheckInRequested() }
+            }
+
+            setNoNetworkWarningVisible(!isNetworkAvailable)
         }
-        setNoNetworkWarningVisible(!isNetworkAvailable)
     }
 
     fun setQrCodeBitmap(bitmap: Bitmap) {
@@ -93,6 +128,40 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
         if (!::binding.isInitialized) return
         binding.myQrCodeDescriptionTextView.isVisible = !isWarningVisible
         binding.noNetworkWarningTextView.isVisible = isWarningVisible
+    }
+
+    private fun showIncludeEntryPolicyInfoDialog() {
+        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.check_in_include_entry_policy_title)
+            .setMessage(R.string.check_in_include_entry_policy_description)
+            .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
+        ).show()
+    }
+
+    private fun showIncludeEntryPolicyConsentDialog() {
+        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.check_in_include_entry_policy_consent_title)
+            .setMessage(R.string.check_in_include_entry_policy_consent_description)
+            .setPositiveButton(R.string.action_accept) { _, _ -> sharedViewModel.onIncludeEntryPolicyToggled(true) }
+            .setNegativeButton(R.string.action_cancel) { dialog, _ ->
+                binding.includeEntryPolicySwitch.isChecked = false
+                dialog.dismiss()
+            }
+        ).apply {
+            isCancelable = false
+            show()
+        }
+    }
+
+    private fun showDocumentsUnavailableError() {
+        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.check_in_documents_unavailable_title)
+            .setMessage(R.string.check_in_documents_unavailable_description)
+            .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
+        ).apply {
+            setOnDismissListener { binding.includeEntryPolicySwitch.isChecked = false }
+            show()
+        }
     }
 
     companion object {

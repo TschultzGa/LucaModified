@@ -2,6 +2,11 @@ package de.culture4life.luca.ui.checkin;
 
 import static de.culture4life.luca.crypto.HashProvider.TRIMMED_HASH_LENGTH;
 import static de.culture4life.luca.registration.RegistrationManager.USER_ID_KEY;
+import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_NOT_SHARED;
+import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_PCR_TESTED;
+import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_QUICK_TESTED;
+import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_RECOVERED;
+import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_VACCINATED;
 
 import android.app.Application;
 import android.graphics.Bitmap;
@@ -40,6 +45,7 @@ import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
 import de.culture4life.luca.crypto.DailyKeyPairPublicKeyWrapper;
 import de.culture4life.luca.crypto.TraceIdWrapper;
+import de.culture4life.luca.document.DocumentManager;
 import de.culture4life.luca.meeting.MeetingAdditionalData;
 import de.culture4life.luca.meeting.MeetingManager;
 import de.culture4life.luca.network.NetworkManager;
@@ -72,6 +78,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     private final CryptoManager cryptoManager;
     private final MeetingManager meetingManager;
     private final NetworkManager networkManager;
+    private final DocumentManager documentManager;
 
     private final MutableLiveData<Bundle> bundle = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<String>> possibleDocumentData = new MutableLiveData<>();
@@ -98,6 +105,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         this.cryptoManager = this.application.getCryptoManager();
         this.meetingManager = this.application.getMeetingManager();
         this.networkManager = this.application.getNetworkManager();
+        this.documentManager = this.application.getDocumentManager();
     }
 
     public void setupViewModelReference(FragmentActivity activity) {
@@ -116,7 +124,8 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                         checkInManager.initialize(application),
                         cryptoManager.initialize(application),
                         meetingManager.initialize(application),
-                        networkManager.initialize(application)
+                        networkManager.initialize(application),
+                        documentManager.initialize(application)
                 ))
                 .andThen(preferencesManager.restore(USER_ID_KEY, UUID.class)
                         .doOnSuccess(uuid -> this.userId = uuid)
@@ -134,6 +143,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 super.keepDataUpdated(),
                 observeNetworkChanges(),
                 observeCheckInDataChanges(),
+                observeIncludeEntryPolicyChanges(),
                 keepUpdatingQrCodes().delaySubscription(100, TimeUnit.MILLISECONDS)
         );
     }
@@ -163,6 +173,12 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                             }
                         }))
         );
+    }
+
+    private Completable observeIncludeEntryPolicyChanges() {
+        return preferencesManager.getChanges(CheckInManager.KEY_INCLUDE_ENTRY_POLICY, Boolean.class)
+                .flatMapCompletable(includeEntryPolicy -> updateQrCode())
+                .subscribeOn(Schedulers.io());
     }
 
     public void checkIfContactDataMissing() {
@@ -204,16 +220,20 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
     private Completable keepUpdatingQrCodes() {
         return Observable.interval(0, 1, TimeUnit.MINUTES, Schedulers.io())
-                .flatMapCompletable(tick -> generateQrCodeData()
-                        .doOnSubscribe(disposable -> Timber.d("Generating new QR code data"))
-                        .doOnSuccess(qrCodeData -> Timber.i("Generated new QR code data: %s", qrCodeData))
-                        .flatMap(this::serializeQrCodeData)
-                        .doOnSuccess(serializedQrCodeData -> Timber.d("Serialized QR code data: %s", serializedQrCodeData))
-                        .flatMap(this::generateQrCode)
-                        .flatMapCompletable(bitmap -> update(qrCode, bitmap))
-                        .doOnError(throwable -> Timber.w("Unable to update QR code: %s", throwable.toString()))
-                        .onErrorComplete()
-                        .doFinally(() -> updateAsSideEffect(isLoading, false)));
+                .flatMapCompletable(tick -> updateQrCode());
+    }
+
+    private Completable updateQrCode() {
+        return generateQrCodeData()
+                .doOnSubscribe(disposable -> Timber.d("Generating new QR code data"))
+                .doOnSuccess(qrCodeData -> Timber.i("Generated new QR code data: %s", qrCodeData))
+                .flatMap(this::serializeQrCodeData)
+                .doOnSuccess(serializedQrCodeData -> Timber.d("Serialized QR code data: %s", serializedQrCodeData))
+                .flatMap(this::generateQrCode)
+                .flatMapCompletable(bitmap -> update(qrCode, bitmap))
+                .doOnError(throwable -> Timber.w("Unable to update QR code: %s", throwable.toString()))
+                .onErrorComplete()
+                .doFinally(() -> updateAsSideEffect(isLoading, false));
     }
 
     private Single<QrCodeData> generateQrCodeData() {
@@ -240,8 +260,37 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                                 TimeUtil.encodeUnixTimestamp(userTraceIdWrapper.getTimestamp())
                                         .doOnSuccess(qrCodeData::setTimestamp)
                                         .ignoreElement(),
+                                getQrCodeEntryPolicy()
+                                        .doOnSuccess(qrCodeData::setEntryPolicy)
+                                        .ignoreElement(),
                                 Completable.fromAction(() -> qrCodeData.setTraceId(userTraceIdWrapper.getTraceId()))))
                         .andThen(Single.just(qrCodeData)));
+    }
+
+    private Single<Byte> getQrCodeEntryPolicy() {
+        return preferencesManager.restoreOrDefault(CheckInManager.KEY_INCLUDE_ENTRY_POLICY, false)
+                .flatMap(includeEntryPolicy -> {
+                    if (!includeEntryPolicy) {
+                        return Single.just(ENTRY_POLICY_NOT_SHARED);
+                    } else {
+                        return getEntryPolicyIfAvailable(documentManager.hasVaccinationDocument(), ENTRY_POLICY_VACCINATED)
+                                .switchIfEmpty(getEntryPolicyIfAvailable(documentManager.hasRecoveryDocument(), ENTRY_POLICY_RECOVERED))
+                                .switchIfEmpty(getEntryPolicyIfAvailable(documentManager.hasPcrTestDocument(), ENTRY_POLICY_PCR_TESTED))
+                                .switchIfEmpty(getEntryPolicyIfAvailable(documentManager.hasQuickTestDocument(), ENTRY_POLICY_QUICK_TESTED))
+                                .defaultIfEmpty(ENTRY_POLICY_NOT_SHARED);
+                    }
+                })
+                .map(entryPolicy -> (byte) (int) entryPolicy);
+    }
+
+    private Maybe<Integer> getEntryPolicyIfAvailable(Single<Boolean> hasDocument, @QrCodeData.EntryPolicy int entryPolicy) {
+        return hasDocument.flatMapMaybe(available -> {
+            if (available) {
+                return Maybe.just(entryPolicy);
+            } else {
+                return Maybe.empty();
+            }
+        });
     }
 
     private Completable setQrCodeEncryptedData(QrCodeData qrCodeData, KeyPair keyPair, TraceIdWrapper userTraceIdWrapper) {
@@ -306,9 +355,10 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     private Single<String> serializeQrCodeData(@NonNull QrCodeData qrCodeData) {
-        return Single.fromCallable(() -> ByteBuffer.allocate(96)
+        return Single.fromCallable(() -> ByteBuffer.allocate(97)
                 .put(qrCodeData.getVersion())
                 .put(qrCodeData.getDeviceType())
+                .put(qrCodeData.getEntryPolicy())
                 .put(qrCodeData.getKeyId())
                 .put(qrCodeData.getTimestamp())
                 .put(qrCodeData.getTraceId())

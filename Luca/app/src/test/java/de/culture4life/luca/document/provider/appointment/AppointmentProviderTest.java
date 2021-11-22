@@ -1,5 +1,7 @@
 package de.culture4life.luca.document.provider.appointment;
 
+import static junit.framework.TestCase.assertEquals;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -10,8 +12,6 @@ import org.robolectric.annotation.Config;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.document.Document;
-
-import static junit.framework.TestCase.assertEquals;
 
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)

@@ -22,4 +22,11 @@ public interface LucaEndpointsV4 {
     @GET("notifications/traces/{chunkId}")
     Single<ResponseBody> getNotifications(@Path("chunkId") String chunkId);
 
+    /*
+        EUDCC Signing Keys
+     */
+
+    @GET("trustList/DSC")
+    Single<ResponseBody> getEudccSigningKeys();
+
 }

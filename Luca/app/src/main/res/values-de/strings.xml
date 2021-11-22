@@ -32,6 +32,7 @@
     <string name="action_copy">Kopieren</string>
     <string name="action_change">Wechseln</string>
     <string name="action_back">Zurück</string>
+    <string name="action_accept">Einwilligen</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Etwas lief schief</string>
@@ -138,10 +139,23 @@
     <string name="what_is_new_skip">Überspringen</string>
     <string name="what_is_new_close">Schließen</string>
     <string name="what_is_new_lets_go">Los geht\'s</string>
-    <string name="what_is_new_intro_title">Hurra! Bei luca hat sich einiges getan!</string>
-    <string name="what_is_new_intro_body">Wische nach rechts und schaue dir die Neuigkeiten an.\n\nGerade keine Zeit? Im Account Tab findest du alle Infos zusammengefasst.</string>
-    <string name="what_is_new_outro_title">Das war\'s auch schon!</string>
-    <string name="what_is_new_outro_body">Alle Infos und weitere Erklärscreens findest du im Anleitungsbereich im „Account“-Tab.\n\nPS: Auschecken nicht vergessen!</string>
+    <string name="what_is_new_intro_heading">Hurra! Bei luca hat sich einiges getan!</string>
+    <string name="what_is_new_intro_description">Wische nach rechts und schaue dir die Neuigkeiten an.\n\nGerade keine Zeit? Im Account Tab findest du alle Infos zusammengefasst.</string>
+    <string name="what_is_new_outro_heading">Das war\'s auch schon!</string>
+    <string name="what_is_new_outro_description">Alle Infos und weitere Erklärscreens findest du im Anleitungsbereich im „Account“-Tab.\n\nPS: Auschecken nicht vergessen!</string>
+
+    <string name="what_is_new_0_heading">Erweiterung von „Mein luca“</string>
+    <string name="what_is_new_0_description">Kinder mitnehmen\nDu kannst luca jetzt auch für deine Kinder mit nutzen.\n\nWichtige Benachrichtigungen\nHier erhältst du alle Benachrichtigungen und Warnmeldungen.</string>
+    <string name="what_is_new_1_heading">@string/what_is_new_0_heading</string>
+    <string name="what_is_new_1_description">Wichtige Benachrichtigungen\nHier erhältst du alle Benachrichtigungen und Warnmeldungen.</string>
+    <string name="what_is_new_2_heading">Mitnahme von Kindern</string>
+    <string name="what_is_new_2_description">Nach dem Hinzufügen kannst du sie bequem beim Check-in mitnehmen und auch Dokumente für sie hinterlegen. Achte dabei auf vollständige und korrekte Angaben.</string>
+    <string name="what_is_new_3_heading">Optimierung der Warnhinweise</string>
+    <string name="what_is_new_3_description">Mit unterschiedlichen Warnmeldungen kannst du gezielt informiert werden, wenn du zeitgleich mit einer infizierten Person eingecheckt warst. Betroffene Ereignisse werden in der Historie markiert.</string>
+    <string name="what_is_new_4_heading">Schnellerer Check-in</string>
+    <string name="what_is_new_4_description">Wenn du dich Einchecken möchtest, startet luca jetzt direkt auf der Kamera. Einfach einmalig den Kamerazugriff aktivieren und los geht\'s. Deinen persönlichen QR-Code erhältst du über den Button darunter.</string>
+    <string name="what_is_new_5_heading">Umzug der Historie</string>
+    <string name="what_is_new_5_description">Die Historie findest du jetzt oben rechts im „Check-in“-Tab über das Uhr-Icon.\n\nÜbrigens: Wie gewohnt können deine Daten nicht eingesehen werden, bis du deine TAN eigenständig mit dem Gesundheitsamt teilst.</string>
 
     <!-- Navigation -->
     <string name="navigation_check_in">Einchecken</string>
@@ -189,6 +203,12 @@
     <string name="check_in_voluntary_info_description">Der Check-in an diesem Standort ist freiwillig. Wenn du trotzdem bei der Kontaktnachverfolgung helfen und im Risikofall gewarnt werden möchtest, kannst du dich freiwillig und sogar anonym einchecken. Beim anonymen Check-in werden deine Kontaktdaten nicht mit dem Gesundheitsamt geteilt.</string>
     <string name="check_in_voluntary_info_checkbox">Freiwillig Kontaktdaten für das Gesundheitsamt freigeben</string>
     <string name="check_in_voluntary_info_action_button">Freiwillig einchecken</string>
+    <string name="check_in_include_entry_policy_title">2G/3G-Status teilen</string>
+    <string name="check_in_include_entry_policy_description">luca Standorte können Zugangsbeschränkungen haben, die einen 2G/3G-Nachweis erfordern. Wenn du deinen Status teilst, erhalten Standorte die Information, ob du ihre Zugangsregelung erfüllst, sehen aber nicht deine Nachweise.</string>
+    <string name="check_in_include_entry_policy_consent_title">Einverständnis</string>
+    <string name="check_in_include_entry_policy_consent_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
+    <string name="check_in_documents_unavailable_title">@string/check_in_include_entry_policy_title</string>
+    <string name="check_in_documents_unavailable_description">Du hast in deinem „Mein luca“-Tab aktuell keine Dokumente hinterlegt und kannst deinen 2G/3G-Status deswegen nicht teilen. Bitte zeige wenn du eingecheckt bist manuell deinen 2G/3G-Nachweis vor. Falls du beim nächsten Check-in deinen 2G/3G-Status automatisch teilen möchtest, füge deinen Nachweis im „Mein luca“-Tab hinzu.</string>
 
     <!-- Private Meeting -->
     <string name="meeting_heading">Privates Treffen</string>

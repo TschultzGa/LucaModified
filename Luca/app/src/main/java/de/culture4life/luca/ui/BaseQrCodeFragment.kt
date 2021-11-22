@@ -2,6 +2,7 @@ package de.culture4life.luca.ui
 
 import android.Manifest
 import android.util.Size
+import android.view.MotionEvent
 import androidx.annotation.CallSuper
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -161,6 +162,19 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
             imageAnalysis,
             preview
         )
+        cameraPreviewView!!.setOnTouchListener { view, event ->
+            return@setOnTouchListener when (event.action) {
+                MotionEvent.ACTION_DOWN -> true
+                MotionEvent.ACTION_UP -> {
+                    val focusPoint = SurfaceOrientedMeteringPointFactory(
+                        view.width.toFloat(), view.height.toFloat()
+                    ).createPoint(event.x, event.y)
+                    autoFocus(focusPoint)
+                    true
+                }
+                else -> false
+            }
+        }
     }
 
     @CallSuper
@@ -168,6 +182,21 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
         cameraProvider?.unbindAll()
         cameraProvider = null
         setTorchEnabled(false)
+    }
+
+    protected fun autoFocus(focusPoint: MeteringPoint) {
+        try {
+            Timber.d("Attempting to auto focus (%f, %f)", focusPoint.x, focusPoint.y)
+            val autoFocusAction = FocusMeteringAction.Builder(
+                focusPoint,
+                FocusMeteringAction.FLAG_AF
+            ).apply {
+                setAutoCancelDuration(3, TimeUnit.SECONDS)
+            }.build()
+            camera?.cameraControl?.startFocusAndMetering(autoFocusAction)
+        } catch (e: Exception) {
+            Timber.w("Unable to trigger auto-focus: %s", e.toString())
+        }
     }
 
     protected fun toggleTorch() {

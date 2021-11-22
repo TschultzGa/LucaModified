@@ -38,16 +38,14 @@ open class VaccinationItem(context: Context, document: Document) :
     private fun setDescriptionAndColor(context: Context, document: Document) {
         var descriptionLabel = context.getString(R.string.document_outcome_unknown)
         val firstProcedure = document.procedures.first()
-        val procedureNumber =
-            String.format("(%d/%d)", firstProcedure.doseNumber, firstProcedure.totalSeriesOfDoses)
+        val procedureNumber = String.format("(%d/%d)", firstProcedure.doseNumber, firstProcedure.totalSeriesOfDoses)
         when (document.outcome) {
             Document.OUTCOME_PARTIALLY_IMMUNE -> {
                 descriptionLabel = context.getString(
                     R.string.document_outcome_partially_vaccinated,
                     procedureNumber
                 )
-                color =
-                    ContextCompat.getColor(context, R.color.document_outcome_partially_vaccinated)
+                color = ContextCompat.getColor(context, R.color.document_outcome_partially_vaccinated)
             }
             Document.OUTCOME_FULLY_IMMUNE -> {
                 val timeUntilValid = document.validityStartTimestamp - System.currentTimeMillis()
@@ -56,12 +54,10 @@ open class VaccinationItem(context: Context, document: Document) :
                         R.string.document_outcome_fully_vaccinated,
                         procedureNumber
                     )
-                    color =
-                        ContextCompat.getColor(context, R.color.document_outcome_fully_vaccinated)
+                    color = ContextCompat.getColor(context, R.color.document_outcome_fully_vaccinated)
                 } else {
-                    val readableDuration =
-                        TimeUtil.getReadableDurationWithPlural(timeUntilValid, context)
-                            .blockingGet()
+                    val readableDuration = TimeUtil.getReadableDurationWithPlural(timeUntilValid, context)
+                        .blockingGet()
                     descriptionLabel = context.getString(
                         R.string.document_outcome_fully_vaccinated_in,
                         readableDuration
@@ -72,9 +68,7 @@ open class VaccinationItem(context: Context, document: Document) :
                     )
                 }
             }
-            else -> {
-                color = ContextCompat.getColor(context, R.color.document_outcome_unknown)
-            }
+            else -> color = ContextCompat.getColor(context, R.color.document_outcome_unknown)
         }
         addTopContent(descriptionLabel, "")
     }

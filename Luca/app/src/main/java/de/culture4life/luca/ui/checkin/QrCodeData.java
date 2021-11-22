@@ -1,12 +1,12 @@
 package de.culture4life.luca.ui.checkin;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import androidx.annotation.IntDef;
 
 import java.lang.annotation.Retention;
 
 import de.culture4life.luca.util.SerializationUtil;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
  * Model holding necessary details to facilitate checking in at a venue.
@@ -16,7 +16,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  */
 public class QrCodeData {
 
-    private static final byte VERSION_CURRENT = 3;
+    private static final byte VERSION_CURRENT = 4;
 
     @IntDef({TYPE_IOS, TYPE_ANDROID, TYPE_STATIC})
     @Retention(SOURCE)
@@ -28,9 +28,27 @@ public class QrCodeData {
     private static final int TYPE_ANDROID = 1;
     private static final int TYPE_STATIC = 2;
 
+    @IntDef({
+            ENTRY_POLICY_NOT_SHARED,
+            ENTRY_POLICY_QUICK_TESTED, ENTRY_POLICY_PCR_TESTED,
+            ENTRY_POLICY_RECOVERED, ENTRY_POLICY_VACCINATED
+    })
+    @Retention(SOURCE)
+    public @interface EntryPolicy {
+
+    }
+
+    public static final int ENTRY_POLICY_NOT_SHARED = 0x01;
+    public static final int ENTRY_POLICY_QUICK_TESTED = 0x02;
+    public static final int ENTRY_POLICY_PCR_TESTED = 0x04;
+    public static final int ENTRY_POLICY_RECOVERED = 0x08;
+    public static final int ENTRY_POLICY_VACCINATED = 0x10;
+
     private byte version = VERSION_CURRENT;
 
     private byte deviceType = TYPE_ANDROID;
+
+    private byte entryPolicy = ENTRY_POLICY_NOT_SHARED;
 
     private byte keyId;
 
@@ -58,6 +76,14 @@ public class QrCodeData {
 
     public void setDeviceType(byte deviceType) {
         this.deviceType = deviceType;
+    }
+
+    public byte getEntryPolicy() {
+        return entryPolicy;
+    }
+
+    public void setEntryPolicy(byte entryPolicy) {
+        this.entryPolicy = entryPolicy;
     }
 
     public void setDeviceType(@Type int deviceType) {
@@ -121,6 +147,7 @@ public class QrCodeData {
         return "QrCodeData{" +
                 "version=" + version +
                 ", deviceType=" + deviceType +
+                ", entryPolicy=" + entryPolicy +
                 ", keyId=" + keyId +
                 ", timestamp=" + SerializationUtil.serializeToBase64(timestamp).blockingGet() +
                 ", traceId=" + SerializationUtil.serializeToBase64(traceId).blockingGet() +

@@ -75,7 +75,7 @@ data class GreenCertificate(
         }
     } catch (ex: Exception) {
         ""
-    }.lowercase(Locale.ROOT)
+    }.toLowerCase(Locale.ROOT)
 
     fun getType(): CertificateType {
         if (vaccinations?.isNotEmpty() == true)

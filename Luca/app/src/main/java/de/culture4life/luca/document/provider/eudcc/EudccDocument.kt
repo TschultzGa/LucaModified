@@ -38,6 +38,13 @@ class EudccDocument(
             "EU/1/20/1507" to Procedure.Type.VACCINATION_MODERNA,
             "Sputnik-V" to Procedure.Type.VACCINATION_SPUTNIK_V
         )
+        private val VACCINATION_DOSES = mapOf(
+            Procedure.Type.VACCINATION_COMIRNATY to 2,
+            Procedure.Type.VACCINATION_VAXZEVRIA to 2,
+            Procedure.Type.VACCINATION_JANNSEN to 1,
+            Procedure.Type.VACCINATION_MODERNA to 2,
+            Procedure.Type.VACCINATION_SPUTNIK_V to 2
+        )
     }
 
     init {
@@ -74,6 +81,7 @@ class EudccDocument(
                 hashableEncodedData = tests?.getOrNull(0)?.certificateIdentifier
                     ?: vaccinations?.getOrNull(0)?.certificateIdentifier
                             ?: recoveryStatements?.getOrNull(0)?.certificateIdentifier
+                hashableEncodedData += vaccinations?.getOrNull(0)?.doseNumber ?: ""
                 firstName = person.givenName
                 lastName = person.familyName
                 document.dateOfBirth = this.dateOfBirth.parseDate()
@@ -112,13 +120,16 @@ class EudccDocument(
                         vaccination.doseNumber,
                         vaccination.totalSeriesOfDoses
                     )
+                    if (vaccination.doseNumber == VACCINATION_DOSES[type]) {
+                        validityStartTimestamp = vaccination.dateOfVaccination.parseDate() + TIME_UNTIL_VACCINATION_IS_VALID
+                    }
                     if (vaccination.doseNumber >= vaccination.totalSeriesOfDoses) {
                         outcome = OUTCOME_FULLY_IMMUNE
                     }
                     procedures.add(procedure)
                 }
                 document.procedures = procedures
-                vaccinations.getOrNull(0)?.let {
+                vaccinations.lastOrNull()?.let {
                     labName = it.certificateIssuer
                     testingTimestamp = it.dateOfVaccination.parseDate()
                     resultTimestamp = testingTimestamp
@@ -143,7 +154,7 @@ class EudccDocument(
                     procedures.add(procedure)
                 }
                 document.procedures = procedures
-                recoveryStatements.getOrNull(0)?.let {
+                recoveryStatements.lastOrNull()?.let {
                     labName = it.certificateIssuer
                     testingTimestamp = it.dateOfFirstPositiveTest.parseDate()
                     resultTimestamp = testingTimestamp

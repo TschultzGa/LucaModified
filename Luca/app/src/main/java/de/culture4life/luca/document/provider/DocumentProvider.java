@@ -1,5 +1,10 @@
 package de.culture4life.luca.document.provider;
 
+import static de.culture4life.luca.document.DocumentVerificationException.Reason.DATE_OF_BIRTH_TOO_OLD_FOR_CHILD;
+import static de.culture4life.luca.document.DocumentVerificationException.Reason.NAME_MISMATCH;
+import static de.culture4life.luca.document.DocumentVerificationException.Reason.TIMESTAMP_IN_FUTURE;
+import static de.culture4life.luca.document.DocumentVerificationException.Reason.UNKNOWN;
+
 import androidx.annotation.NonNull;
 
 import org.joda.time.DateTime;
@@ -14,11 +19,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.exceptions.CompositeException;
-
-import static de.culture4life.luca.document.DocumentVerificationException.Reason.DATE_OF_BIRTH_TOO_OLD_FOR_CHILD;
-import static de.culture4life.luca.document.DocumentVerificationException.Reason.NAME_MISMATCH;
-import static de.culture4life.luca.document.DocumentVerificationException.Reason.TIMESTAMP_IN_FUTURE;
-import static de.culture4life.luca.document.DocumentVerificationException.Reason.UNKNOWN;
+import timber.log.Timber;
 
 public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
 
@@ -49,7 +50,7 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
                 personsToValidate.map(personToValidate -> validateName(document, personToValidate)
                         .andThen(setName(document, personToValidate))
                         .andThen(Observable.just(personToValidate))
-                        .onErrorResumeWith(Observable.empty())
+                        .onErrorResumeNext(throwable -> Observable.empty())
                 )
         )
                 .firstOrError()
@@ -58,6 +59,7 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
                         throwable = ((CompositeException) throwable).getExceptions().get(0);
                     }
                     if (throwable instanceof NoSuchElementException) {
+                        Timber.d("Expected name: %s %s", document.getDocument().getFirstName(), document.getDocument().getLastName());
                         return Single.error(new DocumentVerificationException(NAME_MISMATCH, "Could not find a matching name"));
                     } else {
                         return Single.error(new DocumentVerificationException(UNKNOWN, throwable));
@@ -68,6 +70,7 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
 
     public Completable validate(@NonNull DocumentType document, @NonNull Person person) {
         return validateName(document, person)
+                .andThen(validateTime(document.document.getTestingTimestamp()))
                 .andThen(Completable.defer(() -> {
                     if (person instanceof Child) {
                         return validateChildAge(document);
@@ -77,21 +80,21 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
                 }));
     }
 
-    private Completable setName(@NonNull DocumentType document, @NonNull Person person) {
-        return Completable.fromAction(() -> {
-            document.document.setFirstName(person.getFirstName());
-            document.document.setLastName(person.getLastName());
-        });
-    }
-
     protected Completable validateName(@NonNull DocumentType document, @NonNull Person person) {
         return Completable.fromAction(() -> {
             if (!Person.Companion.compare(person.getFirstName(), document.getDocument().getFirstName())
                     || !Person.Companion.compare(person.getLastName(), document.getDocument().getLastName())) {
                 throw new DocumentVerificationException(NAME_MISMATCH);
             }
+        });
+    }
 
-        }).andThen(validateTime(document.document.getTestingTimestamp()));
+    public static Completable validateTime(long testingTimestamp) {
+        return Completable.fromAction(() -> {
+            if (testingTimestamp > System.currentTimeMillis()) {
+                throw new DocumentVerificationException(TIMESTAMP_IN_FUTURE);
+            }
+        });
     }
 
     protected Completable validateChildAge(@NonNull DocumentType document) {
@@ -106,11 +109,10 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
         }
     }
 
-    public static Completable validateTime(long testingTimestamp) {
+    private Completable setName(@NonNull DocumentType document, @NonNull Person person) {
         return Completable.fromAction(() -> {
-            if (testingTimestamp > System.currentTimeMillis()) {
-                throw new DocumentVerificationException(TIMESTAMP_IN_FUTURE);
-            }
+            document.document.setFirstName(person.getFirstName());
+            document.document.setLastName(person.getLastName());
         });
     }
 

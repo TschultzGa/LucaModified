@@ -34,6 +34,7 @@
     <string name="action_copy">Copy</string>
     <string name="action_change">Change</string>
     <string name="action_back">Back</string>
+    <string name="action_accept">Accept</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Something went wrong</string>
@@ -140,10 +141,23 @@
     <string name="what_is_new_skip">Skip</string>
     <string name="what_is_new_close">Close</string>
     <string name="what_is_new_lets_go">Let\'s go</string>
-    <string name="what_is_new_intro_title">Hooray! A lot has happened at luca</string>
-    <string name="what_is_new_intro_body">Swipe right to see what\'s new.\n\nNo time right now? You can also find all the information in the "Account" tab.</string>
-    <string name="what_is_new_outro_title">That was it!</string>
-    <string name="what_is_new_outro_body">You can find all info and even more explanation screens in the news section of the "Account" tab.\n\nPS: Don\'t forget to check out!</string>
+    <string name="what_is_new_intro_heading">Hooray! A lot has happened at luca</string>
+    <string name="what_is_new_intro_description">Swipe right to see what\'s new.\n\nNo time right now? You can also find all the information in the "Account" tab.</string>
+    <string name="what_is_new_outro_heading">That was it!</string>
+    <string name="what_is_new_outro_description">You can find all info and even more explanation screens in the news section of the "Account" tab.\n\nPS: Don\'t forget to check out!</string>
+
+    <string name="what_is_new_0_heading">Extension of \"My luca\"</string>
+    <string name="what_is_new_0_description">Add children\nYou can now use luca for your children as well.</string>
+    <string name="what_is_new_1_heading">@string/what_is_new_0_heading</string>
+    <string name="what_is_new_1_description">Important notifications\nYou will receive any notifications or warnings here.</string>
+    <string name="what_is_new_2_heading">Bringing Children</string>
+    <string name="what_is_new_2_description">Add your children to check them in with you. You can even import documents for them, but make sure to input full and correct information.</string>
+    <string name="what_is_new_3_heading">Optimization of warnings</string>
+    <string name="what_is_new_3_description">Our different warning levels can inform you in more detail, when you were checked in somewhere at the same time as an infected person. Affected events are marked in your history.</string>
+    <string name="what_is_new_4_heading">Faster check-in</string>
+    <string name="what_is_new_4_description">When you press on \"Check-in\", luca now directly starts on the camera. Just activate the camera once and you\'re good to go. Access your personal QR code by clicking on the button below it.</string>
+    <string name="what_is_new_5_heading">Relocation of your history</string>
+    <string name="what_is_new_5_description">You can now access your history via the icon in the top right corner of the \"Check-in\" tab.\n\nAs always, your data cannot be viewed until you generate your TAN and share it with the health department.</string>
 
     <!-- Navigation -->
     <string name="navigation_check_in">Check-In</string>
@@ -191,6 +205,12 @@
     <string name="check_in_voluntary_info_description">Checking into this location is optional. If you still want to help with contact tracing and be alerted in case of risk, you can check in voluntarily and even anonymously. Your contact information will not be shared with the health department if you check in anonymously.</string>
     <string name="check_in_voluntary_info_checkbox">Optionally share contact information with the health department</string>
     <string name="check_in_voluntary_info_action_button">Check in voluntarily</string>
+    <string name="check_in_include_entry_policy_title">Share 2G/3G status</string>
+    <string name="check_in_include_entry_policy_description">luca locations may have a 2G/3G entry requirement. When you share your status, locations will be informed whether you meet their entry requirement, but will not see your 2G/3G proof.</string>
+    <string name="check_in_include_entry_policy_consent_title">Consent</string>
+    <string name="check_in_include_entry_policy_consent_description">I hereby give my consent in accordance with Art. 9 (2) a) in combination with Art. 6 (1) 1 a) DSGVO to process the status of my stored COVID test, recovery or vaccination document (tested negative, recovered or vaccinated). At check-in, my luca app checks whether my imported document matches the location\'s entry requirement. My luca app displays whether I fulfill the entry requirement of the location I am checked into. My document or the data and information it contains will not be stored or transmitted outside of my luca app.</string>
+    <string name="check_in_documents_unavailable_title">@string/check_in_include_entry_policy_title</string>
+    <string name="check_in_documents_unavailable_description">You currently have no documents in your \"My luca\" tab and therefore cannot share your 2G/3G status. Manually show your 2G/3G document as soon as you are checked in. If you want to automatically share your 2G/3G status for the next check-in, add your document in the \"My luca\" tab.</string>
 
     <!-- Private Meeting -->
     <string name="meeting_heading">Private Meeting</string>

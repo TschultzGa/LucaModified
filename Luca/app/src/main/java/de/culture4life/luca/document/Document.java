@@ -1,6 +1,9 @@
 package de.culture4life.luca.document;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -9,7 +12,7 @@ import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import de.culture4life.luca.registration.Person;
 
 public class Document {
 
@@ -380,14 +383,28 @@ public class Document {
         }
     }
 
+    public boolean isValid() {
+        long now = System.currentTimeMillis();
+        return now > getValidityStartTimestamp() && now < getExpirationTimestamp();
+    }
+
+    /**
+     * @return true if this document is a currently valid test result with negative outcome.
+     */
+    public boolean isValidNegativeTestResult() {
+        if ((type == TYPE_FAST || type == TYPE_PCR) && outcome == OUTCOME_NEGATIVE) {
+            return isValid();
+        }
+        return false;
+    }
+
     /**
      * @return true if this document is a valid recovery certificate. This is the case when it is a
      * positive PCR test older than 14 days but no more than 6 months.
      */
     public boolean isValidRecovery() {
         if (type == TYPE_RECOVERY || (type == TYPE_PCR && outcome == OUTCOME_POSITIVE)) {
-            long now = System.currentTimeMillis();
-            return now > getValidityStartTimestamp() && now < getExpirationTimestamp();
+            return isValid();
         }
         return false;
     }
@@ -397,10 +414,14 @@ public class Document {
      */
     public boolean isValidVaccination() {
         if (type == TYPE_VACCINATION && outcome == OUTCOME_FULLY_IMMUNE) {
-            long now = System.currentTimeMillis();
-            return now > getValidityStartTimestamp() && now < getExpirationTimestamp();
+            return isValid();
         }
         return false;
+    }
+
+    public boolean isSameOwner(@NonNull Document document) {
+        return Person.Companion.compare(firstName, document.getFirstName())
+                && Person.Companion.compare(lastName, document.getLastName());
     }
 
     @Override
@@ -419,7 +440,8 @@ public class Document {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", dateOfBirth=" + dateOfBirth +
-                ", provider=" + provider +
+                ", provider='" + provider + '\'' +
+                ", verified=" + verified +
                 ", encodedData='" + encodedData + '\'' +
                 ", hashableEncodedData='" + hashableEncodedData + '\'' +
                 ", procedures=" + procedures +

@@ -32,7 +32,7 @@ public class BaseDialogFragment extends DialogFragment {
     @Override
     public void onStart() {
         super.onStart();
-        TextView messageTextView = (TextView) getDialog().findViewById(android.R.id.message);
+        TextView messageTextView = getDialog().findViewById(android.R.id.message);
         messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
     }
 

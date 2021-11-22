@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.gson.JsonObject;
 import com.nexenio.rxkeystore.util.RxBase64;
@@ -37,6 +38,7 @@ import de.culture4life.luca.registration.RegistrationData;
 import de.culture4life.luca.registration.RegistrationManager;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -48,6 +50,7 @@ public class DocumentManager extends Manager {
     public static final String KEY_DOCUMENTS = "test_results";
     public static final String KEY_DOCUMENT_TAG = "test_result_tag_";
     public static final String KEY_PROVIDER_DATA = "document_provider_data";
+    public static final String KEY_LAST_RE_VERIFICATION_TIMESTAMP = "last_document_re_verification";
     private static final byte[] DOCUMENT_REDEEM_HASH_SUFFIX = "testRedeemCheck".getBytes(StandardCharsets.UTF_8);
 
     private final PreferencesManager preferencesManager;
@@ -63,6 +66,7 @@ public class DocumentManager extends Manager {
     private EudccDocumentProvider eudccDocumentProvider;
     private BaercodeDocumentProvider baercodeDocumentProvider;
 
+    @Nullable
     private Documents documents;
 
     public DocumentManager(@NonNull PreferencesManager preferencesManager, @NonNull NetworkManager networkManager, @NonNull HistoryManager historyManager,
@@ -87,11 +91,34 @@ public class DocumentManager extends Manager {
                 registrationManager.initialize(context),
                 childrenManager.initialize(context),
                 cryptoManager.initialize(context)
-        ).andThen(deleteExpiredDocuments())
-                .doOnComplete(() -> {
-                    this.eudccDocumentProvider = new EudccDocumentProvider(context);
-                    this.baercodeDocumentProvider = new BaercodeDocumentProvider(context);
-                });
+        ).andThen(Completable.fromAction(() -> {
+            this.eudccDocumentProvider = new EudccDocumentProvider(context);
+            this.baercodeDocumentProvider = new BaercodeDocumentProvider(context);
+        })).andThen(deleteExpiredDocuments())
+                .andThen(reVerifyDocumentsIfRequired());
+    }
+
+    public Single<Boolean> hasMatchingDocument(@NonNull Predicate<Document> filterFunction) {
+        return getOrRestoreDocuments()
+                .filter(filterFunction)
+                .isEmpty()
+                .map(isEmpty -> !isEmpty);
+    }
+
+    public Single<Boolean> hasVaccinationDocument() {
+        return hasMatchingDocument(document -> document.isValidVaccination() && document.isVerified());
+    }
+
+    public Single<Boolean> hasRecoveryDocument() {
+        return hasMatchingDocument(document -> document.isValidRecovery() && document.isVerified());
+    }
+
+    public Single<Boolean> hasPcrTestDocument() {
+        return hasMatchingDocument(document -> document.isValidNegativeTestResult() && document.getType() == Document.TYPE_PCR);
+    }
+
+    public Single<Boolean> hasQuickTestDocument() {
+        return hasMatchingDocument(document -> document.isValidNegativeTestResult() && document.getType() == Document.TYPE_FAST);
     }
 
     public Single<Document> parseAndValidateEncodedDocument(@NonNull String encodedDocument) {
@@ -181,7 +208,7 @@ public class DocumentManager extends Manager {
     }
 
     /**
-     * Redeem a document so that it can not be imported on another device
+     * Redeem a document so that it can not be imported on another device.
      *
      * @param document document object to redeem
      */
@@ -201,7 +228,7 @@ public class DocumentManager extends Manager {
     }
 
     /**
-     * Unredeem the given document so it can be imported again on another device
+     * Unredeem the given document so it can be imported again on another device.
      *
      * @param document document object to unredeem
      */
@@ -219,12 +246,35 @@ public class DocumentManager extends Manager {
     }
 
     /**
-     * Unredeem and delete all documents stored so they can be imported again on another device
+     * Unredeem and delete all documents stored so they can be imported again on another device.
      */
     public Completable unredeemAndDeleteAllDocuments() {
         return getOrRestoreDocuments()
                 .flatMapCompletable(document -> unredeemDocument(document)
                         .andThen(deleteDocument(document.getId())));
+    }
+
+    /**
+     * By default, vaccination certificates with the required number of doses
+     * are considered to provide full immunization after two weeks.
+     * <p>
+     * Booster shots however should be treated as valid immediately,
+     * given that a currently valid vaccination or recovery certificate is available.
+     */
+    public Completable adjustValidityStartTimestampIfRequired(@NonNull Document document) {
+        if (document.getType() != Document.TYPE_VACCINATION
+                || document.getOutcome() != Document.OUTCOME_FULLY_IMMUNE
+                || document.isValid()) {
+            return Completable.complete();
+        }
+        return getOrRestoreDocuments()
+                .filter(it -> (it.isValidVaccination() || it.isValidRecovery()) && it.isSameOwner(document))
+                .lastElement()
+                .flatMapCompletable(it -> Completable.fromAction(() -> {
+                    if (it.getExpirationTimestamp() > document.getValidityStartTimestamp()) {
+                        document.setValidityStartTimestamp(document.getTestingTimestamp());
+                    }
+                }));
     }
 
     private JsonObject jsonObjectWith(String hash, String tag) {
@@ -293,6 +343,34 @@ public class DocumentManager extends Manager {
                                                 .andThen(addDocument(document)))
                                         .doOnError(throwable -> Timber.w("Unable to re-import document: %s", throwable.toString()))
                                         .onErrorComplete())));
+    }
+
+    private Completable reVerifyDocumentsIfRequired() {
+        return preferencesManager.restoreOrDefault(KEY_LAST_RE_VERIFICATION_TIMESTAMP, 0L)
+                .filter(timestamp -> timestamp < 1634112471927L) // before 13.10.2021
+                .flatMapCompletable(timestamp -> reVerifyDocuments());
+    }
+
+    public Completable reVerifyDocuments() {
+        Flowable<Completable> updateVerificationStatus = getOrRestoreDocuments()
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .filter(document -> eudccDocumentProvider.canParse(document.getEncodedData()).blockingGet())
+                .map(document -> eudccDocumentProvider.verify(document.getEncodedData())
+                        .andThen(Single.just(true))
+                        .onErrorReturnItem(false)
+                        .doOnSuccess(document::setVerified)
+                        .doFinally(() -> Timber.d("Re-verified %s", document))
+                        .ignoreElement());
+
+        Completable persistUpdatedDocuments = getOrRestoreDocuments()
+                .toList()
+                .map(Documents::new)
+                .flatMapCompletable(this::persistDocuments);
+
+        return Completable.mergeDelayError(updateVerificationStatus)
+                .andThen(persistUpdatedDocuments)
+                .onErrorComplete()
+                .andThen(preferencesManager.persist(KEY_LAST_RE_VERIFICATION_TIMESTAMP, System.currentTimeMillis()));
     }
 
     public Completable clearDocuments() {
@@ -369,6 +447,10 @@ public class DocumentManager extends Manager {
 
     public static boolean isAppointment(@NonNull String url) {
         return url.contains("luca-app.de/webapp/appointment");
+    }
+
+    public void setEudccDocumentProvider(EudccDocumentProvider eudccDocumentProvider) {
+        this.eudccDocumentProvider = eudccDocumentProvider;
     }
 
 }
