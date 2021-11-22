@@ -1,0 +1,40 @@
+{
+  "name": "mobile_e2e",
+  "description": "Luca Android test cases",
+  "scripts": {
+    "android.sauce.rdc.app.eu.release": "REGION=eu BUILD=release ENV=sauce wdio config/saucelabs/wdio.android.rdc.app.conf.ts",
+    "android.app.qs": "BUILD=qs ENV=local wdio config/wdio.android.app.conf.ts",
+    "android.app.release": "BUILD=release ENV=local wdio config/wdio.android.app.conf.ts",
+    "lint": "eslint"
+  },
+  "keywords": [
+    "WebdriverIO",
+    "WebDriver",
+    "appium",
+    "native app",
+    "hybrid",
+    "android"
+  ],
+  "devDependencies": {
+    "@types/jasmine": "^3.6.9",
+    "@typescript-eslint/eslint-plugin": "^4.32.0",
+    "@typescript-eslint/parser": "^4.32.0",
+    "@wdio/allure-reporter": "^7.13.0",
+    "@wdio/appium-service": "^7.13.0",
+    "@wdio/cli": "^7.13.0",
+    "@wdio/jasmine-framework": "^7.13.0",
+    "@wdio/local-runner": "^7.13.0",
+    "@wdio/sauce-service": "^7.13.0",
+    "@wdio/spec-reporter": "^7.13.0",
+    "@wdio/sync": "^7.13.0",
+    "allure-commandline": "^2.13.8",
+    "eslint": "^7.32.0",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-wdio": "^7.4.2",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
+  },
+  "dependencies": {
+    "appium": "^1.21.0"
+  }
+}
