@@ -65,7 +65,7 @@ public class CheckInManagerTest extends LucaUnitTest {
     public void getTraceIdWrappers_afterDeleteTraceData_isEmpty() {
         checkInManager.generateTraceId(USER_ID, 1601481600L)
                 .ignoreElement()
-                .andThen(checkInManager.deleteTraceData())
+                .andThen(checkInManager.deleteUnusedTraceData())
                 .andThen(checkInManager.getTraceIdWrappers())
                 .toList()
                 .test()

@@ -2,21 +2,25 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape>
-            <solid android:color="@color/camera_box_background" />
+            <solid android:color="?attr/colorSecondary" />
             <stroke
                 android:width="3dp"
-                android:color="@color/primaryColor" />
+                android:color="?attr/colorPrimary" />
             <corners android:radius="10dp" />
         </shape>
     </item>
-    <item android:top="56dp" android:bottom="56dp">
+    <item
+        android:bottom="56dp"
+        android:top="56dp">
         <shape>
-            <solid android:color="@color/camera_box_background" />
+            <solid android:color="?attr/colorSecondary" />
         </shape>
     </item>
-    <item android:left="56dp" android:right="56dp">
+    <item
+        android:left="56dp"
+        android:right="56dp">
         <shape>
-            <solid android:color="@color/camera_box_background" />
+            <solid android:color="?attr/colorSecondary" />
         </shape>
     </item>
 </layer-list>

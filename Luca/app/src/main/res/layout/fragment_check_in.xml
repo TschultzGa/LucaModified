@@ -7,30 +7,22 @@
     tools:context=".ui.checkin.CheckInFragment">
 
     <TextView
-        android:id="@+id/headingTextView"
-        style="@style/TextAppearance.Luca.Headline2"
-        android:layout_width="wrap_content"
-        android:layout_margin="@dimen/spacing_default"
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
         android:text="@string/navigation_check_in"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        tools:ignore="MissingConstraints" />
 
     <ImageView
-        android:id="@+id/historyImageView"
-        style="@style/MenuImageView"
+        android:id="@+id/historyActionBarMenuImageView"
+        style="@style/ActionBarMenuImageView"
         android:contentDescription="@string/navigation_history"
         android:src="@drawable/ic_history"
-        app:layout_constraintBottom_toBottomOf="@id/headingTextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/headingTextView" />
+        tools:ignore="MissingConstraints" />
 
     <View
-        android:id="@+id/headingSeparatorView"
-        style="@style/HeaderSeparatorView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView" />
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
 
     <de.culture4life.luca.ui.checkin.BottomFadingEdgeScrollView
         android:layout_width="match_parent"
@@ -39,7 +31,7 @@
         android:fillViewport="true"
         android:requiresFadingEdge="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingSeparatorView">
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -61,8 +53,7 @@
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    app:cardBackgroundColor="@color/camera_box_background"
-                    app:cardCornerRadius="8dp">
+                    app:cardBackgroundColor="?attr/colorSecondary">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -102,7 +93,7 @@
 
                             <TextView
                                 android:id="@+id/startCameraTextView"
-                                style="@style/TextAppearance.Luca.Body1"
+                                style="@style/TextAppearance.Luca.Body2"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="@dimen/spacing_default"
@@ -118,7 +109,7 @@
                             android:id="@+id/checkingInLoadingLayout"
                             android:layout_width="0dp"
                             android:layout_height="0dp"
-                            android:background="#FFFFFF"
+                            android:background="?attr/colorSurface"
                             android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
@@ -126,10 +117,9 @@
                             app:layout_constraintTop_toTopOf="parent">
 
                             <ProgressBar
+                                style="@style/LoadingSpinner"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:indeterminateTint="?attr/colorSurface"
-                                android:indeterminateTintMode="src_atop"
                                 app:layout_constraintBottom_toBottomOf="parent"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"
@@ -176,7 +166,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/showQrCodeButton"
-                style="@style/Button.Luca.PrimaryActionButton"
+                style="@style/Widget.Luca.Button.PrimaryActionButton"
                 android:layout_marginHorizontal="@dimen/spacing_default"
                 android:layout_marginTop="@dimen/spacing_default"
                 android:layout_marginBottom="@dimen/spacing_default"
@@ -188,7 +178,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/createMeetingButton"
-                style="@style/Button.Luca.SecondaryActionButton"
+                style="@style/Widget.Luca.Button.SecondaryActionButton"
                 android:layout_marginHorizontal="@dimen/spacing_default"
                 android:layout_marginBottom="@dimen/spacing_default"
                 android:text="@string/meeting_create_action"

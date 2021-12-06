@@ -156,7 +156,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
                     showJoinPrivateMeetingDialog(it.valueAndMarkAsHandled)
                 }
             }
-            binding.historyImageView.setOnClickListener {
+            binding.historyActionBarMenuImageView.setOnClickListener {
                 safeNavigateFromNavController(R.id.action_checkInFragment_to_history)
             }
             observe(viewModel.confirmCheckIn) {

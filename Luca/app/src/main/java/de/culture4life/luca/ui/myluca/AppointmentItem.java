@@ -15,7 +15,7 @@ public class AppointmentItem extends TestResultItem {
         super(context, document);
 
         this.title = context.getString(R.string.appointment_title, document.getFirstName());
-        this.color = ContextCompat.getColor(context, R.color.appointment);
+        this.color = ContextCompat.getColor(context, R.color.document_appointment);
         this.deleteButtonText = context.getString(R.string.delete_appointment_action);
         this.provider = null;
         String time = context.getString(R.string.document_result_time, TimeUtil.getReadableTime(context, document.getResultTimestamp()));

@@ -23,7 +23,7 @@ class AccessedDataDetailFragment : BaseFragment<AccessedDataDetailViewModel>() {
         return super.initializeViews()
             .andThen(Completable.fromAction {
                 observe(viewModel.accessedDataItem) {
-                    binding.headingTextView.text = it.title
+                    binding.actionBarTitleTextView.text = it.title
                     binding.healthDepartmentTextView.text = it.accessorName
                     binding.locationTextView.text = it.locationName
                     binding.timeTextView.text = it.checkInTimeRange

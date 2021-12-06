@@ -75,11 +75,11 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     }
 
     private void initializeDeleteHistoryListener() {
-        binding.deleteHistoryImageView.setOnClickListener(v -> showClearHistoryConfirmationDialog());
+        binding.deleteHistoryActionBarMenuImageView.setOnClickListener(v -> showClearHistoryConfirmationDialog());
     }
 
     private void initializeHistoryItemsViews() {
-        binding.headingTextView.setText(getTitleFor(warningLevelFilter));
+        binding.actionBarTitleTextView.setText(getTitleFor(warningLevelFilter));
         historyListAdapter = new HistoryListAdapter(getContext(), binding.historyListView.getId(), warningLevelFilter == NO_WARNING_LEVEL_FILTER);
         historyListAdapter.setItemClickHandler(new HistoryListAdapter.ItemClickHandler() {
             @Override
@@ -184,7 +184,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
 
     private void showShareHistorySelectionDialog() {
         ViewGroup viewGroup = getActivity().findViewById(android.R.id.content);
-        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.days_selection_dialog, viewGroup, false);
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_select_days, viewGroup, false);
 
         int maximumDays = (int) TimeUnit.MILLISECONDS.toDays(HistoryManager.SHARE_DATA_DURATION);
         String[] items = new String[maximumDays];
@@ -194,7 +194,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
         TextView message = dialogView.findViewById(R.id.messageTextView);
         message.setText(getString(R.string.history_share_selection_description, HistoryManager.KEEP_DATA_DAYS));
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), R.layout.day_selection_item, items);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), R.layout.item_select_days, items);
         AutoCompleteTextView autoCompleteTextView = dialogView.findViewById(R.id.dayInputAutoCompleteTextView);
         autoCompleteTextView.setAdapter(adapter);
         autoCompleteTextView.setText(String.valueOf(maximumDays), false);

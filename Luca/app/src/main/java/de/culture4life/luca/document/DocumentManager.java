@@ -150,6 +150,7 @@ public class DocumentManager extends Manager {
                 .doOnNext(documentProvider -> Timber.v("Attempting to parse using %s", documentProvider.getClass().getSimpleName()))
                 .map(documentProvider -> documentProvider.verify(encodedDocument)
                         .andThen(documentProvider.parse(encodedDocument))
+                        .doOnSuccess(parsedDocument -> parsedDocument.getDocument().setVerified(true))
                         .doOnError(throwable -> Timber.w("Parsing failed: %s", throwable.toString())))
                 .toFlowable(BackpressureStrategy.BUFFER))
                 .firstOrError()

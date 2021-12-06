@@ -22,6 +22,7 @@ import de.culture4life.luca.registration.RegistrationData;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.functions.Predicate;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import timber.log.Timber;
 
@@ -177,11 +178,15 @@ public class HistoryManager extends Manager {
     }
 
     private Completable deleteItemsCreatedBefore(long timestamp) {
+        return deleteItems(historyItem -> historyItem.getTimestamp() < timestamp)
+                .doOnComplete(() -> Timber.d("Deleted history items created before %d", timestamp));
+    }
+
+    public Completable deleteItems(Predicate<HistoryItem> predicate) {
         Observable<HistoryItem> remainingItems = getItems()
-                .filter(historyItem -> historyItem.getTimestamp() > timestamp);
+                .filter(historyItem -> !predicate.test(historyItem));
 
         return persistItemsToPreferences(remainingItems)
-                .doOnComplete(() -> Timber.d("Deleted history items created before %d", timestamp))
                 .andThen(invalidateItemCache());
     }
 

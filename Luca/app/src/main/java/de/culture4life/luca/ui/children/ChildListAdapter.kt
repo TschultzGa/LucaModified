@@ -1,17 +1,15 @@
 package de.culture4life.luca.ui.children
 
 import android.content.Context
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.core.view.isVisible
 import de.culture4life.luca.R
 import de.culture4life.luca.children.Child
-import de.culture4life.luca.databinding.ChildListItemBinding
+import de.culture4life.luca.databinding.ItemChildBinding
 import io.reactivex.rxjava3.schedulers.Schedulers
 
 const val CHILD_NAME_VIEW_TYPE = 0
@@ -55,9 +53,9 @@ class ChildListAdapter(
     private fun getChildView(position: Int, convertView: View?, container: ViewGroup): View {
         // for smooth scrolling
         val binding = if (convertView == null) {
-            ChildListItemBinding.inflate(layoutInflater)
+            ItemChildBinding.inflate(layoutInflater)
         } else {
-            ChildListItemBinding.bind(convertView)
+            ItemChildBinding.bind(convertView)
         }
 
         getItem(position)?.let { childItem ->
@@ -69,7 +67,6 @@ class ChildListAdapter(
 
             binding.childNameTextView.apply {
                 text = childItem.child.getFullName()
-                setTextColor(if (isCheckedIn) Color.BLACK else Color.WHITE)
                 if (isCheckedIn) {
                     setOnClickListener {
                         toggleCheckIn(childItem)
@@ -89,15 +86,8 @@ class ChildListAdapter(
         convertView: View?,
         container: ViewGroup
     ): View {
-        val view = convertView ?: layoutInflater.inflate(R.layout.add_child_button, container, false)
-
-        val addChildTextView = view.findViewById<TextView>(R.id.addChildTextView)
+        val view = convertView ?: layoutInflater.inflate(R.layout.layout_add_child_button, container, false)
         val addChildLinearLayout = view.findViewById<LinearLayout>(R.id.addChildLayout)
-
-        if (!isCheckedIn) {
-            addChildTextView.setTextColor(Color.WHITE)
-        }
-
         addChildLinearLayout.setOnClickListener(addChildListener)
         return view
     }

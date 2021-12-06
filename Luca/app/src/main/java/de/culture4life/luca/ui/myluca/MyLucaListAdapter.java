@@ -18,7 +18,7 @@ import java.util.Map;
 
 import de.culture4life.luca.R;
 import de.culture4life.luca.children.Child;
-import de.culture4life.luca.databinding.MyLucaListItemsSectionHeaderBinding;
+import de.culture4life.luca.databinding.ItemMyLucaSectionHeaderBinding;
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.registration.Person;
 import de.culture4life.luca.ui.myluca.viewholders.MultipleMyLucaItemViewHolder;
@@ -53,10 +53,10 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             return new SingleMyLucaItemViewHolder(view.getBinding());
         } else if (viewType == MULTIPLE_ITEM_VIEW_HOLDER) {
             ViewGroup view = (ViewGroup) LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.my_luca_list_items_viewpager, parent, false);
+                    .inflate(R.layout.item_my_luca_viewpager, parent, false);
             return new MultipleMyLucaItemViewHolder(view);
         } else if (viewType == SECTION_HEADER_ITEM_VIEW_HOLDER) {
-            MyLucaListItemsSectionHeaderBinding binding = MyLucaListItemsSectionHeaderBinding.inflate(LayoutInflater.from(parent.getContext()));
+            ItemMyLucaSectionHeaderBinding binding = ItemMyLucaSectionHeaderBinding.inflate(LayoutInflater.from(parent.getContext()));
             return new SectionHeaderViewHolder(binding);
         } else {
             throw new IllegalStateException(String.format("ViewType does not exist: ", viewType));
@@ -113,7 +113,7 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             setLeftPaddingForChild(multipleHolder.getViewPager(), itemsWrapper.isChildSection());
         } else if (viewHolder.getItemViewType() == SECTION_HEADER_ITEM_VIEW_HOLDER) {
-            MyLucaListItemsSectionHeaderBinding binding = ((SectionHeaderViewHolder) viewHolder).getBinding();
+            ItemMyLucaSectionHeaderBinding binding = ((SectionHeaderViewHolder) viewHolder).getBinding();
             binding.personNameTextView.setText(itemsWrapper.getSectionHeader());
             binding.personNameTextView.setCompoundDrawablesWithIntrinsicBounds(itemsWrapper.sectionDrawable(), 0, 0, 0);
         }
@@ -204,21 +204,10 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     protected static boolean isFrom(@NonNull MyLucaListItem item, @NonNull Person person) {
-        String firstName = item.document.getFirstName();
-        String lastName = item.document.getLastName();
-
-        boolean isSameName = true;
-
-        if (firstName != null) {
-            isSameName = Person.Companion.compare(person.getFirstName(), firstName)
-                    && Person.Companion.compare(person.getLastName(), lastName);
+        if (item.getDocument().getFirstName() == null) {
+            return !(person instanceof Child);
         }
-
-        if (person instanceof Child) {
-            return isSameName && firstName != null;
-        } else {
-            return isSameName;
-        }
+        return item.getDocument().getOwner().equalsSimplified(person);
     }
 
 }

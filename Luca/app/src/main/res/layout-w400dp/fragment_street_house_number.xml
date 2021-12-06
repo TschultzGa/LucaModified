@@ -7,7 +7,7 @@
 
     <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
         android:id="@+id/streetLayout"
-        style="@style/TextInputLayout.Luca.RegistrationTextBox"
+        style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="@dimen/spacing_default"
@@ -25,7 +25,7 @@
 
     <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
         android:id="@+id/houseNumberLayout"
-        style="@style/TextInputLayout.Luca.RegistrationTextBox"
+        style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"

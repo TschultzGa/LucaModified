@@ -29,8 +29,12 @@ import timber.log.Timber
 
 class AccountViewModel(application: Application) : BaseViewModel(application) {
 
-    fun openHealthDepartmentKeyView() {
-        navigationController?.navigate(R.id.action_accountFragment_to_healthDepartmentKeyFragment)
+    fun openDailyKeyView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_dailyKeyFragment)
+    }
+
+    fun openNewsView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_newsFragment)
     }
 
     fun requestSupportMail() {
@@ -179,7 +183,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
                 .appendLine()
 
             val accessedData = application.dataAccessManager
-                .getPreviouslyAccessedTraceData(checkInData.traceId)
+                .getPreviouslyAccessedTraceData(checkInData.traceId!!)
                 .map {
                     if (TextUtils.isEmpty(it.healthDepartment.name)) {
                         application.getString(R.string.unknown)

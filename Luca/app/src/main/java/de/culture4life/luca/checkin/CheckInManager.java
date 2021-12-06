@@ -64,6 +64,7 @@ import de.culture4life.luca.network.pojo.CheckInRequestData;
 import de.culture4life.luca.network.pojo.CheckOutRequestData;
 import de.culture4life.luca.network.pojo.LocationResponseData;
 import de.culture4life.luca.network.pojo.TraceData;
+import de.culture4life.luca.network.pojo.TraceDeletionRequestData;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
 import de.culture4life.luca.ui.MainActivity;
@@ -98,6 +99,7 @@ public class CheckInManager extends Manager {
     private static final String KEY_PREFIX_TRACING_SECRET = "tracing_secret_";
     private static final String ALIAS_SCANNER_EPHEMERAL_KEY_PAIR = "scanner_ephemeral_key_pair";
     public static final String KEY_INCLUDE_ENTRY_POLICY = "include_entry_policy";
+    public static final String KEY_ENABLE_AUTOMATIC_CHECK_OUT = "enable_automatic_check_out";
 
     private static final String CHECK_IN_DATA_UPDATE_TAG = "check_in_update";
     private static final long CHECK_IN_DATA_UPDATE_INTERVAL = BuildConfig.DEBUG ? PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS : TimeUnit.HOURS.toMillis(6);
@@ -356,8 +358,15 @@ public class CheckInManager extends Manager {
             persistScannerEphemeralKeyPair(scannerEphemeralKeyPair).blockingAwait();
 
             String serializedScannerPublicKey = AsymmetricCipherProvider.encode((ECPublicKey) scannerEphemeralKeyPair.getPublic())
-                    .flatMap(SerializationUtil::serializeToBase64).blockingGet();
+                    .flatMap(SerializationUtil::serializeToBase64)
+                    .blockingGet();
             checkInRequestData.setScannerEphemeralPublicKey(serializedScannerPublicKey);
+
+            String serializedGuestPublicKey = cryptoManager.getGuestEphemeralKeyPair(qrCodeData.getTraceId())
+                    .flatMap(keyPair -> AsymmetricCipherProvider.encode((ECPublicKey) keyPair.getPublic()))
+                    .flatMap(SerializationUtil::serializeToBase64)
+                    .blockingGet();
+            checkInRequestData.setGuestEphemeralPublicKey(serializedGuestPublicKey);
 
             byte[] iv = cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH).blockingGet();
             String encodedIv = serializeToBase64(iv).blockingGet();
@@ -719,6 +728,46 @@ public class CheckInManager extends Manager {
     }
 
     /*
+        Deletion
+     */
+
+    public Completable deleteCheckInFromBackend(@NonNull String traceId) {
+        return generateDeletionRequestData(traceId)
+                .flatMapCompletable(requestData -> networkManager.getLucaEndpointsV3()
+                        .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.deleteTrace(requestData)))
+                .andThen(deleteCheckInLocally(traceId));
+    }
+
+    private Single<TraceDeletionRequestData> generateDeletionRequestData(@NonNull String traceId) {
+        return Single.fromCallable(() -> {
+            byte[] traceIdBytes = CryptoManager.decodeFromString(traceId).blockingGet();
+            PrivateKey privateKey = cryptoManager.getGuestEphemeralKeyPair(traceIdBytes)
+                    .map(KeyPair::getPrivate)
+                    .blockingGet();
+
+            long timestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet();
+            byte[] timestampBytes = TimeUtil.encodeUnixTimestamp(timestamp).blockingGet();
+
+            byte[] signedData = CryptoManager.concatenate(
+                    "DELETE_TRACE".getBytes(StandardCharsets.UTF_8),
+                    traceIdBytes,
+                    timestampBytes
+            ).blockingGet();
+
+            String encodedSignature = cryptoManager.getSignatureProvider()
+                    .sign(signedData, privateKey)
+                    .flatMap(CryptoManager::encodeToString)
+                    .blockingGet();
+
+            return new TraceDeletionRequestData(traceId, timestamp, encodedSignature);
+        });
+    }
+
+    private Completable deleteCheckInLocally(@NonNull String traceId) {
+        return historyManager.deleteItems(historyItem -> traceId.equals(historyItem.getRelatedId()));
+    }
+
+    /*
         Distance and duration
      */
 
@@ -803,8 +852,7 @@ public class CheckInManager extends Manager {
     }
 
     public Observable<CheckInData> getCheckInDataAndChanges() {
-        return preferencesManager.restoreIfAvailableAndGetChanges(KEY_CHECK_IN_DATA, CheckInData.class)
-                .doOnNext(checkInData -> Timber.v("Check-in data updated from preferences: %s", checkInData));
+        return preferencesManager.restoreIfAvailableAndGetChanges(KEY_CHECK_IN_DATA, CheckInData.class);
     }
 
     private Maybe<CheckInData> fetchCheckInDataFromBackend(boolean useOlderTraceIds) {
@@ -865,7 +913,7 @@ public class CheckInManager extends Manager {
 
     private Completable removeCheckInData() {
         return Completable.mergeArray(
-                deleteTraceData(),
+                deleteUnusedTraceData(),
                 preferencesManager.delete(KEY_CHECK_IN_DATA)
         ).andThen(Completable.fromAction(() -> checkInData = null))
                 .doOnComplete(() -> Timber.d("Removed check-in data"));
@@ -1043,13 +1091,29 @@ public class CheckInManager extends Manager {
     }
 
     /**
-     * Delete all trace IDs and their associated user ephemeral key pair.
+     * Delete all trace IDs and their associated user ephemeral key pair that do not belong to any check-in.
      *
      * @see CryptoManager#deleteGuestEphemeralKeyPair
      */
-    public Completable deleteTraceData() {
-        return getTraceIdWrappers()
+    public Completable deleteUnusedTraceData() {
+        Observable<String> allTraceIds = getTraceIdWrappers()
                 .map(TraceIdWrapper::getTraceId)
+                .flatMapSingle(CryptoManager::encodeToString);
+
+        Observable<String> checkedInTraceIds = getArchivedTraceIds();
+
+        Observable<String> discardableTraceIds = Single.zip(
+                allTraceIds.toList(),
+                checkedInTraceIds.toList(),
+                (all, checkedIn) -> {
+                    ArrayList<String> discardable = new ArrayList<>(all);
+                    discardable.removeAll(checkedIn);
+                    return discardable;
+                }
+        ).flatMapObservable(Observable::fromIterable);
+
+        return discardableTraceIds
+                .flatMapSingle(CryptoManager::decodeFromString)
                 .flatMapCompletable(cryptoManager::deleteGuestEphemeralKeyPair)
                 .andThen(preferencesManager.delete(KEY_TRACE_ID_WRAPPERS));
     }

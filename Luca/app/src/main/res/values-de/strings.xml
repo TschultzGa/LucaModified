@@ -33,6 +33,7 @@
     <string name="action_change">Wechseln</string>
     <string name="action_back">Zurück</string>
     <string name="action_accept">Einwilligen</string>
+    <string name="action_open">Öffnen</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Etwas lief schief</string>
@@ -134,15 +135,18 @@
     <string name="onboarding_completed_action">Fertig</string>
 
     <!-- What is new -->
+    <string name="what_is_new_series_luca_2_0">luca 2.0</string>
+    <string name="what_is_new_series_check_in">Check-In</string>
+
     <string name="what_is_new_back">Zurück</string>
     <string name="what_is_new_next">Weiter</string>
     <string name="what_is_new_skip">Überspringen</string>
     <string name="what_is_new_close">Schließen</string>
     <string name="what_is_new_lets_go">Los geht\'s</string>
-    <string name="what_is_new_intro_heading">Hurra! Bei luca hat sich einiges getan!</string>
-    <string name="what_is_new_intro_description">Wische nach rechts und schaue dir die Neuigkeiten an.\n\nGerade keine Zeit? Im Account Tab findest du alle Infos zusammengefasst.</string>
+    <string name="what_is_new_intro_heading">Es gibt wieder Neuigkeiten</string>
+    <string name="what_is_new_intro_description">Wir haben uns für euch ins Zeug gelegt und die Check-ins erleichtert.</string>
     <string name="what_is_new_outro_heading">Das war\'s auch schon!</string>
-    <string name="what_is_new_outro_description">Alle Infos und weitere Erklärscreens findest du im Anleitungsbereich im „Account“-Tab.\n\nPS: Auschecken nicht vergessen!</string>
+    <string name="what_is_new_outro_description">Alle Infos und weiteren Erklärungen findest du auch nochmal unter Neuigkeiten im „Account“-Tab.\n\nPS: Auschecken nicht vergessen!</string>
 
     <string name="what_is_new_0_heading">Erweiterung von „Mein luca“</string>
     <string name="what_is_new_0_description">Kinder mitnehmen\nDu kannst luca jetzt auch für deine Kinder mit nutzen.\n\nWichtige Benachrichtigungen\nHier erhältst du alle Benachrichtigungen und Warnmeldungen.</string>
@@ -156,6 +160,10 @@
     <string name="what_is_new_4_description">Wenn du dich Einchecken möchtest, startet luca jetzt direkt auf der Kamera. Einfach einmalig den Kamerazugriff aktivieren und los geht\'s. Deinen persönlichen QR-Code erhältst du über den Button darunter.</string>
     <string name="what_is_new_5_heading">Umzug der Historie</string>
     <string name="what_is_new_5_description">Die Historie findest du jetzt oben rechts im „Check-in“-Tab über das Uhr-Icon.\n\nÜbrigens: Wie gewohnt können deine Daten nicht eingesehen werden, bis du deine TAN eigenständig mit dem Gesundheitsamt teilst.</string>
+    <string name="what_is_new_6_heading">2G/3G-Status beim Einchecken teilen</string>
+    <string name="what_is_new_6_description">Teile deinen 2G/3G-Status direkt in deinem luca-QR-Code beim Check-in. Erleichtere das Einscannen für dich und die Betreiber:innen.</string>
+    <string name="what_is_new_7_heading">Speisekarte und mehr</string>
+    <string name="what_is_new_7_description">Betreiber:innen haben nun die Möglichkeit, Speisekarten, Lagepläne, Programme, ihre Webseite oder weitere Infos zu hinterlegen. Du findest sie nach dem Einchecken hinter dem jeweiligen Button.</string>
 
     <!-- Navigation -->
     <string name="navigation_check_in">Einchecken</string>
@@ -297,6 +305,19 @@
     <string name="auto_checkout_location_disabled_description">Der automatische Check-out ist nicht mehr möglich, da die Standortdienste deaktiviert wurden.</string>
     <string name="auto_checkout_generic_error_title">Automatischer Check-out Fehler</string>
     <string name="auto_checkout_generic_error_description">Der automatische Check-out konnte nicht aktiviert werden.</string>
+
+    <!-- Venue URLs -->
+    <string name="venue_url_consent_title">Externen Link öffnen</string>
+    <string name="venue_url_consent_description">Du bist dabei, <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g>\'s <xliff:g example="Website" id="urlType">%2$s</xliff:g> zu öffnen. Dieser Link wird von dem luca Standort, an dem du eingecheckt bist, zur Verfügung gestellt. luca hat keine Kontrolle über den Inhalt. Der folgende Link wird geöffnet:\n\n<xliff:g example="https://nexenio.com" id="url">%3$s</xliff:g></string>
+    <string name="venue_url_report_title">Unangemessene Inhalte melden</string>
+    <string name="venue_url_report_description">Mit dieser E-Mail möchte ich die Inhalte von folgendem Standort melden: <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g> (<xliff:g example="8b212727-b90f-449b-a347-098c38c2f299" id="locationId">%2$s</xliff:g>).\n\nDer Standort hat unangemessene Inhalte über die folgenden Links zur Verfügung gestellt:\n<xliff:g example="- https://luca-app.de/" id="providedUrls">%3$s</xliff:g>\n\nDie Inhalte sind aus folgenden Grund unangemessen:\nBitte ergänze weswegen du die Links meldest.</string>
+    <string name="venue_url_clipboard_label"><xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g>\'s <xliff:g example="Website" id="urlType">%2$s</xliff:g></string>
+    <string name="venue_url_clipboard_toast">URL wurde in die Zwischenablage kopiert</string>
+    <string name="venue_url_type_menu">Menü</string>
+    <string name="venue_url_type_program">Programm</string>
+    <string name="venue_url_type_map">Lageplan</string>
+    <string name="venue_url_type_website">Webseite</string>
+    <string name="venue_url_type_general">Allgemeine Infos</string>
 
     <!-- History -->
     <string name="history_empty_title">Keine Einträge</string>
@@ -483,13 +504,28 @@
     </plurals>
 
     <!-- Account tab -->
-    <string name="account_tab_edit_contact_data">Kontaktdaten bearbeiten</string>
-    <string name="account_tab_key_for_health_dep">Schlüssel für Gesundheitsämter</string>
-    <string name="account_tab_what_is_new">Neuerungen in der App</string>
-    <string name="account_tab_data_request">Daten anfragen</string>
+    <string name="account_tab_section_settings">Einstellungen</string>
+    <string name="account_tab_item_edit_contact_data">Kontaktdaten</string>
+
+    <string name="account_tab_section_help">Hilfe</string>
+    <string name="account_tab_item_guides">Neuigkeiten</string>
+    <string name="account_tab_item_faq">FAQ</string>
+    <string name="account_tab_item_support">Support</string>
+
+    <string name="account_tab_section_info">Informationen</string>
+    <string name="account_tab_item_data_request">Daten anfragen</string>
+    <string name="account_tab_item_data_protection">Datenschutz</string>
+    <string name="account_tab_item_terms">AGB</string>
+    <string name="account_tab_item_imprint">Impressum</string>
+    <string name="account_tab_item_daily_key">Tagesschlüssel</string>
+    <string name="account_tab_item_app_version">App Version</string>
+    <string name="account_tab_item_app_data">App Daten</string>
+    <string name="account_tab_item_source_code">Quelltext</string>
+
+    <string name="account_tab_item_delete_account">Account löschen</string>
 
     <!-- Version details -->
-    <string name="version_details_dialog_title">App Version</string>
+    <string name="version_details_dialog_title">@string/account_tab_item_app_version</string>
     <string name="version_details_dialog_message">Du benutzt aktuell die Android App Version <xliff:g example="1.0.0" id="version_name">%1$s</xliff:g> (Release <xliff:g example="42" id="version_code">%2$d</xliff:g>).\n\nDen Quellcode findest du auf GitLab mit dem Commit Hash <xliff:g example="843cbaf2d9840624defe303c0c854385ee69d23f" id="commit_hash">%3$s</xliff:g>.</string>
     <string name="version_details_dialog_action">@string/action_ok</string>
 
@@ -589,13 +625,13 @@
     <string name="data_request_appointment_qr_code">QR-Code</string>
 
     <!-- Key for health departments -->
-    <string name="key_health_department_title">Tagesschlüssel</string>
-    <string name="key_health_department_transfer_key">Tagesschlüssel</string>
-    <string name="key_health_department_date">@string/document_issued_at</string>
-    <string name="key_health_department_issuer">Aussteller:</string>
-    <string name="key_health_department_signed">Signiert:</string>
-    <string name="key_health_department_download_cert">Zertifikatskette herunterladen</string>
-    <string name="key_health_department_description">Jeden Tag wird von einem der Gesundheitsämter, die luca nutzen, ein neuer Tagesschlüssel erstellt. Diesen Schlüssel benötigen alle Gesundheitsämter für die Entschlüsselung von Check-in-Datensätzen. Hier kannst du sehen, welches Gesundheitsamt den aktuellen Schlüssel erstellt hat.</string>
+    <string name="daily_key_title">Tagesschlüssel</string>
+    <string name="daily_key_description">Jeden Tag wird von einem der Gesundheitsämter, die luca nutzen, ein neuer Tagesschlüssel erstellt. Diesen Schlüssel benötigen alle Gesundheitsämter für die Entschlüsselung von Check-in-Datensätzen. Hier kannst du sehen, welches Gesundheitsamt den aktuellen Schlüssel erstellt hat.</string>
+    <string name="daily_key_date">@string/document_issued_at</string>
+    <string name="daily_key_issuer">Aussteller:</string>
+    <string name="daily_key_signed">Signiert:</string>
+    <string name="daily_key_download_action">Zertifikatskette herunterladen</string>
+    <string name="daily_key_update_error_title">Tagesschlüssel Aktualisierung fehlgeschlagen</string>
 
     <!-- Updated terms -->
     <string name="updated_terms_description">Wir aktualisieren unsere Nutzungsbedingungen und Datenschutzerklärung.</string>

@@ -8,8 +8,8 @@
     tools:context=".ui.MainActivity">
 
     <TextView
-        android:id="@+id/appNameTextView"
-        style="@style/TextAppearance.Luca.Headline1"
+        android:id="@+id/onboardingTitleTextView"
+        style="@style/OnboardingTitleTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/app_name"
@@ -26,12 +26,12 @@
         android:textColor="?attr/colorOnSurface"
         android:textSize="14sp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/appNameTextView"
+        app:layout_constraintBottom_toBottomOf="@id/onboardingTitleTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/appNameTextView" />
+        app:layout_constraintTop_toTopOf="@id/onboardingTitleTextView" />
 
     <TextView
-        android:id="@+id/headingTextView"
+        android:id="@+id/actionBarTitleTextView"
         style="@style/TextAppearance.Luca.Body1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -40,7 +40,7 @@
         android:textSize="@dimen/font_size_large"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/appNameTextView" />
+        app:layout_constraintTop_toBottomOf="@id/onboardingTitleTextView" />
 
     <ScrollView
         android:layout_width="0dp"
@@ -53,7 +53,7 @@
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView">
+        app:layout_constraintTop_toBottomOf="@id/actionBarTitleTextView">
 
         <TextView
             android:id="@+id/descriptionTextView"
@@ -62,13 +62,13 @@
             android:layout_height="wrap_content"
             android:text="@string/onboarding_info_description"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/headingTextView" />
+            app:layout_constraintTop_toBottomOf="@id/actionBarTitleTextView" />
 
     </ScrollView>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/primaryActionButton"
-        style="@style/Button.Luca.PrimaryActionButton"
+        style="@style/Widget.Luca.Button.PrimaryActionButton"
         android:text="@string/onboarding_info_action"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

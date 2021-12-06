@@ -65,8 +65,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 public class LucaApplication extends MultiDexApplication {
 
     public static final boolean IS_USING_STAGING_ENVIRONMENT = !BuildConfig.BUILD_TYPE.equals("production");
-    private static final long MAXIMUM_TIMESTAMP_OFFSET = TimeUnit.MINUTES.toMillis(1);
-    private static final String INTENT_TYPE_MAIL = "message/rfc822";
+    public static final String INTENT_TYPE_MAIL = "message/rfc822";
 
     private final PreferencesManager preferencesManager;
     private final CryptoManager cryptoManager;
@@ -201,7 +200,7 @@ public class LucaApplication extends MultiDexApplication {
     }
 
     private Completable invokeRotatingBackendPublicKeyUpdate() {
-        return Completable.fromAction(() -> applicationDisposable.add(cryptoManager.updateDailyKeyPairPublicKey()
+        return Completable.fromAction(() -> applicationDisposable.add(cryptoManager.updateDailyPublicKey()
                 .doOnError(throwable -> {
                     if (throwable instanceof SSLPeerUnverifiedException) {
                         showErrorAsDialog(new ViewError.Builder(this)

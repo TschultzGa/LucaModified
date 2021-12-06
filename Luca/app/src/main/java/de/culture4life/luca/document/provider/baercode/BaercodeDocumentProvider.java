@@ -75,7 +75,6 @@ public class BaercodeDocumentProvider extends DocumentProvider<BaercodeDocument>
                 .map(bytes -> {
                     BaercodeDocument document = new BaercodeDocument(bytes);
                     decryptPersonalData(document);
-                    document.getDocument().setVerified(true);
                     return document;
                 }).onErrorResumeNext(throwable -> {
                     if (throwable instanceof DocumentParsingException || throwable instanceof DocumentImportException) {

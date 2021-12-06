@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/addChildLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:contentDescription="@string/venue_children_add"
+    android:orientation="horizontal"
+    android:paddingTop="@dimen/spacing_default">
+
+    <LinearLayout
+        android:layout_width="?attr/minTouchTargetSize"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_circle_with_plus"
+            app:layout_constraintStart_toStartOf="parent" />
+
+    </LinearLayout>
+
+    <TextView
+        style="@style/TextAppearance.Luca.Body1.Bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_default"
+        android:layout_marginEnd="@dimen/spacing_default"
+        android:layout_marginBottom="@dimen/spacing_default"
+        android:text="@string/venue_children_add_another_child"
+        android:textAllCaps="true" />
+
+</LinearLayout>
+
+
+

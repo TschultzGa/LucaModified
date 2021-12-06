@@ -57,7 +57,7 @@
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/firstNameLayout"
-                    style="@style/TextInputLayout.Luca.RegistrationTextBox"
+                    style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_first_name"
@@ -76,7 +76,7 @@
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/lastNameLayout"
-                    style="@style/TextInputLayout.Luca.RegistrationTextBox"
+                    style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="0dp"
@@ -104,7 +104,7 @@
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/phoneNumberLayout"
-                    style="@style/TextInputLayout.Luca.RegistrationTextBox"
+                    style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_phone_number"
@@ -122,7 +122,7 @@
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/emailLayout"
-                    style="@style/TextInputLayout.Luca.RegistrationTextBox"
+                    style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_email"
@@ -153,7 +153,7 @@
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/postalCodeLayout"
-                    style="@style/TextInputLayout.Luca.RegistrationTextBox"
+                    style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_postal_code"
@@ -171,7 +171,7 @@
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/cityNameLayout"
-                    style="@style/TextInputLayout.Luca.RegistrationTextBox"
+                    style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_city_name"
@@ -191,7 +191,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/registrationActionButton"
-                style="@style/Button.Luca.RegistrationButton"
+                style="@style/Widget.Luca.Button.RegistrationButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="@dimen/spacing_default"

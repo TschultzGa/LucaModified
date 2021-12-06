@@ -15,7 +15,6 @@ import de.culture4life.luca.databinding.FragmentAccountBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.registration.RegistrationActivity
-import de.culture4life.luca.ui.whatisnew.WhatIsNewActivity
 import io.reactivex.rxjava3.core.Completable
 
 class AccountFragment : BaseFragment<AccountViewModel>() {
@@ -47,24 +46,26 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
     }
 
     private fun initializeOnClickListeners() {
-        binding.editContactDataTextView.setOnClickListener {
+        binding.editContactDataItem.setOnClickListener {
             val intent = Intent(activity, RegistrationActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         }
 
-        binding.deleteAccountTextView.setOnClickListener { showDeleteAccountDialog() }
-        binding.faqTextView.setOnClickListener { application.openUrl(getString(R.string.url_faq)) }
-        binding.supportTextView.setOnClickListener { viewModel.requestSupportMail() }
-        binding.whatIsNewTextView.setOnClickListener { showWhatIsNewPages() }
-        binding.dataRequestTextView.setOnClickListener { showDataRequestMenu() }
-        binding.privacyTextView.setOnClickListener { application.openUrl(getString(R.string.url_privacy_policy)) }
-        binding.termsTextView.setOnClickListener { application.openUrl(getString(R.string.url_terms_and_conditions)) }
-        binding.imprintTextView.setOnClickListener { application.openUrl(getString(R.string.url_imprint)) }
-        binding.showAppDataTextView.setOnClickListener { application.openAppSettings() }
-        binding.versionTextView.setOnClickListener { showVersionDetailsDialog() }
-        binding.gitlabTextView.setOnClickListener { showGitlabDialog() }
-        binding.healthDepartmentKeyTextView.setOnClickListener { viewModel.openHealthDepartmentKeyView() }
+        binding.guidesItem.setOnClickListener { viewModel.openNewsView() }
+        binding.faqItem.setOnClickListener { application.openUrl(getString(R.string.url_faq)) }
+        binding.supportItem.setOnClickListener { viewModel.requestSupportMail() }
+
+        binding.dataRequestItem.setOnClickListener { showDataRequestMenu() }
+        binding.dataProtectionItem.setOnClickListener { application.openUrl(getString(R.string.url_privacy_policy)) }
+        binding.termsItem.setOnClickListener { application.openUrl(getString(R.string.url_terms_and_conditions)) }
+        binding.imprintItem.setOnClickListener { application.openUrl(getString(R.string.url_imprint)) }
+        binding.dailyKeyItem.setOnClickListener { viewModel.openDailyKeyView() }
+        binding.versionItem.setOnClickListener { showVersionDetailsDialog() }
+        binding.appDataItem.setOnClickListener { application.openAppSettings() }
+        binding.sourceCodeItem.setOnClickListener { showGitlabDialog() }
+
+        binding.deleteAccountItem.setOnClickListener { showDeleteAccountDialog() }
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
@@ -91,16 +92,9 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
         }
     }
 
-    private fun showWhatIsNewPages() {
-        val intent = Intent(context, WhatIsNewActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        intent.putExtra(WhatIsNewActivity.SHOW_ONLY_UNSEEN_PAGES, false)
-        startActivity(intent)
-    }
-
     private fun showDataRequestMenu() {
         context?.also { context ->
-            PopupMenu(context, binding.dataRequestTextView).apply {
+            PopupMenu(context, binding.dataRequestItem).apply {
                 menuInflater.inflate(R.menu.data_request_menu, this.menu)
                 setOnMenuItemClickListener { item -> onMenuItemClick(item) }
                 show()

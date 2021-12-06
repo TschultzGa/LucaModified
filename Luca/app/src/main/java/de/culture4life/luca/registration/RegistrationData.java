@@ -153,7 +153,7 @@ public class RegistrationData {
     }
 
     public Person getPerson() {
-        return new Person(getFirstName(), getLastName());
+        return new Person(getFirstName().trim(), getLastName().trim());
     }
 
     public String getAddress() {

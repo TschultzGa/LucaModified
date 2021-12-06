@@ -171,7 +171,7 @@ public class ViewError {
     }
 
     @Nullable
-    private static String getMessagesFromThrowableAndCauses(@NonNull Throwable throwable) {
+    public static String getMessagesFromThrowableAndCauses(@NonNull Throwable throwable) {
         if (throwable instanceof RxJavaAssemblyException) {
             // these don't have any meaningful messages
             return null;
@@ -189,7 +189,6 @@ public class ViewError {
                 message += " " + causeMessage;
             }
         }
-
         return message;
     }
 

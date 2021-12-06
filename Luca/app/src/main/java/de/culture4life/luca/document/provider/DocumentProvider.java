@@ -34,6 +34,7 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
     public Single<DocumentType> verifyParseAndValidate(@NonNull String encodedData, @NonNull Person person, @NonNull List<Child> children) {
         return verify(encodedData)
                 .andThen(parse(encodedData))
+                .doOnSuccess(parsedDocument -> parsedDocument.getDocument().setVerified(true))
                 .flatMap(document -> validate(document, person, children)
                         .andThen(Single.just(document)));
     }
@@ -82,8 +83,7 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
 
     protected Completable validateName(@NonNull DocumentType document, @NonNull Person person) {
         return Completable.fromAction(() -> {
-            if (!Person.Companion.compare(person.getFirstName(), document.getDocument().getFirstName())
-                    || !Person.Companion.compare(person.getLastName(), document.getDocument().getLastName())) {
+            if (!document.getDocument().getOwner().equalsSimplified(person)) {
                 throw new DocumentVerificationException(NAME_MISMATCH);
             }
         });

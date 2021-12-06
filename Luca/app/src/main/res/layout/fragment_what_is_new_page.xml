@@ -27,8 +27,10 @@
             android:layout_margin="@dimen/spacing_default">
 
             <TextView
-                android:id="@+id/headingTextView"
+                android:id="@+id/actionBarTitleTextView"
                 style="@style/TextAppearance.Luca.Headline2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:textAlignment="textStart"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -41,7 +43,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_default"
-                app:layout_constraintTop_toBottomOf="@id/headingTextView"
+                app:layout_constraintTop_toBottomOf="@id/actionBarTitleTextView"
                 tools:text="@string/dummy_paragraph" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

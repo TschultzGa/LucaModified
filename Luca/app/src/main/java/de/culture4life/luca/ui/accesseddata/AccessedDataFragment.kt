@@ -60,9 +60,7 @@ class AccessedDataFragment : BaseFragment<AccessedDataViewModel>() {
             val emptyStateVisibility = if (items.isEmpty()) View.VISIBLE else View.GONE
             val contentVisibility = if (items.isNotEmpty()) View.VISIBLE else View.GONE
             with(binding) {
-                emptyTitleTextView.visibility = emptyStateVisibility
-                emptyDescriptionTextView.visibility = emptyStateVisibility
-                emptyImageView.visibility = emptyStateVisibility
+                emptyStateGroup.visibility = emptyStateVisibility
                 accessedDataListView.visibility = contentVisibility
             }
         }

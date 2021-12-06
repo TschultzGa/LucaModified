@@ -11,7 +11,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
 import de.culture4life.luca.dataaccess.AccessedTraceData
 import de.culture4life.luca.databinding.FragmentMyLucaBinding
-import de.culture4life.luca.databinding.TopSheetContainerBinding
+import de.culture4life.luca.databinding.LayoutTopSheetBinding
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.registration.Person
 import de.culture4life.luca.ui.BaseQrCodeFragment
@@ -65,7 +65,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
     private fun initializeMyLucaItemsViews() {
         binding.myLucaRecyclerView.adapter = myLucaListAdapter
         binding.myLucaRecyclerView.layoutManager = LinearLayoutManager(context)
-        binding.childAddingIconImageView.setOnClickListener { viewModel.onChildrenManagementRequested() }
+        binding.childrenActionBarMenuImageView.setOnClickListener { viewModel.onChildrenManagementRequested() }
         binding.childCounterTextView.setOnClickListener { viewModel.onChildrenManagementRequested() }
         observe(viewModel.children) {
             if (it.isEmpty()) {
@@ -99,7 +99,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
     }
 
     private fun initializeImportViews() {
-        binding.bookAppointmentImageView.setOnClickListener { viewModel.onAppointmentRequested() }
+        binding.appointmentsActionBarMenuImageView.setOnClickListener { viewModel.onAppointmentRequested() }
         binding.primaryActionButton.setOnClickListener { toggleCameraPreview() }
         observe(viewModel.isLoading) {
             binding.loadingLayout.visibility = if (it) View.VISIBLE else View.GONE
@@ -171,7 +171,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         val container = binding.bannerLayout
         container.removeAllViews()
         if (!isGenuineTime) {
-            val bannerBinding = TopSheetContainerBinding.inflate(layoutInflater, container, true)
+            val bannerBinding = LayoutTopSheetBinding.inflate(layoutInflater, container, true)
             bannerBinding.sheetDescriptionTextView.setText(R.string.time_error_description)
             bannerBinding.sheetActionButton.setText(R.string.time_error_action)
             bannerBinding.sheetActionButton.setOnClickListener {
@@ -182,7 +182,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         }
         for (warningLevel in 1..AccessedTraceData.NUMBER_OF_WARNING_LEVELS) {
             if (accessNotifications.containsKey(warningLevel)) {
-                val bannerBinding = TopSheetContainerBinding.inflate(layoutInflater, container, true)
+                val bannerBinding = LayoutTopSheetBinding.inflate(layoutInflater, container, true)
                 bannerBinding.sheetActionButton.setText(R.string.accessed_data_banner_action_show)
                 bannerBinding.sheetIconImageView.setImageResource(R.drawable.ic_eye)
                 bannerBinding.sheetDescriptionTextView.text = accessNotifications[warningLevel]!!.bannerText
@@ -221,7 +221,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         }
         binding.scanDocumentHintTextView.visibility = cameraVisibility
         binding.cardView.visibility = cameraVisibility
-        binding.blackBackground.visibility = cameraVisibility
+        binding.surfaceBackground.visibility = cameraVisibility
         binding.myLucaRecyclerView.visibility = contentVisibility
         binding.bannerScrollView.visibility = contentVisibility
         binding.emptyStateScrollView.visibility = emptyStateVisibility

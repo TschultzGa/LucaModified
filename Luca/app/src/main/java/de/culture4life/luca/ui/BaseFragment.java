@@ -204,7 +204,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     protected Completable setupBackButton() {
         return Completable.fromAction(() -> {
-            backImageView = getView().findViewById(R.id.backImageView);
+            backImageView = getView().findViewById(R.id.actionBarBackButtonImageView);
             if (backImageView == null) {
                 return;
             }

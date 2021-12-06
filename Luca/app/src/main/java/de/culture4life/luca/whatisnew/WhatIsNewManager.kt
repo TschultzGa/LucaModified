@@ -88,7 +88,7 @@ class WhatIsNewManager(
 
     private fun getIntroPage(): WhatIsNewPage {
         return WhatIsNewPage(
-            image = R.drawable.g_rocket,
+            image = R.drawable.g_news,
             heading = context.getString(R.string.what_is_new_intro_heading),
             description = context.getString(R.string.what_is_new_intro_description)
         )
@@ -148,6 +148,28 @@ class WhatIsNewManager(
         }
     }
 
+    enum class PageGroup(val value: PageGroupContent) {
+        LUCA_2_0(
+            PageGroupContent(
+                titleRes = R.string.what_is_new_series_luca_2_0,
+                startIndex = 0,
+                size = 6
+            )
+        ),
+        LUCA_2_2(
+            PageGroupContent(
+                titleRes = R.string.what_is_new_series_check_in,
+                startIndex = 6,
+                size = 2
+            )
+        )
+    }
+
+    data class PageGroupContent(
+        val titleRes: Int,
+        val startIndex: Int,
+        val size: Int
+    )
 }
 
 private const val KEY_LAST_WHAT_IS_NEW_PAGE_SEEN_INDEX = "key_last_what_is_new_page_seen_index"

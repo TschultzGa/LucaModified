@@ -8,48 +8,28 @@
     tools:context=".ui.terms.UpdatedTermsActivity">
 
     <TextView
-        android:id="@+id/appNameTextView"
-        style="@style/TextAppearance.Luca.Headline1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_name"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:id="@+id/onboardingTitleTextView"
+        style="@style/OnboardingTitleTextView"
+        tools:ignore="MissingConstraints" />
 
     <ImageView
         android:id="@+id/menuImageView"
-        style="@style/MenuImageView"
+        style="@style/ActionBarMenuImageView"
         android:contentDescription="@string/menu_more_content_description"
-        app:layout_constraintBottom_toBottomOf="@id/appNameTextView"
+        app:layout_constraintBottom_toBottomOf="@id/onboardingTitleTextView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/appNameTextView"
+        app:layout_constraintTop_toTopOf="@id/onboardingTitleTextView"
         app:tint="?attr/colorOnSurface" />
 
     <TextView
-        android:id="@+id/headingTextView"
-        style="@style/TextAppearance.Luca.Body1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_large"
+        android:id="@+id/onboardingSubTitleTextView"
+        style="@style/OnboardingSubTitleTextView"
         android:text="@string/welcome_heading"
-        android:textSize="@dimen/font_size_large"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/appNameTextView" />
+        tools:ignore="MissingConstraints" />
 
     <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="@dimen/spacing_large"
-        android:layout_marginBottom="@dimen/spacing_large"
-        android:fadingEdgeLength="@dimen/spacing_large"
-        android:fillViewport="true"
-        android:requiresFadingEdge="vertical"
-        app:layout_constrainedHeight="true"
-        app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView">
+        style="@style/OnboardingContentScrollView"
+        tools:ignore="MissingConstraints">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -57,21 +37,15 @@
             android:orientation="vertical">
 
             <TextView
-                style="@style/TextAppearance.Luca.Body2"
-                android:layout_width="match_parent"
+                style="@style/OnboardingBodyTextView"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:text="@string/updated_terms_description"
-                android:textColor="?attr/colorOnSurface" />
+                android:text="@string/updated_terms_description" />
 
             <TextView
                 android:id="@+id/updatedTermsDescription"
-                style="@style/TextAppearance.Luca.Body2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/updated_terms_info"
-                android:textColor="?attr/colorOnSurface"
-                android:textColorLink="?attr/colorOnSurface" />
+                style="@style/OnboardingBodyTextView"
+                android:text="@string/updated_terms_info" />
 
         </LinearLayout>
 
@@ -79,7 +53,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/primaryActionButton"
-        style="@style/Button.Luca.PrimaryActionButton"
+        style="@style/Widget.Luca.Button.PrimaryActionButton"
         android:text="@string/updated_terms_button_agree"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

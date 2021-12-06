@@ -5,80 +5,43 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/spacing_large"
-    tools:context=".ui.MainActivity">
+    tools:context=".ui.onboarding.OnboardingActivity">
 
     <TextView
-        android:id="@+id/appNameTextView"
-        style="@style/TextAppearance.Luca.Headline1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_name"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:id="@+id/onboardingTitleTextView"
+        style="@style/OnboardingTitleTextView"
+        tools:ignore="MissingConstraints" />
 
     <TextView
-        android:id="@+id/appSloganTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_small"
-        android:lineSpacingExtra="4dp"
-        android:text="@string/welcome_app_slogan"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="14sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/appNameTextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/appNameTextView" />
-
-    <TextView
-        android:id="@+id/headingTextView"
-        style="@style/TextAppearance.Luca.Body1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/spacing_large"
+        android:id="@+id/onboardingSubTitleTextView"
+        style="@style/OnboardingSubTitleTextView"
         android:text="@string/welcome_heading"
-        android:textSize="@dimen/font_size_large"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/appNameTextView" />
+        tools:ignore="MissingConstraints" />
 
     <ScrollView
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:fadingEdgeLength="@dimen/spacing_large"
-        android:fillViewport="true"
-        android:orientation="vertical"
-        android:requiresFadingEdge="vertical"
-        app:layout_constraintBottom_toTopOf="@id/privacyTextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView">
+        style="@style/OnboardingContentScrollView"
+        app:layout_constraintBottom_toTopOf="@id/termsLayout"
+        tools:ignore="MissingConstraints">
 
-        <TextView
-            android:id="@+id/descriptionTextView"
-            style="@style/TextAppearance.Luca.Body2"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/welcome_description"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/headingTextView" />
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/OnboardingBodyTextView"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:text="@string/welcome_description" />
+
+            <TextView
+                android:id="@+id/privacyTextView"
+                style="@style/OnboardingBodyTextView"
+                android:text="@string/welcome_privacy_description" />
+
+        </LinearLayout>
 
     </ScrollView>
-
-    <TextView
-        android:id="@+id/privacyTextView"
-        style="@style/TextAppearance.Luca.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/spacing_default"
-        android:gravity="center_vertical"
-        android:text="@string/welcome_privacy_description"
-        android:textColor="?attr/colorOnSurface"
-        android:textColorLink="?attr/colorOnSurface"
-        app:layout_constraintBottom_toTopOf="@id/termsLayout"
-        app:layout_constraintStart_toStartOf="parent" />
 
     <LinearLayout
         android:id="@+id/termsLayout"
@@ -98,20 +61,16 @@
 
         <TextView
             android:id="@+id/termsTextView"
-            style="@style/TextAppearance.Luca.Body2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            style="@style/OnboardingBodyTextView"
             android:gravity="center_vertical"
             android:labelFor="@id/termsCheckBox"
-            android:text="@string/welcome_terms_description"
-            android:textColor="?attr/colorOnSurface"
-            android:textColorLink="?attr/colorOnSurface" />
+            android:text="@string/welcome_terms_description" />
 
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/primaryActionButton"
-        style="@style/Button.Luca.PrimaryActionButton"
+        style="@style/Widget.Luca.Button.PrimaryActionButton"
         android:text="@string/welcome_action"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

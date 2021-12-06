@@ -43,7 +43,7 @@ import de.culture4life.luca.checkin.CheckInData;
 import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
-import de.culture4life.luca.crypto.DailyKeyPairPublicKeyWrapper;
+import de.culture4life.luca.crypto.DailyPublicKeyData;
 import de.culture4life.luca.crypto.TraceIdWrapper;
 import de.culture4life.luca.document.DocumentManager;
 import de.culture4life.luca.meeting.MeetingAdditionalData;
@@ -244,8 +244,8 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         return Single.just(new QrCodeData())
                 .flatMap(qrCodeData -> checkInManager.getTraceIdWrapper(userId)
                         .flatMapCompletable(userTraceIdWrapper -> Completable.mergeArray(
-                                cryptoManager.getDailyKeyPairPublicKeyWrapper()
-                                        .map(DailyKeyPairPublicKeyWrapper::getId)
+                                cryptoManager.getDailyPublicKey()
+                                        .map(DailyPublicKeyData::getId)
                                         .doOnSuccess(qrCodeData::setKeyId)
                                         .ignoreElement(),
                                 cryptoManager.getGuestEphemeralKeyPair(userTraceIdWrapper.getTraceId())
@@ -315,10 +315,10 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                         .flatMap(publicKey -> AsymmetricCipherProvider.encode(publicKey, true))
                         .doOnSuccess(userEphemeralKey -> {
                             qrCodeData.setUserEphemeralPublicKey(userEphemeralKey);
-                            qrCodeData.setEncryptedData(new byte[0]);
+                            qrCodeData.setEncryptedData(new byte[32]);
                         })
                         .ignoreElement(),
-                generateVerificationTag(new byte[0], userTraceIdWrapper.getTimestamp())
+                generateVerificationTag(new byte[32], userTraceIdWrapper.getTimestamp())
                         .doOnSuccess(qrCodeData::setVerificationTag)
                         .ignoreElement()
         );
@@ -575,6 +575,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .flatMapCompletable(qrCodeData -> checkInManager.checkIn(DEBUGGING_SCANNER_ID, qrCodeData))
                 .doOnSubscribe(disposable -> updateAsSideEffect(isLoading, true))
                 .doFinally(() -> updateAsSideEffect(isLoading, false))
+                .subscribeOn(Schedulers.io())
                 .subscribe(
                         () -> Timber.i("Checked in"),
                         throwable -> Timber.w("Unable to check in: %s", throwable.toString())

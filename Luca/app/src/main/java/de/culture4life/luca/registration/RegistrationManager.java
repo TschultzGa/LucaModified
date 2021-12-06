@@ -24,7 +24,7 @@ import de.culture4life.luca.Manager;
 import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
-import de.culture4life.luca.crypto.DailyKeyPairPublicKeyWrapper;
+import de.culture4life.luca.crypto.DailyPublicKeyData;
 import de.culture4life.luca.network.NetworkManager;
 import de.culture4life.luca.network.pojo.ContactData;
 import de.culture4life.luca.network.pojo.DataTransferRequestData;
@@ -37,6 +37,7 @@ import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import timber.log.Timber;
 
 /**
@@ -52,6 +53,8 @@ public class RegistrationManager extends Manager {
     public static final String REGISTRATION_ID_KEY = "registration_id";
     public static final String REGISTRATION_DATA_KEY = "registration_data_2";
     public static final String USER_ID_KEY = "user_id";
+    public static final String LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY = "last_user_activity_report_timestamp";
+    public static final long USER_ACTIVITY_REPORT_INTERVAL = TimeUnit.DAYS.toMillis(365 / 2);
 
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
@@ -73,7 +76,7 @@ public class RegistrationManager extends Manager {
         ).andThen(Completable.fromAction(() -> {
             this.context = context;
             this.checkInManager = getApplication().getCheckInManager();
-        }));
+        })).andThen(invokeReportActiveUser());
     }
 
     /**
@@ -223,6 +226,7 @@ public class RegistrationManager extends Manager {
                         getOrCreateRegistrationData()
                                 .doOnSuccess(registrationData -> registrationData.setId(userId))
                                 .flatMapCompletable(this::persistRegistrationData)
+                                .andThen(preferencesManager.persist(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, System.currentTimeMillis()))
                 ));
     }
 
@@ -243,9 +247,46 @@ public class RegistrationManager extends Manager {
                 .doOnSuccess(data -> Timber.d("User update request data: %s", data))
                 .flatMapCompletable(data -> getUserIdIfAvailable()
                         .flatMapCompletable(userId -> networkManager.getLucaEndpointsV3()
-                                .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.updateUser(userId.toString(), data))))
-                .doOnComplete(() -> Timber.i("Updated user"));
+                                .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.updateUser(userId.toString(), data)
+                                        .andThen(preferencesManager.persist(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, System.currentTimeMillis())))))
+                .doOnComplete(() -> Timber.i("Updated user"))
+                .onErrorResumeNext(throwable -> {
+                    if (NetworkManager.isHttpException(throwable, 403) || NetworkManager.isHttpException(throwable, 404)) {
+                        // User keystore changed (403) or data already removed from database (404).
+                        return registerUser();
+                    } else {
+                        return Completable.error(throwable);
+                    }
+                });
+    }
 
+    private Completable invokeReportActiveUser() {
+        // Skip here on unit tests, otherwise it will try to en/decrypt together with KeyStore which is not prepared for unit tests yet.
+        if (LucaApplication.isRunningUnitTests()) return Completable.complete();
+
+        return Completable.fromAction(() -> managerDisposable.add(reportActiveUser()
+                .subscribeOn(Schedulers.io())
+                .doOnError(throwable -> Timber.w("Unable to report active user: %s", throwable.toString()))
+                .retryWhen(error -> error.delay(10, TimeUnit.SECONDS))
+                .subscribe()));
+    }
+
+    /**
+     * Report active app user. Backend will regularly delete inactive user. Here we report in
+     * meaningful time periods that the user has still installed the app. Usually we try to
+     * have as less backend communication as possible, here we ensure that minimum necessary
+     * communication will happen.
+     */
+    public Completable reportActiveUser() {
+        return preferencesManager.restoreOrDefault(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, 0L)
+                .map(lastReportTimestamp -> System.currentTimeMillis() - lastReportTimestamp)
+                .flatMapCompletable(durationSinceLastActivityReport -> {
+                    if (durationSinceLastActivityReport >= USER_ACTIVITY_REPORT_INTERVAL) {
+                        return updateUser();
+                    } else {
+                        return Completable.complete();
+                    }
+                });
     }
 
     /**
@@ -258,7 +299,7 @@ public class RegistrationManager extends Manager {
      * @see <a href="https://luca-app.de/securityoverview/properties/secrets.html#term-guest-keypair">Security
      * Overview: Secrets</a>
      */
-    private Single<UserRegistrationRequestData> createUserRegistrationRequestData() {
+    public Single<UserRegistrationRequestData> createUserRegistrationRequestData() {
         return getOrCreateRegistrationData()
                 .flatMap(this::createContactData)
                 .flatMap(this::encryptContactData)
@@ -396,8 +437,8 @@ public class RegistrationManager extends Manager {
                                         .flatMap(SerializationUtil::serializeToBase64)
                                         .doOnSuccess(transferRequestData::setGuestKeyPairPublicKey)
                                         .ignoreElement(),
-                                cryptoManager.getDailyKeyPairPublicKeyWrapper()
-                                        .map(DailyKeyPairPublicKeyWrapper::getId)
+                                cryptoManager.getDailyPublicKey()
+                                        .map(DailyPublicKeyData::getId)
                                         .doOnSuccess(transferRequestData::setDailyPublicKeyId)
                                         .ignoreElement()
                         ).toSingle(() -> transferRequestData)));

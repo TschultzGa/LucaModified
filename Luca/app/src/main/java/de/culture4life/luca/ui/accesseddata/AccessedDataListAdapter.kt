@@ -5,10 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.core.content.ContextCompat
 import de.culture4life.luca.R
-import de.culture4life.luca.databinding.AccessedDataListItemBinding
+import de.culture4life.luca.databinding.ItemAccessedDataBinding
 
 class AccessedDataListAdapter(context: Context, resource: Int) :
     ArrayAdapter<AccessedDataListItem>(context, resource) {
@@ -37,8 +36,8 @@ class AccessedDataListAdapter(context: Context, resource: Int) :
     }
 
     override fun getView(position: Int, convertView: View?, container: ViewGroup): View {
-        val view = convertView ?: layoutInflater.inflate(R.layout.accessed_data_list_item, container, false)
-        val binding = AccessedDataListItemBinding.bind(view)
+        val view = convertView ?: layoutInflater.inflate(R.layout.item_accessed_data, container, false)
+        val binding = ItemAccessedDataBinding.bind(view)
 
         getItem(position)?.let { item ->
             binding.itemTitleTextView.text = item.title

@@ -1,8 +1,21 @@
 <resources>
     <attr name="colorPrimaryLight" format="reference" />
     <attr name="colorPrimaryTranslucent" format="reference" />
-    <attr name="colorAlmostSurface" format="reference" />
+    <attr name="colorSurfaceTranslucent" format="reference" />
+    <attr name="colorOnSurfaceTranslucent" format="reference" />
     <attr name="colorControlDisabled" format="reference" />
     <attr name="colorControlBackground" format="reference" />
+    <attr name="colorControlBackgroundActivated" format="reference" />
     <attr name="colorWarning" format="reference" />
+    <attr name="colorHighlight" format="reference" />
+
+    <declare-styleable name="AccountItemView">
+        <attr name="text" format="string" />
+        <attr name="startIconSrc" format="reference" />
+        <attr name="endIconSrc" format="reference" />
+        <attr name="showStartIcon" format="boolean" />
+        <attr name="showEndIcon" format="boolean" />
+        <attr name="showSeparator" format="boolean" />
+    </declare-styleable>
+
 </resources>

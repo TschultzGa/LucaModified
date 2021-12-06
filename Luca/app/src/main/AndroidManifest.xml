@@ -26,8 +26,7 @@
         <activity
             android:name=".ui.splash.SplashActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.Luca.DayNight.Splash">
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -42,16 +41,30 @@
                     android:host="app.luca-app.de"
                     android:pathPrefix="/webapp/"
                     android:scheme="https" />
-
                 <!-- The Play Store is blocking releases that don't support HTTP for web intent-filters -->
-
                 <data
                     android:host="app.luca-app.de"
                     android:pathPrefix="/webapp/"
                     android:scheme="http" />
-
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
 
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:host="app.luca-app.de"
+                    android:pathPrefix="/webapp/"
+                    android:scheme="luca" />
+                <data
+                    android:host="app.luca-app.de"
+                    android:pathPrefix="/webapp/"
+                    android:scheme="https" />
+                <data
+                    android:host="app.luca-app.de"
+                    android:pathPrefix="/webapp/"
+                    android:scheme="http" />
+            </intent-filter>
         </activity>
 
         <activity

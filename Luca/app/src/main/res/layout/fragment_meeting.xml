@@ -4,25 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/checked_in_light_green_gradient"
+    android:background="@color/checked_in_background"
+    android:theme="@style/Theme.Luca.DayNight.Light"
     tools:context=".ui.meeting.MeetingFragment">
 
     <TextView
-        android:id="@+id/headingTextView"
-        style="@style/TextAppearance.Luca.Headline2"
-        android:layout_margin="@dimen/spacing_default"
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
         android:text="@string/meeting_heading"
-        android:textColor="@android:color/black"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        tools:ignore="MissingConstraints" />
 
     <View
-        android:id="@+id/headingSeparatorView"
-        style="@style/HeaderSeparatorView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView" />
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
 
     <TextView
         android:id="@+id/subHeadingTextView"
@@ -32,10 +27,9 @@
         android:layout_marginHorizontal="@dimen/spacing_default"
         android:layout_marginTop="@dimen/spacing_default"
         android:text="@string/meeting_description"
-        android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingSeparatorView" />
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardView"
@@ -45,8 +39,6 @@
         android:layout_marginTop="@dimen/spacing_large"
         android:layout_marginEnd="@dimen/spacing_large"
         android:layout_marginBottom="@dimen/spacing_large"
-        app:cardBackgroundColor="?attr/colorOnSurface"
-        app:cardCornerRadius="8dp"
         app:layout_constraintBottom_toTopOf="@id/durationContainer"
         app:layout_constraintDimensionRatio="h,1:1"
         app:layout_constraintEnd_toEndOf="parent"
@@ -75,21 +67,15 @@
                 android:id="@+id/loadingLayout"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:background="#CCFFFFFF"
+                android:background="?attr/colorSurfaceTranslucent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
                 <ProgressBar
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:indeterminateTint="?attr/colorSurface"
-                    android:indeterminateTintMode="src_atop"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    style="@style/LoadingSpinner"
+                    tools:ignore="MissingConstraints" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -114,10 +100,10 @@
             android:layout_height="wrap_content"
             android:drawableStart="@drawable/ic_hourglass"
             android:drawablePadding="@dimen/spacing_default"
+            android:drawableTint="?attr/colorOnSurface"
             android:ellipsize="end"
             android:labelFor="@id/durationTextView"
             android:text="@string/meeting_duration_heading"
-            android:textColor="@android:color/black"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/durationTextView"
             app:layout_constraintStart_toStartOf="parent"
@@ -125,14 +111,12 @@
 
         <TextView
             android:id="@+id/durationTextView"
-            style="@style/TextAppearance.Luca.Body1"
+            style="@style/TextAppearance.Luca.Body1.Bold"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:accessibilityTraversalAfter="@id/durationHeadingTextView"
             android:ellipsize="end"
             android:text="00:00:00"
-            android:textColor="@android:color/black"
-            app:fontFamily="@font/montserrat_bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/durationHeadingTextView"
@@ -160,27 +144,23 @@
             android:accessibilityTraversalAfter="@id/durationTextView"
             android:drawableStart="@drawable/ic_child"
             android:drawablePadding="@dimen/spacing_default"
-            android:drawableTint="@android:color/black"
+            android:drawableTint="?attr/colorOnSurface"
             android:ellipsize="end"
             android:labelFor="@id/guestsCountTextView"
             android:text="@string/meeting_guests_label"
-            android:textColor="@android:color/black"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/guestsCountTextView"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-
         <TextView
             android:id="@+id/guestsCountTextView"
-            style="@style/TextAppearance.Luca.Body1"
+            style="@style/TextAppearance.Luca.Body1.Bold"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:accessibilityTraversalAfter="@id/guestsLabelTextView"
             android:ellipsize="end"
             android:text="0"
-            android:textColor="@android:color/black"
-            app:fontFamily="@font/montserrat_bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/guestsLabelTextView"
@@ -199,7 +179,8 @@
         android:src="@drawable/ic_arrow"
         app:layout_constraintBottom_toBottomOf="@id/guestsCountContainer"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/durationContainer" />
+        app:layout_constraintTop_toTopOf="@id/durationContainer"
+        app:tint="?attr/colorOnSurface" />
 
     <com.ncorti.slidetoact.SlideToActView
         android:id="@+id/slideToActView"
@@ -210,12 +191,12 @@
         app:area_margin="0dp"
         app:bump_vibration="50"
         app:complete_icon="@drawable/ic_sync"
-        app:inner_color="@android:color/white"
+        app:inner_color="?attr/colorSurface"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:outer_color="#65ffffff"
-        app:slider_icon_color="@android:color/black"
+        app:slider_icon_color="?attr/colorOnSurface"
         app:text="@string/meeting_slider_text"
         app:text_appearance="@style/TextAppearance.Luca.SlideToActView" />
 

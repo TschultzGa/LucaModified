@@ -12,8 +12,8 @@ android {
         applicationId "de.culture4life.luca"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 89
-        versionName "2.2.0"
+        versionCode 90
+        versionName "2.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -227,12 +227,9 @@ dependencies {
     testImplementation 'com.android.support.test:runner:1.0.2'
     testImplementation junit
     testImplementation 'net.lachlanmckee:timber-junit-rule:1.0.1'
-    testImplementation 'org.mockito:mockito-core:2.21.0'
-    testImplementation 'org.powermock:powermock-api-mockito2:2.0.0-beta.5'
-    testImplementation 'org.powermock:powermock-classloading-xstream:2.0.0-beta.5'
-    testImplementation 'org.powermock:powermock-module-junit4:2.0.0-beta.5'
-    testImplementation 'org.powermock:powermock-module-junit4-common:2.0.0-beta.5'
-    testImplementation 'org.powermock:powermock-module-junit4-rule:2.0.0-beta.5'
+    testImplementation 'org.assertj:assertj-core:3.21.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:4.0.0'
+    testImplementation 'org.mockito:mockito-inline:4.0.0'
     testImplementation 'org.robolectric:robolectric:4.5.1'
 
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'

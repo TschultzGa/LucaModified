@@ -22,7 +22,7 @@ class WhatIsNewPageFragment : Fragment() {
                 binding.whatIsNewHeaderImage.safelySetImageResource(bundle.getInt(PAGE_IMAGE_RES_KEY))
             }
             bundle.getString(PAGE_HEADING_KEY)?.let { heading ->
-                binding.headingTextView.text = heading
+                binding.actionBarTitleTextView.text = heading
             }
             bundle.getString(PAGE_DESCRIPTION_KEY)?.let { heading ->
                 binding.descriptionTextView.text = heading

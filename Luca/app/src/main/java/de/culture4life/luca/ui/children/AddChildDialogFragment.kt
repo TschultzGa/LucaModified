@@ -15,7 +15,7 @@ import com.google.android.material.textfield.TextInputLayout
 import de.culture4life.luca.R
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.children.ChildrenManager
-import de.culture4life.luca.databinding.ChildNameDialogBinding
+import de.culture4life.luca.databinding.DialogAddChildBinding
 
 
 class AddChildDialogFragment : BottomSheetDialogFragment() {
@@ -25,11 +25,11 @@ class AddChildDialogFragment : BottomSheetDialogFragment() {
     }
 
     private lateinit var listener: AddChildListener
-    private lateinit var binding: ChildNameDialogBinding
+    private lateinit var binding: DialogAddChildBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setStyle(DialogFragment.STYLE_NORMAL, R.style.BottomSheetStyle)
+        setStyle(DialogFragment.STYLE_NORMAL, R.style.ThemeOverlay_Luca_BottomSheet)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -51,7 +51,7 @@ class AddChildDialogFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = ChildNameDialogBinding.inflate(inflater)
+        binding = DialogAddChildBinding.inflate(inflater)
         setTextChangedListener(binding.firstNameLayout)
         setTextChangedListener(binding.lastNameLayout)
         binding.primaryActionButton.setOnClickListener { validateChildName() }

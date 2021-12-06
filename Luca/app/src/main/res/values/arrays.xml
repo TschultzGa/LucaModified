@@ -8,6 +8,8 @@
         <item>3</item>
         <item>4</item>
         <item>5</item>
+        <item>6</item>
+        <item>7</item>
     </integer-array>
 
     <integer-array name="what_is_new_pages_images" translatable="false">
@@ -17,6 +19,8 @@
         <item>@drawable/img_new_3_warnings</item>
         <item>@drawable/img_new_4_check_in</item>
         <item>@drawable/img_new_5_history</item>
+        <item>@drawable/img_new_6_qr_entry_policy</item>
+        <item>@drawable/img_new_7_menu_card_and_more</item>
     </integer-array>
 
     <string-array name="what_is_new_pages_headings" translatable="false">
@@ -26,6 +30,8 @@
         <item>@string/what_is_new_3_heading</item>
         <item>@string/what_is_new_4_heading</item>
         <item>@string/what_is_new_5_heading</item>
+        <item>@string/what_is_new_6_heading</item>
+        <item>@string/what_is_new_7_heading</item>
     </string-array>
 
     <string-array name="what_is_new_pages_descriptions" translatable="false">
@@ -35,6 +41,8 @@
         <item>@string/what_is_new_3_description</item>
         <item>@string/what_is_new_4_description</item>
         <item>@string/what_is_new_5_description</item>
+        <item>@string/what_is_new_6_description</item>
+        <item>@string/what_is_new_7_description</item>
     </string-array>
 
 </resources>

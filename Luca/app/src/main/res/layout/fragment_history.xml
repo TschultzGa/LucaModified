@@ -7,68 +7,54 @@
     tools:context="de.culture4life.luca.ui.history.HistoryFragment">
 
     <ImageView
-        android:id="@+id/backImageView"
-        style="@style/BackButtonImageView"
+        android:id="@+id/actionBarBackButtonImageView"
+        style="@style/ActionBarBackButtonImageView"
         android:contentDescription="@string/action_back"
         tools:ignore="MissingConstraints" />
 
     <TextView
-        android:id="@+id/headingTextView"
-        style="@style/TextAppearance.Luca.Headline2"
-        android:layout_width="wrap_content"
-        android:layout_margin="@dimen/spacing_default"
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
         android:text="@string/navigation_history"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        tools:ignore="MissingConstraints" />
 
     <ImageView
-        android:id="@+id/deleteHistoryImageView"
-        style="@style/MenuImageView"
-        android:contentDescription="@string/menu_more_content_description"
-        android:src="@drawable/ic_bin_icon_white"
-        app:layout_constraintBottom_toBottomOf="@id/headingTextView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/headingTextView" />
+        android:id="@+id/deleteHistoryActionBarMenuImageView"
+        style="@style/ActionBarMenuImageView"
+        android:contentDescription="@string/history_clear_content_description"
+        android:src="@drawable/ic_bin"
+        tools:ignore="MissingConstraints" />
 
     <View
-        android:id="@+id/headingSeparatorView"
-        style="@style/HeaderSeparatorView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView" />
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
 
     <TextView
         android:id="@+id/emptyTitleTextView"
         style="@style/EmptyStateTitleTextView"
         android:text="@string/history_empty_title"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingSeparatorView"
-        tools:visibility="visible" />
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
 
     <TextView
         android:id="@+id/emptyDescriptionTextView"
         style="@style/EmptyStateDescriptionTextView"
         android:text="@string/history_empty_description"
-        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="@id/emptyTitleTextView"
         app:layout_constraintStart_toStartOf="@id/emptyTitleTextView"
-        app:layout_constraintTop_toBottomOf="@id/emptyTitleTextView"
-        tools:visibility="visible" />
+        app:layout_constraintTop_toBottomOf="@id/emptyTitleTextView" />
 
     <ImageView
         android:id="@+id/emptyImageView"
         style="@style/EmptyStateImageView"
-        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintEnd_toEndOf="@id/emptyDescriptionTextView"
         app:layout_constraintStart_toStartOf="@id/emptyDescriptionTextView"
         app:layout_constraintTop_toBottomOf="@id/emptyDescriptionTextView"
         app:layout_constraintVertical_bias="0.35"
-        tools:ignore="ContentDescription"
-        tools:visibility="visible" />
+        tools:ignore="ContentDescription" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/emptyStateGroup"
@@ -87,14 +73,13 @@
         android:fadingEdgeLength="@dimen/spacing_large"
         android:listSelector="@android:color/transparent"
         android:requiresFadingEdge="vertical"
-        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
-        app:layout_constraintTop_toBottomOf="@id/headingSeparatorView"
-        tools:listitem="@layout/history_list_item" />
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView"
+        tools:listitem="@layout/item_history" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/primaryActionButton"
-        style="@style/Button.Luca.PrimaryActionButton"
+        style="@style/Widget.Luca.Button.PrimaryActionButton"
         android:layout_margin="@dimen/spacing_default"
         android:text="@string/history_share"
         android:visibility="gone"
@@ -106,7 +91,6 @@
         android:id="@+id/historyContentGroup"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="gone"
-        app:constraint_referenced_ids="historyListView, primaryActionButton, deleteHistoryImageView" />
+        app:constraint_referenced_ids="historyListView, primaryActionButton, deleteHistoryActionBarMenuImageView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

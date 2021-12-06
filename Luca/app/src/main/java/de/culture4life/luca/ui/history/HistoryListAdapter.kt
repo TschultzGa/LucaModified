@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.core.content.ContextCompat
 import de.culture4life.luca.R
-import de.culture4life.luca.databinding.HistoryListItemBinding
+import de.culture4life.luca.databinding.ItemHistoryBinding
 
 class HistoryListAdapter(context: Context, resource: Int, private val showTimeLine: Boolean) :
     ArrayAdapter<HistoryListItem>(context, resource) {
@@ -39,9 +39,9 @@ class HistoryListAdapter(context: Context, resource: Int, private val showTimeLi
     override fun getView(position: Int, convertView: View?, container: ViewGroup): View {
         // for smooth scrolling
         val binding = if (convertView == null) {
-            HistoryListItemBinding.inflate(layoutInflater)
+            ItemHistoryBinding.inflate(layoutInflater)
         } else {
-            HistoryListItemBinding.bind(convertView)
+            ItemHistoryBinding.bind(convertView)
         }
 
         binding.root.setOnClickListener(null)

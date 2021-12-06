@@ -10,11 +10,11 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.recyclerview.widget.RecyclerView
 import de.culture4life.luca.R
-import de.culture4life.luca.databinding.MyLucaListItemBinding
+import de.culture4life.luca.databinding.ItemMyLucaBinding
 import de.culture4life.luca.ui.myluca.MyLucaListItem
 import kotlin.math.max
 
-class SingleMyLucaItemViewHolder(val binding: MyLucaListItemBinding) : RecyclerView.ViewHolder(binding.root) {
+class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.ViewHolder(binding.root) {
 
     fun show(item: MyLucaListItem) {
         binding.cardView.setCardBackgroundColor(item.color)
@@ -51,7 +51,7 @@ class SingleMyLucaItemViewHolder(val binding: MyLucaListItemBinding) : RecyclerV
         if (labelAndTextView == null) {
             val layoutInflater = LayoutInflater.from(container.context)
             labelAndTextView = layoutInflater.inflate(
-                R.layout.my_luca_label_and_text,
+                R.layout.item_my_luca_label_and_text,
                 container,
                 false
             ) as ConstraintLayout

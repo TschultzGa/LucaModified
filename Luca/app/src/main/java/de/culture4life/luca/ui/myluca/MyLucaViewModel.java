@@ -147,8 +147,7 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     }
 
     private Observable<MyLucaListItem> loadListItems() {
-        return Completable.defer(() -> BuildConfig.DEBUG ? Completable.complete() : documentManager.deleteExpiredDocuments())
-                .andThen(documentManager.getOrRestoreDocuments())
+        return documentManager.getOrRestoreDocuments()
                 .flatMapSingle(document -> documentManager.adjustValidityStartTimestampIfRequired(document)
                         .andThen(Single.just(document)))
                 .flatMapMaybe(this::createListItem)

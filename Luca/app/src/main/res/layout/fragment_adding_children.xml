@@ -4,50 +4,40 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/checked_in_light_green_gradient">
+    android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/backImageView"
-        style="@style/BackButtonImageView"
-        app:tint="?attr/colorSurface"
+        android:id="@+id/actionBarBackButtonImageView"
+        style="@style/ActionBarBackButtonImageView"
         tools:ignore="MissingConstraints" />
 
     <TextView
-        android:id="@+id/headingTextView"
-        style="@style/TextAppearance.Luca.Headline2"
-        android:layout_width="wrap_content"
-        android:layout_margin="@dimen/spacing_default"
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
         android:text="@string/venue_children_title"
-        android:textColor="?attr/colorSurface"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        tools:ignore="MissingConstraints" />
 
     <View
-        android:id="@+id/headingSeparatorView"
-        style="@style/HeaderSeparatorView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingTextView" />
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
 
     <TextView
         android:id="@+id/childAddingDescriptionTextView"
-        style="@style/TextAppearance.Luca.Body1"
+        style="@style/TextAppearance.Luca.Body2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/spacing_default"
         android:text="@string/venue_children_empty_list_description"
-        android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/headingSeparatorView" />
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
 
     <ImageView
         android:id="@+id/emptyImageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/g_child"
+        android:src="@drawable/g_child_light"
         android:visibility="gone"
         app:layout_constrainedHeight="true"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
@@ -67,15 +57,14 @@
         android:fadingEdgeLength="@dimen/spacing_large"
         android:listSelector="@android:color/transparent"
         android:requiresFadingEdge="vertical"
-        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintTop_toBottomOf="@id/childAddingDescriptionTextView"
-        tools:listitem="@layout/child_list_item" />
+        tools:listitem="@layout/item_child" />
 
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/primaryActionButton"
-        style="@style/Button.Luca.PrimaryActionButtonLight"
+        style="@style/Widget.Luca.Button.PrimaryActionButton"
         android:layout_margin="@dimen/spacing_default"
         android:contentDescription="@string/venue_children_add"
         android:text="@string/venue_children_add"

@@ -13,11 +13,11 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import de.culture4life.luca.R
-import de.culture4life.luca.databinding.BottomSheetVoluntaryCheckinBinding
+import de.culture4life.luca.databinding.DialogVoluntaryCheckinBinding
 
 class VoluntaryCheckInBottomSheetFragment : BottomSheetDialogFragment() {
 
-    private lateinit var binding: BottomSheetVoluntaryCheckinBinding
+    private lateinit var binding: DialogVoluntaryCheckinBinding
     private val viewModel: VoluntaryCheckInViewModel by activityViewModels()
 
     private lateinit var locationUrl: String
@@ -25,7 +25,7 @@ class VoluntaryCheckInBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setStyle(DialogFragment.STYLE_NORMAL, R.style.BottomSheetStyle)
+        setStyle(DialogFragment.STYLE_NORMAL, R.style.ThemeOverlay_Luca_BottomSheet)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -46,7 +46,7 @@ class VoluntaryCheckInBottomSheetFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = BottomSheetVoluntaryCheckinBinding.inflate(inflater)
+        binding = DialogVoluntaryCheckinBinding.inflate(inflater)
 
         arguments?.apply {
             getString(KEY_LOCATION_URL)?.let { locationUrl = it }

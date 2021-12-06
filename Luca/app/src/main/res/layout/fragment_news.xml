@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/actionBarBackButtonImageView"
+        style="@style/ActionBarBackButtonImageView"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
+        android:text="@string/account_tab_item_guides"
+        tools:ignore="MissingConstraints" />
+
+    <View
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_default">
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/AccountTabCardView"
+                tools:ignore="MissingConstraints">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/pageGroup1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:showStartIcon="false"
+                        app:text="@string/what_is_new_series_luca_2_0" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/pageGroup2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:showSeparator="false"
+                        app:showStartIcon="false"
+                        app:text="@string/what_is_new_series_check_in" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -7,7 +7,6 @@ import org.junit.Test;
 import de.culture4life.luca.BuildConfig;
 import de.culture4life.luca.LucaInstrumentationTest;
 import de.culture4life.luca.network.endpoints.LucaEndpointsV3;
-import de.culture4life.luca.network.pojo.DailyKeyPair;
 import de.culture4life.luca.network.pojo.UserDeletionRequestData;
 import retrofit2.HttpException;
 
@@ -20,15 +19,6 @@ public class NetworkManagerTest extends LucaInstrumentationTest {
     public void setup() {
         networkManager = getInitializedManager(application.getNetworkManager());
         lucaEndpoints = networkManager.getLucaEndpointsV3().blockingGet();
-    }
-
-    @Test
-    public void getDailyKeyPairPublicKey_call_isSuccessful() throws InterruptedException {
-        lucaEndpoints.getDailyKeyPair()
-                .map(DailyKeyPair::getPublicKey)
-                .map(String::isEmpty)
-                .test().await()
-                .assertValue(false);
     }
 
     @Test

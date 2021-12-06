@@ -8,12 +8,12 @@ import de.culture4life.luca.meeting.MeetingCreationResponse;
 import de.culture4life.luca.network.pojo.AdditionalCheckInPropertiesRequestData;
 import de.culture4life.luca.network.pojo.CheckInRequestData;
 import de.culture4life.luca.network.pojo.CheckOutRequestData;
-import de.culture4life.luca.network.pojo.DailyKeyPair;
 import de.culture4life.luca.network.pojo.DataTransferRequestData;
 import de.culture4life.luca.network.pojo.DocumentProviderDataList;
-import de.culture4life.luca.network.pojo.Issuer;
 import de.culture4life.luca.network.pojo.LocationResponseData;
+import de.culture4life.luca.network.pojo.LocationUrlsResponseData;
 import de.culture4life.luca.network.pojo.TraceData;
+import de.culture4life.luca.network.pojo.TraceDeletionRequestData;
 import de.culture4life.luca.network.pojo.TracesResponseData;
 import de.culture4life.luca.network.pojo.UserDeletionRequestData;
 import de.culture4life.luca.network.pojo.UserRegistrationRequestData;
@@ -31,21 +31,14 @@ import retrofit2.http.Path;
 public interface LucaEndpointsV3 {
 
     /*
-        Keys
-     */
-
-    @GET("keys/daily/current")
-    Single<DailyKeyPair> getDailyKeyPair();
-
-    @GET("keys/issuers/{issuerId}")
-    Single<Issuer> getIssuer(@Path("issuerId") String issuerId);
-
-    /*
         Locations
      */
 
     @GET("locations/{locationId}")
     Single<LocationResponseData> getLocation(@Path("locationId") String locationId);
+
+    @GET("locations/{locationId}/urls")
+    Single<LocationUrlsResponseData> getLocationUrls(@Path("locationId") String locationId);
 
     @POST("locations/private")
     Single<MeetingCreationResponse> createPrivateLocation(@Body JsonObject message);
@@ -94,6 +87,10 @@ public interface LucaEndpointsV3 {
     @POST("traces/additionalData")
     @Headers("Content-Type: application/json")
     Completable addAdditionalCheckInProperties(@Body AdditionalCheckInPropertiesRequestData data);
+
+    @DELETE("traces")
+    @Headers("Content-Type: application/json")
+    Completable deleteTrace(@Body TraceDeletionRequestData data);
 
     /*
         Scanners

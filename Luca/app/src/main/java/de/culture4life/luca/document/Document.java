@@ -420,8 +420,14 @@ public class Document {
     }
 
     public boolean isSameOwner(@NonNull Document document) {
-        return Person.Companion.compare(firstName, document.getFirstName())
-                && Person.Companion.compare(lastName, document.getLastName());
+        return getOwner().equalsSimplified(document.getOwner());
+    }
+
+    public Person getOwner() {
+        return new Person(
+                firstName != null ? firstName.trim() : "Unknown",
+                lastName != null ? lastName.trim() : "Unknown"
+        );
     }
 
     @Override

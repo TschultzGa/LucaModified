@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.color.MaterialColors;
 
 import de.culture4life.luca.R;
 import de.culture4life.luca.databinding.FragmentOnboardingInfoBinding;
@@ -64,7 +65,7 @@ public class OnboardingActivity extends BaseActivity {
         welcomeBinding.termsTextView.setMovementMethod(LinkMovementMethod.getInstance());
         welcomeBinding.privacyTextView.setMovementMethod(LinkMovementMethod.getInstance());
 
-        errorTint = getResources().getColor(R.color.material_red_300);
+        errorTint = MaterialColors.getColor(welcomeBinding.termsCheckBox, R.attr.colorWarning);
         normalTint = welcomeBinding.termsCheckBox.getButtonTintList().getDefaultColor();
         errorDrawable = ContextCompat.getDrawable(this, R.drawable.ic_error_outline);
         errorDrawable.setTint(errorTint);

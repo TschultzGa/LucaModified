@@ -1,3 +1,11 @@
+# Release 2.3.0
+
+- Additional information of the luca location
+- Account tab redesign
+- Bug fixes
+
+With this update you can view information about the location while you are checked in. Thus, you can have a look at the menu, map or schedule of the location you are checked into!
+
 # Release 2.2.0
 
 - 2G/3G Status in QR code

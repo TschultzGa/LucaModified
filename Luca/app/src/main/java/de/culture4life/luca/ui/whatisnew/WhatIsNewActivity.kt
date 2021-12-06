@@ -7,8 +7,10 @@ import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ActivityWhatIsNewBinding
 import de.culture4life.luca.ui.BaseActivity
 import de.culture4life.luca.ui.MainActivity
+import de.culture4life.luca.whatisnew.WhatIsNewManager
 import de.culture4life.luca.whatisnew.WhatIsNewPage
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.functions.Predicate
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 
@@ -19,12 +21,18 @@ class WhatIsNewActivity : BaseActivity() {
     private var pages: List<WhatIsNewPage>? = null
     private var currentViewPagerPosition = 0
 
+    private var finishOnExit = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityWhatIsNewBinding.inflate(layoutInflater)
         setupViews()
-        val onlyUnseenPages = intent?.extras?.getBoolean(SHOW_ONLY_UNSEEN_PAGES) ?: true
-        initializePages(onlyUnseenPages)
+
+        val onlyUnseenPages = intent?.extras?.getBoolean(SHOW_ONLY_UNSEEN_PAGES, true) ?: true
+        val pageGroup: WhatIsNewManager.PageGroup? = intent?.extras?.getSerializable(SHOW_PAGE_GROUP) as WhatIsNewManager.PageGroup?
+        finishOnExit = intent?.extras?.getBoolean(FINISH_ON_EXIT, false) ?: false
+
+        initializePages(onlyUnseenPages, pageGroup)
         hideActionBar()
     }
 
@@ -33,13 +41,24 @@ class WhatIsNewActivity : BaseActivity() {
         setClickListeners()
     }
 
-    private fun initializePages(onlyUnseenPages: Boolean = true) {
+    private fun initializePages(onlyUnseenPages: Boolean = true, pageGroup: WhatIsNewManager.PageGroup? = null) {
         val pagesToDisplay = if (onlyUnseenPages) {
             application.whatIsNewManager.getUnseenPages()
         } else {
             application.whatIsNewManager.getAllPages()
         }
-        pagesToDisplay.toList()
+
+        val filterByPageGroup = if (pageGroup != null) {
+            Predicate<WhatIsNewPage> {
+                it.index >= pageGroup.value.startIndex && it.index < (pageGroup.value.startIndex + pageGroup.value.size)
+            }
+        } else {
+            Predicate<WhatIsNewPage> { true }
+        }
+
+        pagesToDisplay
+            .filter(filterByPageGroup)
+            .toList()
             .doOnSuccess { this.pages = it }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -108,10 +127,13 @@ class WhatIsNewActivity : BaseActivity() {
     }
 
     private fun showMainApp() {
-        application.whatIsNewManager.disableWhatIsNewScreenForCurrentVersion()
-        val intent = Intent(this, MainActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        startActivity(intent)
+        if (!finishOnExit) {
+            application.whatIsNewManager.disableWhatIsNewScreenForCurrentVersion()
+            val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            startActivity(intent)
+        }
+
         finish()
     }
 
@@ -133,6 +155,8 @@ class WhatIsNewActivity : BaseActivity() {
     companion object {
 
         const val SHOW_ONLY_UNSEEN_PAGES = "show_only_unseen_pages"
+        const val SHOW_PAGE_GROUP = "show_page_group"
+        const val FINISH_ON_EXIT = "finish_on_exit"
 
     }
 

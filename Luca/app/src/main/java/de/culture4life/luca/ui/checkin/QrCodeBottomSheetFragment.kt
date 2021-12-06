@@ -17,7 +17,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.R
-import de.culture4life.luca.databinding.BottomSheetQrCodeBinding
+import de.culture4life.luca.databinding.DialogQrCodeBinding
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
@@ -28,14 +28,14 @@ import timber.log.Timber
 class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
 
     private lateinit var sharedViewModel: QrCodeBottomSheetViewModel
-    private lateinit var binding: BottomSheetQrCodeBinding
+    private lateinit var binding: DialogQrCodeBinding
     private var qrCodeBitmap: Bitmap? = null
     private var isLoading = false
     private var isNetworkAvailable = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setStyle(DialogFragment.STYLE_NORMAL, R.style.BottomSheetStyle)
+        setStyle(DialogFragment.STYLE_NORMAL, R.style.ThemeOverlay_Luca_BottomSheet)
         sharedViewModel = ViewModelProvider(requireActivity()).get(QrCodeBottomSheetViewModel::class.java)
     }
 
@@ -44,7 +44,7 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = BottomSheetQrCodeBinding.inflate(inflater)
+        binding = DialogQrCodeBinding.inflate(inflater)
 
         initializeViewModel()
             .observeOn(AndroidSchedulers.mainThread())
@@ -99,7 +99,12 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
             }
             sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner, { binding.includeEntryPolicySwitch.isChecked = it })
 
-            sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner, { showDocumentsUnavailableError() })
+            sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner, {
+                if (!it.hasBeenHandled()) {
+                    it.setHandled(true)
+                    showDocumentsUnavailableError()
+                }
+            })
 
 
             if (BuildConfig.DEBUG) {

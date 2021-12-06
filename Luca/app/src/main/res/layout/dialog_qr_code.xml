@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fadingEdgeLength="4dp"
+    android:requiresFadingEdge="vertical">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="?dialogPreferredPadding"
+        android:paddingEnd="?dialogPreferredPadding"
+        android:paddingBottom="@dimen/spacing_large">
+
+        <TextView
+            android:id="@+id/myQrCodeTextView"
+            style="@style/MaterialAlertDialog.Luca.Title.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/check_in_show_your_qr_code_title"
+            android:textAlignment="center"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/myQrCodeDescriptionTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/check_in_show_your_qr_code_description"
+            app:layout_constraintTop_toBottomOf="@id/myQrCodeTextView" />
+
+        <TextView
+            android:id="@+id/noNetworkWarningTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/error_no_internet_connection_title"
+            android:textAlignment="center"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/myQrCodeTextView" />
+
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/barrierBetweenTextAndQrCode"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            app:barrierDirection="bottom"
+            app:constraint_referenced_ids="myQrCodeDescriptionTextView,noNetworkWarningTextView" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/spacing_large"
+            android:theme="@style/Theme.Luca.DayNight.Light"
+            app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/barrierBetweenTextAndQrCode">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:id="@+id/qrCodeImageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/qr_code"
+                    android:keepScreenOn="true"
+                    android:padding="@dimen/spacing_default"
+                    android:scaleType="fitCenter"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/loadingLayout"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:background="?attr/colorSurfaceTranslucent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ProgressBar
+                        style="@style/LoadingSpinner"
+                        tools:ignore="MissingConstraints" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/automaticCheckOutTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="48dp"
+            android:labelFor="@id/includeEntryPolicySwitch"
+            android:text="@string/check_in_include_entry_policy_title"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="@id/includeEntryPolicySwitch"
+            app:layout_constraintEnd_toStartOf="@id/includeEntryPolicySwitch"
+            app:layout_constraintHorizontal_bias="0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/includeEntryPolicySwitch" />
+
+        <ImageView
+            android:id="@+id/includeEntryPolicyInfoImageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_default"
+            android:accessibilityTraversalAfter="@id/includeEntryPolicySwitch"
+            android:contentDescription="@string/additional_details_content_description"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_information_filled"
+            app:layout_constraintBottom_toBottomOf="@id/includeEntryPolicySwitch"
+            app:layout_constraintStart_toEndOf="@id/automaticCheckOutTextView"
+            app:layout_constraintTop_toTopOf="@id/includeEntryPolicySwitch" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/includeEntryPolicySwitch"
+            style="@style/ThemeOverlay.Luca.Switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:checked="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardView" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

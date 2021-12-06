@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/actionBarBackButtonImageView"
+        style="@style/ActionBarBackButtonImageView"
+        tools:ignore="MissingConstraints" />
+
+    <TextView
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
+        android:text="@string/daily_key_title"
+        tools:ignore="MissingConstraints" />
+
+    <View
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
+
+    <ScrollView
+        style="@style/ContentScrollView"
+        tools:ignore="MissingConstraints">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/descriptionTextView"
+                style="@style/ContentDescriptionTextView"
+                android:text="@string/daily_key_description" />
+
+            <!-- date -->
+            <TextView
+                android:id="@+id/dateTextView"
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_default"
+                android:layout_marginTop="@dimen/spacing_large"
+                android:text="@string/daily_key_date"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/descriptionTextView" />
+
+            <TextView
+                android:id="@+id/dateValueTextView"
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/spacing_default"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/propertyBarrier"
+                app:layout_constraintTop_toTopOf="@id/dateTextView"
+                tools:text="@string/date_format" />
+
+            <!-- issuer -->
+            <TextView
+                android:id="@+id/issuerTextView"
+                style="@style/EmptyStateDescriptionTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_default"
+                android:layout_marginTop="@dimen/spacing_default"
+                android:text="@string/daily_key_issuer"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/dateValueTextView" />
+
+            <TextView
+                android:id="@+id/issuerValueTextView"
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/spacing_default"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/propertyBarrier"
+                app:layout_constraintTop_toTopOf="@id/issuerTextView"
+                tools:text="@string/dummy_heading" />
+
+            <!-- signed -->
+            <TextView
+                android:id="@+id/signedTextView"
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_default"
+                android:layout_marginTop="@dimen/spacing_default"
+                android:text="@string/daily_key_signed"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/issuerValueTextView" />
+
+            <ImageView
+                android:id="@+id/signedImageView"
+                android:layout_width="32dp"
+                android:layout_height="0dp"
+                android:contentDescription="@string/action_no"
+                android:scaleType="fitStart"
+                android:src="@drawable/ic_key_unsigned"
+                app:layout_constraintBottom_toBottomOf="@id/signedTextView"
+                app:layout_constraintStart_toEndOf="@id/propertyBarrier"
+                app:layout_constraintTop_toTopOf="@id/signedTextView" />
+
+            <androidx.constraintlayout.widget.Barrier
+                android:id="@+id/propertyBarrier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:barrierDirection="end"
+                app:barrierMargin="@dimen/spacing_default"
+                app:constraint_referenced_ids="dateTextView, issuerTextView, signedTextView" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/downloadCertificateButton"
+                style="@style/Widget.Luca.Button.TertiaryActionButton"
+                android:layout_width="wrap_content"
+                android:layout_marginTop="@dimen/spacing_large"
+                android:text="@string/daily_key_download_action"
+                app:layout_constrainedWidth="true"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/signedTextView" />
+
+            <androidx.constraintlayout.widget.Group
+                android:id="@+id/contentGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="visible"
+                app:constraint_referenced_ids="descriptionTextView,dateTextView,dateValueTextView,issuerTextView,issuerValueTextView,signedTextView,signedImageView,downloadCertificateButton" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </ScrollView>
+
+    <ProgressBar
+        android:id="@+id/loadingProgressBar"
+        style="@style/LoadingSpinner"
+        tools:ignore="MissingConstraints" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

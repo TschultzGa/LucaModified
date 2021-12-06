@@ -6,30 +6,30 @@ import android.os.Build
 import android.util.Base64
 import com.nexenio.rxkeystore.RxKeyStore
 import com.nexenio.rxkeystore.util.RxBase64
+import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
 import de.culture4life.luca.genuinity.GenuinityManager
 import de.culture4life.luca.network.NetworkManager
-import de.culture4life.luca.network.pojo.DailyKeyPairIssuer
 import de.culture4life.luca.preference.PreferencesManager
-import de.culture4life.luca.util.SerializationUtil
+import de.culture4life.luca.util.*
 import de.culture4life.luca.util.SingleUtil.retryWhen
-import de.culture4life.luca.util.TimeUtil.convertFromUnixTimestamp
-import de.culture4life.luca.util.TimeUtil.encodeUnixTimestamp
 import io.reactivex.rxjava3.core.*
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.bouncycastle.asn1.*
+import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.security.*
+import java.security.cert.X509Certificate
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
+
 
 /**
  * Provides access to all cryptographic methods, handles Bouncy-Castle key store persistence.
@@ -52,8 +52,7 @@ open class CryptoManager constructor(
     val hashProvider: HashProvider
     val secureRandom: SecureRandom
 
-    private val context: Context? = null
-    private var dailyKeyPairPublicKeyWrapper: DailyKeyPairPublicKeyWrapper? = null
+    private var dailyPublicKeyData: DailyPublicKeyData? = null
 
     init {
         androidKeyStore = RxKeyStore(RxKeyStore.TYPE_ANDROID, getAndroidKeyStoreProviderName())
@@ -77,7 +76,26 @@ open class CryptoManager constructor(
             genuinityManager.initialize(context)
         ).andThen(Completable.fromAction { this.context = context })
             .andThen(setupSecurityProviders())
-            .andThen(loadKeyStoreFromFile().onErrorComplete())
+            .andThen(
+                loadKeyStoreFromFile()
+                    .onErrorComplete()
+            )
+            .andThen(deleteOldPreferencesIfRequired())
+    }
+
+    /**
+     * Delete preferences that have been used instead in app versions before 2.3.0.
+     */
+    private fun deleteOldPreferencesIfRequired(): Completable {
+        return Completable.fromAction {
+            Completable.mergeArray(
+                preferencesManager.delete(DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY),
+                preferencesManager.delete(DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY),
+                preferencesManager.delete(DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY)
+            ).onErrorComplete()
+                .subscribeOn(Schedulers.io())
+                .subscribe()
+        }
     }
 
     private fun getAndroidKeyStoreProviderName(): String? {
@@ -111,6 +129,7 @@ open class CryptoManager constructor(
                             .doFinally { inputStream.close() }
                     }
             }
+            .retry(1)
             .doOnSubscribe { Timber.d("Loading keystore from file") }
             .doOnError { Timber.w("Unable to load keystore from file: %s", it.toString()) }
     }
@@ -129,6 +148,7 @@ open class CryptoManager constructor(
                             .doFinally { outputStream.close() }
                     }
             }
+            .retry(1)
             .doOnSubscribe { Timber.d("Persisting keystore to file") }
             .doOnError { Timber.e("Unable to persist keystore to file: %s", it.toString()) }
     }
@@ -195,117 +215,92 @@ open class CryptoManager constructor(
     }
 
     /*
-        Daily key pair public key
+        Daily public key
     */
 
     /**
-     * Will fetch the latest daily key pair public key from the API, update [ ][.dailyKeyPairPublicKeyWrapper] and persist it in the preferences.
-     *
+     * Will fetch the latest daily public key from the API, update [.dailyPublicKeyData] and persist it in the preferences.
      *
      * This should be done on each app start, but not required for a successful initialization (e.g.
      * because the user may be offline).
      */
-    fun updateDailyKeyPairPublicKey(): Completable {
-        return fetchDailyKeyPairPublicKeyWrapperFromBackend()
-            .doOnSuccess { dailyKeyPairPublicKeyWrapper = it }
-            .flatMapCompletable(::persistDailyKeyPairPublicKeyWrapper)
-            .doOnSubscribe { Timber.d("Updating daily key pair public key") }
+    fun updateDailyPublicKey(): Completable {
+        return fetchDailyPublicKeyData()
+            .doOnSuccess { dailyPublicKeyData = it }
+            .flatMapCompletable(::persistDailyPublicKey)
+            .doOnSubscribe { Timber.d("Updating daily public key") }
+            .doOnComplete { Timber.d("Daily public key updated: %s", dailyPublicKeyData) }
+            .doOnError { Timber.w(it, "Daily public key update failed: %s", it.toString()) }
     }
 
     /**
-     * Get [DailyKeyPairPublicKeyWrapper], restore it if available, attempt fetching it from
-     * server otherwise using [.updateDailyKeyPairPublicKey].
+     * Get [DailyPublicKeyData], restore it if available or attempt fetching it
+     * otherwise using [.updateDailyKeyPairPublicKey].
      */
-    open fun getDailyKeyPairPublicKeyWrapper(): Single<DailyKeyPairPublicKeyWrapper> {
-        return Maybe.fromCallable<DailyKeyPairPublicKeyWrapper> { dailyKeyPairPublicKeyWrapper }
-            .switchIfEmpty(restoreDailyKeyPairPublicKeyWrapper()
-                .doOnSuccess { dailyKeyPairPublicKeyWrapper = it }
+    open fun getDailyPublicKey(): Single<DailyPublicKeyData> {
+        return Maybe.fromCallable<DailyPublicKeyData> { dailyPublicKeyData }
+            .switchIfEmpty(restoreDailyPublicKey()
+                .doOnSuccess { dailyPublicKeyData = it }
                 .switchIfEmpty(
-                    updateDailyKeyPairPublicKey()
-                        .andThen(Single.fromCallable { dailyKeyPairPublicKeyWrapper!! })
+                    updateDailyPublicKey()
+                        .andThen(Single.fromCallable { dailyPublicKeyData!! })
                 )
             ).onErrorResumeNext { Single.error(DailyKeyUnavailableException(it)) }
     }
 
-    fun getDailyKeyPair(): Single<DailyKeyPairIssuer> {
-        return networkManager.lucaEndpointsV3.flatMap { lucaEndpointsV3 ->
-            lucaEndpointsV3.dailyKeyPair.flatMap { dailyKeyPair ->
-                lucaEndpointsV3.getIssuer(dailyKeyPair.issuerId)
-                    .map { issuer -> DailyKeyPairIssuer(dailyKeyPair, issuer) }
-            }
-        }
-    }
-
-
-    fun verifyDailyKeyPair(dailyKeyPairIssuer: DailyKeyPairIssuer): Completable {
-        return Completable.defer {
-            val issuerSigningKey = dailyKeyPairIssuer.issuer.publicHDSKPToPublicKey()
-            val signedData = concatenate(
-                dailyKeyPairIssuer.dailyKeyPair.getEncodedKeyId(),
-                dailyKeyPairIssuer.dailyKeyPair.getEncodedCreatedAt(),
-                dailyKeyPairIssuer.dailyKeyPair.publicKey.decodeFromBase64()
-            ).blockingGet()
-            val signature = dailyKeyPairIssuer.dailyKeyPair.signature.decodeFromBase64()
-            signatureProvider.verify(signedData, signature, issuerSigningKey)
-        }
-    }
-
     /**
-     * Fetch [DailyKeyPairPublicKeyWrapper] from server, verify its authenticity and ensure
+     * Fetch [DailyPublicKeyData] from API, verify its authenticity and ensure
      * its less than 7 days old.
      */
-    private fun fetchDailyKeyPairPublicKeyWrapperFromBackend(): Single<DailyKeyPairPublicKeyWrapper> {
-        return getDailyKeyPair()
-            .flatMap { (dailyKeyPair, issuer) ->
-                Single.fromCallable {
-                    val encodedPublicKey = dailyKeyPair.publicKey.decodeFromBase64()
-                    val publicKey = AsymmetricCipherProvider.decodePublicKey(encodedPublicKey).blockingGet()
-                    val creationUnixTimestamp = dailyKeyPair.createdAt
-                    val encodedCreationTimestamp = encodeUnixTimestamp(creationUnixTimestamp).blockingGet()
-                    val id = dailyKeyPair.keyId
-                    val encodedId = ByteBuffer.allocate(4)
-                        .order(ByteOrder.LITTLE_ENDIAN)
-                        .putInt(id)
-                        .array()
-                    val issuerSigningKey = issuer.publicHDSKPToPublicKey()
-                    val signature = dailyKeyPair.signature.decodeFromBase64()
-                    val signedData = concatenate(encodedId, encodedCreationTimestamp, encodedPublicKey).blockingGet()
-                    signatureProvider.verify(signedData, signature, issuerSigningKey).blockingAwait()
-                    val creationTimestamp = convertFromUnixTimestamp(creationUnixTimestamp).blockingGet()
-                    DailyKeyPairPublicKeyWrapper(id, publicKey, creationTimestamp)
-                }
+    private fun fetchDailyPublicKeyData(): Single<DailyPublicKeyData> {
+        return networkManager.lucaEndpointsV4
+            .flatMap { it.dailyPublicKey }
+            .map { it.dailyPublicKeyData }
+            .flatMap { dailyPublicKeyData ->
+                verifyDailyPublicKeyData(dailyPublicKeyData)
+                    .andThen(Single.just(dailyPublicKeyData))
             }
-            .flatMap { assertKeyNotExpired(it).andThen(Single.just(it)) }
-            .doOnSuccess { Timber.d("Fetched daily key pair public key from backend: %s", it) }
+    }
+
+    private fun verifyDailyPublicKeyData(dailyPublicKeyData: DailyPublicKeyData): Completable {
+        return assertKeyNotExpired(dailyPublicKeyData)
+            .andThen(networkManager.lucaEndpointsV4
+                .flatMap { it.getKeyIssuer(dailyPublicKeyData.issuerId) }
+                .flatMapCompletable { keyIssuerResponseData ->
+                    Completable.defer {
+                        // verify issuer certificate using luca intermediate and root CA
+                        val issuerCertificate = keyIssuerResponseData.certificate
+                        verifyKeyIssuerCertificate(issuerCertificate).blockingAwait()
+
+                        // verify issuer signing key JWT signature using issuer certificate
+                        val signingKeyData = keyIssuerResponseData.signingKeyData
+                        signingKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
+
+                        // verify signing key JWT subject matches daily key issuer ID
+                        require(signingKeyData.id == dailyPublicKeyData.issuerId)
+
+                        // verify daily key JWT signature using issuer signing key
+                        dailyPublicKeyData.signedJwt!!.verifyJwt(signingKeyData.publicKey)
+
+                        persistDailyPublicKeyIssuerData(signingKeyData)
+                    }
+                })
+            .doOnError { Timber.w("Daily public key verification failed: %s", it.toString()) }
     }
 
     /**
-     * Restore [DailyKeyPairPublicKeyWrapper] if available.
+     * Restore [DailyPublicKeyData] from preferences if available.
      */
-    private fun restoreDailyKeyPairPublicKeyWrapper(): Maybe<DailyKeyPairPublicKeyWrapper> {
-        val restoreId = preferencesManager.restoreIfAvailable(DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY, Int::class.java)
-        val restoreKey = preferencesManager.restoreIfAvailable(DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY, String::class.java)
-            .map(String::decodeFromBase64)
-            .flatMapSingle(AsymmetricCipherProvider::decodePublicKey)
-        val restoreCreationTimestamp = preferencesManager.restoreIfAvailable(DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY, Long::class.java)
-        return Maybe.zip(restoreId, restoreKey, restoreCreationTimestamp, ::DailyKeyPairPublicKeyWrapper)
-            .flatMapSingle { restoredKey: DailyKeyPairPublicKeyWrapper -> assertKeyNotExpired(restoredKey).andThen(Single.just(restoredKey)) }
-            .doOnError { Timber.w("Unable to restore daily key pair: %s", it.toString()) }
-            .onErrorComplete()
+    private fun restoreDailyPublicKey(): Maybe<DailyPublicKeyData> {
+        return preferencesManager.restoreIfAvailable(DAILY_PUBLIC_KEY_DATA_KEY, DailyPublicKeyData::class.java)
+            .flatMapSingle { assertKeyNotExpired(it).andThen(Single.just(it)) }
     }
 
     /**
-     * Persist given daily public key wrapper to preferences.
-     *
-     * @param wrapper [DailyKeyPairPublicKeyWrapper]
+     * Persist given [DailyPublicKeyData] to preferences.
      */
-    fun persistDailyKeyPairPublicKeyWrapper(wrapper: DailyKeyPairPublicKeyWrapper): Completable {
-        val persistId = preferencesManager.persist(DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY, wrapper.id)
-        val persistKey = AsymmetricCipherProvider.encode(wrapper.publicKey, false)
-            .map(ByteArray::encodeToBase64)
-            .flatMapCompletable { preferencesManager.persist(DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY, it) }
-        val persistCreationTimestamp = preferencesManager.persist(DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY, wrapper.creationTimestamp)
-        return Completable.mergeArray(persistId, persistKey, persistCreationTimestamp)
+    private fun persistDailyPublicKey(dailyPublicKeyData: DailyPublicKeyData): Completable {
+        return preferencesManager.persist(DAILY_PUBLIC_KEY_DATA_KEY, dailyPublicKeyData)
     }
 
     /**
@@ -313,14 +308,62 @@ open class CryptoManager constructor(
      * or emit a [DailyKeyExpiredException] otherwise.
      * Uses the [.genuinityManager] to make sure the system time is valid.
      */
-    fun assertKeyNotExpired(wrapper: DailyKeyPairPublicKeyWrapper): Completable {
+    fun assertKeyNotExpired(dailyPublicKeyData: DailyPublicKeyData): Completable {
         return genuinityManager.assertIsGenuineTime()
             .andThen(Completable.fromAction {
-                val keyAge = System.currentTimeMillis() - wrapper.creationTimestamp
+                val keyAge = System.currentTimeMillis() - dailyPublicKeyData.creationTimestamp
                 if (keyAge > TimeUnit.DAYS.toMillis(7)) {
-                    throw DailyKeyExpiredException("Daily key pair public key is older than 7 days")
+                    throw DailyKeyExpiredException("Daily public key is older than 7 days")
                 }
             })
+    }
+
+    /*
+        Daily public key issuer
+     */
+
+    private fun verifyKeyIssuerCertificate(certificate: X509Certificate): Completable {
+        return Completable.fromAction {
+            if (!LucaApplication.IS_USING_STAGING_ENVIRONMENT) {
+                // staging example:    C=DE,ST=Berlin,L=Berlin,O=luca Dev,CN=Dev Cluster Health Department,SERIALNUMBER=CSM026070939
+                // production example: C=DE,ST=Berlin,L=Berlin,O=Bundesdruckerei GmbH,OU=LUCA,CN=1.12.0.60.luca,serialNumber=CSM025852123
+                val x500name = certificate.getX500Name()
+
+                // verify organizational unit
+                val ouRdn = x500name.getRdnAsString(BCStyle.OU)
+                require(ouRdn.equals("luca", true))
+
+                // verify common name
+                val cnRdn = x500name.getRdnAsString(BCStyle.CN)
+                require(cnRdn.endsWith("luca", true))
+            }
+
+            // verify digital signature usage
+            require(certificate.keyUsage[0])
+
+            // verify certificate chain
+            val namePrefix = if (LucaApplication.IS_USING_STAGING_ENVIRONMENT) "staging" else "production"
+            val intermediateCertificate = CertificateUtil.loadCertificate(namePrefix + "_intermediate_ca.pem", application)
+            val rootCertificate = CertificateUtil.loadCertificate(namePrefix + "_root_ca.pem", application)
+            CertificateUtil.checkCertificateChain(
+                rootCertificate,
+                listOf(certificate, intermediateCertificate)
+            )
+        }
+    }
+
+    /**
+     * Restore [KeyIssuerData] from preferences if available.
+     */
+    fun restoreDailyPublicKeyIssuerData(): Maybe<KeyIssuerData> {
+        return preferencesManager.restoreIfAvailable(DAILY_PUBLIC_KEY_ISSUER_DATA_KEY, KeyIssuerData::class.java)
+    }
+
+    /**
+     * Persist given [KeyIssuerData] to preferences.
+     */
+    private fun persistDailyPublicKeyIssuerData(keyIssuerData: KeyIssuerData): Completable {
+        return preferencesManager.persist(DAILY_PUBLIC_KEY_ISSUER_DATA_KEY, keyIssuerData)
     }
 
     /*
@@ -489,7 +532,7 @@ open class CryptoManager constructor(
      * Compute shared DH secret of [DailyKeyPairPublicKeyWrapper] and a given private key.
      */
     fun generateSharedDiffieHellmanSecret(privateKey: PrivateKey): Single<ByteArray> {
-        return getDailyKeyPairPublicKeyWrapper()
+        return getDailyPublicKey()
             .map { it.publicKey }
             .flatMap { asymmetricCipherProvider.generateSecret(privateKey, it) }
             .doOnSuccess { Timber.d("Generated shared Diffie Hellman secret") }
@@ -605,9 +648,8 @@ open class CryptoManager constructor(
 }
 
 private const val KEYSTORE_FILE_NAME = "keys.ks"
-private const val DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY = "daily_key_pair_public_key_id"
-private const val DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY = "daily_key_pair_public_key"
-private const val DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY = "daily_key_pair_creation_timestamp"
+private const val DAILY_PUBLIC_KEY_DATA_KEY = "daily_public_key_data"
+private const val DAILY_PUBLIC_KEY_ISSUER_DATA_KEY = "daily_public_key_issuer_data"
 private const val DATA_SECRET_KEY = "user_data_secret_2"
 private const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"
 private const val ALIAS_GUEST_EPHEMERAL_KEY_PAIR = "user_ephemeral_key_pair"
@@ -615,6 +657,15 @@ private const val ALIAS_KEYSTORE_PASSWORD = "keystore_secret"
 private const val ALIAS_SECRET_WRAPPING_KEY_PAIR = "secret_wrapping_key_pair"
 private val DATA_ENCRYPTION_SECRET_SUFFIX = byteArrayOf(0x01)
 private val DATA_AUTHENTICATION_SECRET_SUFFIX = byteArrayOf(0x02)
+
+@Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
+private const val DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY = "daily_key_pair_public_key_id"
+
+@Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
+private const val DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY = "daily_key_pair_public_key"
+
+@Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
+private const val DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY = "daily_key_pair_creation_timestamp"
 
 fun UUID.toByteArray(): ByteArray {
     val byteBuffer = ByteBuffer.wrap(ByteArray(16))

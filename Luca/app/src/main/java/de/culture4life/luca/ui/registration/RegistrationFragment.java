@@ -331,7 +331,7 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
     private void showPhoneNumberVerificationTanDialog() {
         ViewGroup viewGroup = getActivity().findViewById(android.R.id.content);
-        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.tan_dialog, viewGroup, false);
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_tan, viewGroup, false);
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(getContext())
                 .setView(dialogView)
