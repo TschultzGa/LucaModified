@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.messages.MessagesFragment">
+
+    <TextView
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
+        android:text="@string/accessed_data_heading"
+        tools:ignore="MissingConstraints" />
+
+    <View
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
+
+    <ScrollView
+        android:id="@+id/emptyStateGroup"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/lucaConnectButton"
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/emptyTitleTextView"
+                style="@style/EmptyStateTitleTextView"
+                android:text="@string/messages_empty_title"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/emptyDescriptionTextView"
+                style="@style/EmptyStateDescriptionTextView"
+                android:text="@string/messages_empty_description"
+                app:layout_constraintEnd_toEndOf="@id/emptyTitleTextView"
+                app:layout_constraintStart_toStartOf="@id/emptyTitleTextView"
+                app:layout_constraintTop_toBottomOf="@id/emptyTitleTextView" />
+
+            <ImageView
+                android:id="@+id/emptyImageView"
+                style="@style/EmptyStateImageView"
+                android:src="@drawable/g_messages"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/emptyDescriptionTextView"
+                app:layout_constraintStart_toStartOf="@id/emptyDescriptionTextView"
+                app:layout_constraintTop_toBottomOf="@id/emptyDescriptionTextView"
+                app:layout_constraintVertical_bias="0.25" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+
+    <ListView
+        android:id="@+id/messageListView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/spacing_small"
+        android:cacheColorHint="@android:color/transparent"
+        android:divider="@null"
+        android:fadingEdgeLength="@dimen/spacing_large"
+        android:listSelector="@android:color/transparent"
+        android:requiresFadingEdge="vertical"
+        app:layout_constraintBottom_toTopOf="@id/lucaConnectButton"
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView"
+        tools:listitem="@layout/item_message" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/lucaConnectButton"
+        style="@style/Widget.Luca.Button.PrimaryActionButton"
+        android:layout_marginHorizontal="@dimen/spacing_default"
+        android:layout_marginTop="@dimen/spacing_default"
+        android:layout_marginBottom="@dimen/spacing_default"
+        android:text="@string/messages_luca_connect_action"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

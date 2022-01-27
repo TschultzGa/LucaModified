@@ -26,7 +26,7 @@ class RecoveryItem(context: Context, document: Document) : VaccinationItem(conte
         collapsedContent.clear()
         val time = context.getReadableDate(document.testingTimestamp)
         addCollapsedContent(
-            context.getString(R.string.document_issued_by),
+            context.getString(R.string.document_issued),
             "$time\n${document.labName}"
         )
         val validUntil = context.getReadableDate(document.expirationTimestamp)

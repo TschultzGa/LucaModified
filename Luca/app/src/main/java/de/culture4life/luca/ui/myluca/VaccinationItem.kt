@@ -6,6 +6,8 @@ import de.culture4life.luca.R
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.util.TimeUtil
 import de.culture4life.luca.util.getReadableDate
+import org.joda.time.DateTimeZone
+import org.joda.time.Instant
 
 /**
  * Item shown on UI for a vaccination certificate
@@ -27,7 +29,7 @@ open class VaccinationItem(context: Context, document: Document) :
         addTopContent(context.getString(R.string.vaccination_date_label), time)
 
         collapsedContent.clear()
-        addCollapsedContent(context.getString(R.string.document_issued_by), document.labName)
+        addCollapsedContent(context.getString(R.string.document_lab_issuer), document.labName)
         for (testProcedure in getTestProcedures(context, document)) {
             addCollapsedContent(testProcedure.name, testProcedure.date)
         }
@@ -71,6 +73,10 @@ open class VaccinationItem(context: Context, document: Document) :
             else -> color = ContextCompat.getColor(context, R.color.document_outcome_unknown)
         }
         addTopContent(descriptionLabel, "")
+
+        if(!document.isValidVaccination) {
+            color = ContextCompat.getColor(context, R.color.document_outcome_expired)
+        }
     }
 
     private fun getTestProcedures(context: Context, document: Document): List<TestProcedure> {
@@ -109,5 +115,4 @@ open class VaccinationItem(context: Context, document: Document) :
         )
         return time + "\n" + procedureName
     }
-
 }

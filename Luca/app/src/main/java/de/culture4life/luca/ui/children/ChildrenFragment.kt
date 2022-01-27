@@ -2,6 +2,7 @@ package de.culture4life.luca.ui.children
 
 import android.os.Bundle
 import android.view.View
+import androidx.annotation.CallSuper
 import androidx.core.view.isVisible
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -10,7 +11,6 @@ import de.culture4life.luca.children.Child
 import de.culture4life.luca.databinding.FragmentAddingChildrenBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.UiUtil
-import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
 
 class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
@@ -35,12 +35,11 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
         return binding
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(Completable.fromAction {
-                initializeChildItemsViews()
-                initializeAddChildViews()
-            })
+    @CallSuper
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeChildItemsViews()
+        initializeAddChildViews()
     }
 
     override fun onResume() {

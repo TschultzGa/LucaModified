@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
@@ -48,7 +49,7 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
 
         initializeViewModel()
             .observeOn(AndroidSchedulers.mainThread())
-            .andThen(initializeViews())
+            .doOnComplete { initializeViews() }
             .subscribe(
                 { Timber.d("Initialized %s with %s", this, sharedViewModel) },
                 { Timber.e("Unable to initialize %s with %s: %s", this, sharedViewModel, it.toString()) }
@@ -59,7 +60,13 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        dialog.window?.attributes?.apply { screenBrightness = 1f }
+
+        dialog.window?.apply {
+            attributes.screenBrightness = 1f
+            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            setDimAmount(0.8F)
+        }
+
         dialog.setOnShowListener {
             val bottomSheet =
                 dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
@@ -81,39 +88,37 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
             .flatMapCompletable { it.initialize() }
     }
 
-    private fun initializeViews(): Completable {
-        return Completable.fromAction {
-            qrCodeBitmap?.let {
-                setQrCodeBitmap(it)
-            }
-
-            setIsLoading(isLoading)
-
-            binding.includeEntryPolicyInfoImageView.setOnClickListener { showIncludeEntryPolicyInfoDialog() }
-            binding.includeEntryPolicySwitch.setOnClickListener {
-                if (binding.includeEntryPolicySwitch.isChecked) {
-                    showIncludeEntryPolicyConsentDialog()
-                } else {
-                    sharedViewModel.onIncludeEntryPolicyToggled(false)
-                }
-            }
-            sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner, { binding.includeEntryPolicySwitch.isChecked = it })
-
-            sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner, {
-                if (!it.hasBeenHandled()) {
-                    it.setHandled(true)
-                    showDocumentsUnavailableError()
-                }
-            })
-
-
-            if (BuildConfig.DEBUG) {
-                // simulate check in when clicking on the QR code in debug builds
-                binding.qrCodeImageView.setOnClickListener { sharedViewModel.onDebuggingCheckInRequested() }
-            }
-
-            setNoNetworkWarningVisible(!isNetworkAvailable)
+    private fun initializeViews() {
+        qrCodeBitmap?.let {
+            setQrCodeBitmap(it)
         }
+
+        setIsLoading(isLoading)
+
+        binding.includeEntryPolicyInfoImageView.setOnClickListener { showIncludeEntryPolicyInfoDialog() }
+        binding.includeEntryPolicySwitch.setOnClickListener {
+            if (binding.includeEntryPolicySwitch.isChecked) {
+                showIncludeEntryPolicyConsentDialog()
+            } else {
+                sharedViewModel.onIncludeEntryPolicyToggled(false)
+            }
+        }
+        sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner, { binding.includeEntryPolicySwitch.isChecked = it })
+
+        sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner, {
+            if (!it.hasBeenHandled()) {
+                it.setHandled(true)
+                showDocumentsUnavailableError()
+            }
+        })
+
+
+        if (BuildConfig.DEBUG) {
+            // simulate check in when clicking on the QR code in debug builds
+            binding.qrCodeImageView.setOnClickListener { sharedViewModel.onDebuggingCheckInRequested() }
+        }
+
+        setNoNetworkWarningVisible(!isNetworkAvailable)
     }
 
     fun setQrCodeBitmap(bitmap: Bitmap) {

@@ -88,7 +88,7 @@ class WhatIsNewManager(
 
     private fun getIntroPage(): WhatIsNewPage {
         return WhatIsNewPage(
-            image = R.drawable.g_news,
+            image = R.drawable.g_star,
             heading = context.getString(R.string.what_is_new_intro_heading),
             description = context.getString(R.string.what_is_new_intro_description)
         )
@@ -161,6 +161,13 @@ class WhatIsNewManager(
                 titleRes = R.string.what_is_new_series_check_in,
                 startIndex = 6,
                 size = 2
+            )
+        ),
+        LUCA_2_4(
+            PageGroupContent(
+                titleRes = R.string.what_is_new_series_notification_tab,
+                startIndex = 8,
+                size = 1
             )
         )
     }

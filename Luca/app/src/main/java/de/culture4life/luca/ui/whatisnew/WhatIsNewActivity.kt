@@ -20,6 +20,10 @@ class WhatIsNewActivity : BaseActivity() {
     private var adapter: WhatIsNewViewPagerAdapter? = null
     private var pages: List<WhatIsNewPage>? = null
     private var currentViewPagerPosition = 0
+    private val hasPreviousPage: Boolean
+        get() = currentViewPagerPosition > 0
+    private val hasNextPage: Boolean
+        get() = currentViewPagerPosition < (pages?.size ?: 0) - 1
 
     private var finishOnExit = false
 
@@ -94,34 +98,34 @@ class WhatIsNewActivity : BaseActivity() {
     private fun updateBottomButtonsLabels(position: Int) {
         currentViewPagerPosition = position
         if (pages == null) return
-        when (getViewPagerState()) {
-            ViewPagerState.FIRST_PAGE -> {
-                binding.skipOrGoBackButton.text = getString(R.string.what_is_new_skip)
-                binding.nextButton.text = getString(R.string.what_is_new_lets_go)
+        with(binding) {
+            skipOrGoBackButton.text = if (hasPreviousPage) {
+                getString(R.string.what_is_new_back)
+            } else {
+                getString(R.string.what_is_new_skip)
             }
-            ViewPagerState.IN_BETWEEN -> {
-                binding.skipOrGoBackButton.text = getString(R.string.what_is_new_back)
-                binding.nextButton.text = getString(R.string.what_is_new_next)
-            }
-            ViewPagerState.LAST_PAGE -> {
-                binding.skipOrGoBackButton.text = getString(R.string.what_is_new_back)
-                binding.nextButton.text = getString(R.string.what_is_new_close)
+            nextButton.text = if (hasNextPage) {
+                getString(R.string.what_is_new_next)
+            } else {
+                getString(R.string.what_is_new_close)
             }
         }
     }
 
     private fun setClickListeners() {
         binding.skipOrGoBackButton.setOnClickListener {
-            when (getViewPagerState()) {
-                ViewPagerState.FIRST_PAGE -> showMainApp()
-                else -> binding.whatIsNewViewPager.currentItem = currentViewPagerPosition - 1
+            if (hasPreviousPage) {
+                binding.whatIsNewViewPager.currentItem = currentViewPagerPosition - 1
+            } else {
+                showMainApp()
             }
         }
 
         binding.nextButton.setOnClickListener {
-            when (getViewPagerState()) {
-                ViewPagerState.LAST_PAGE -> showMainApp()
-                else -> binding.whatIsNewViewPager.currentItem = currentViewPagerPosition + 1
+            if (hasNextPage) {
+                binding.whatIsNewViewPager.currentItem = currentViewPagerPosition + 1
+            } else {
+                showMainApp()
             }
         }
     }
@@ -133,23 +137,7 @@ class WhatIsNewActivity : BaseActivity() {
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             startActivity(intent)
         }
-
         finish()
-    }
-
-    private fun getViewPagerState(): ViewPagerState {
-        if (pages == null) return ViewPagerState.FIRST_PAGE
-        return when (currentViewPagerPosition) {
-            0 -> ViewPagerState.FIRST_PAGE
-            pages!!.size - 1 -> ViewPagerState.LAST_PAGE
-            else -> ViewPagerState.IN_BETWEEN
-        }
-    }
-
-    enum class ViewPagerState {
-        FIRST_PAGE,
-        IN_BETWEEN,
-        LAST_PAGE
     }
 
     companion object {

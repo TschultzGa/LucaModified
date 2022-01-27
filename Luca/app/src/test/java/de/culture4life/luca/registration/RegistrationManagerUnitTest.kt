@@ -3,7 +3,7 @@ package de.culture4life.luca.registration
 import androidx.test.runner.AndroidJUnit4
 import com.google.gson.JsonObject
 import de.culture4life.luca.LucaUnitTest
-import de.culture4life.luca.crypto.*
+import de.culture4life.luca.crypto.encodeToBase64
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.network.endpoints.LucaEndpointsV3
 import de.culture4life.luca.network.pojo.UserRegistrationRequestData
@@ -12,8 +12,6 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.math.ec.ECPoint
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
@@ -22,7 +20,6 @@ import org.mockito.kotlin.*
 import org.robolectric.annotation.Config
 import retrofit2.HttpException
 import retrofit2.Response
-import java.security.interfaces.ECPrivateKey
 import java.util.*
 
 @RunWith(AndroidJUnit4::class)

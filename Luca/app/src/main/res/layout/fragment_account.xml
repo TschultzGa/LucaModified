@@ -52,6 +52,14 @@
                         app:startIconSrc="@drawable/ic_person_outline"
                         app:text="@string/account_tab_item_edit_contact_data" />
 
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/lucaConnectItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:showSeparator="false"
+                        app:startIconSrc="@drawable/ic_bell"
+                        app:text="@string/account_tab_item_luca_connect" />
 
                 </LinearLayout>
 

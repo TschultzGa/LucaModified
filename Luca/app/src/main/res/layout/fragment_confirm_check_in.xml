@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="?dialogPreferredPadding"
+        android:paddingEnd="?dialogPreferredPadding"
+        android:paddingBottom="@dimen/spacing_large">
+
+        <TextView
+            android:id="@+id/checkInHeaderTextView"
+            style="@style/MaterialAlertDialog.Luca.Title.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/venue_check_in_confirmation_title"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/checkInDescriptionTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/venue_check_in_confirmation_description"
+            app:layout_constraintTop_toBottomOf="@id/checkInHeaderTextView" />
+
+        <de.culture4life.luca.ui.compound.DescriptionSwitchView
+            android:id="@+id/dontAskAgainSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_default"
+            app:infoText="@string/venue_check_in_confirmation_dont_show_again"
+            app:layout_constraintBottom_toTopOf="@id/actionButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:showInfoIcon="true" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionButton"
+            style="@style/Widget.Luca.Button.PrimaryActionButton"
+            android:text="@string/action_check_in"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/checkInDescriptionTextView"
+            app:layout_constraintVertical_bias="1" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

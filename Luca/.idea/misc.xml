@@ -3,90 +3,38 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="../../../../../../../layout/custom_preview.xml" value="0.3619791666666667" />
-        <entry key="app/src/aqs/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.36302083333333335" />
-        <entry key="app/src/debug/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/account_tab_button_bottom_stroke.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/bg_bottom_sheet.xml" value="0.31979166666666664" />
-        <entry key="app/src/main/res/drawable/bg_camera_box.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/bg_camera_box_active_preview.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/ic_arrow.xml" value="0.563076923076923" />
-        <entry key="app/src/main/res/drawable/ic_bin.xml" value="0.42604166666666665" />
-        <entry key="app/src/main/res/drawable/ic_bin_icon_white.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/ic_help_outline_24.xml" value="0.4935185185185185" />
-        <entry key="app/src/main/res/drawable/ic_key_unsigned.xml" value="0.563076923076923" />
-        <entry key="app/src/main/res/drawable/ic_launcher_foreground.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/selector_navigation.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/selector_primary_button_background_color.xml" value="0.5305555555555556" />
-        <entry key="app/src/main/res/drawable/selector_primary_button_highlight_color.xml" value="0.5305555555555556" />
-        <entry key="app/src/main/res/drawable/selector_secondary_button_background_color.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/selector_secondary_button_highlight_color.xml" value="0.36302083333333335" />
+        <entry key="app/src/main/res/drawable/background_bottom_sheet.xml" value="0.38981481481481484" />
+        <entry key="app/src/main/res/drawable/ic_information_outline.xml" value="0.10104166666666667" />
         <entry key="app/src/main/res/drawable/selector_switch_thumb.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/selector_switch_thumb_muted.xml" value="0.5305555555555556" />
         <entry key="app/src/main/res/drawable/selector_switch_thumb_on_light_background.xml" value="0.36302083333333335" />
         <entry key="app/src/main/res/drawable/selector_switch_track.xml" value="0.36302083333333335" />
-        <entry key="app/src/main/res/drawable/selector_switch_track_muted.xml" value="0.5305555555555556" />
         <entry key="app/src/main/res/drawable/selector_switch_track_on_light_background.xml" value="0.36302083333333335" />
         <entry key="app/src/main/res/layout/accessed_data_list_item.xml" value="0.5471794871794872" />
-        <entry key="app/src/main/res/layout/activity_main.xml" value="0.4898148148148148" />
         <entry key="app/src/main/res/layout/activity_registration.xml" value="0.3927083333333333" />
-        <entry key="app/src/main/res/layout/activity_updated_terms.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/activity_what_is_new.xml" value="0.4898148148148148" />
-        <entry key="app/src/main/res/layout/add_child_button.xml" value="0.4898148148148148" />
-        <entry key="app/src/main/res/layout/bottom_sheet_qr_code.xml" value="0.4898148148148148" />
-        <entry key="app/src/main/res/layout/bottom_sheet_voluntary_checkin.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/child_list_item.xml" value="0.5557291666666667" />
+        <entry key="app/src/main/res/layout/activity_updated_terms.xml" value="0.5471794871794872" />
+        <entry key="app/src/main/res/layout/bottom_sheet_checkin_flow_confirmation.xml" value="0.3493975903614458" />
+        <entry key="app/src/main/res/layout/bottom_sheet_qr_code.xml" value="0.5471794871794872" />
         <entry key="app/src/main/res/layout/child_name_dialog.xml" value="0.40677083333333336" />
-        <entry key="app/src/main/res/layout/day_selection_item.xml" value="0.4898148148148148" />
-        <entry key="app/src/main/res/layout/days_selection_dialog.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/dialog_add_child.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/dialog_qr_code.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/dialog_select_days.xml" value="0.36770833333333336" />
-        <entry key="app/src/main/res/layout/dialog_tan.xml" value="0.36770833333333336" />
-        <entry key="app/src/main/res/layout/dialog_voluntary_checkin.xml" value="0.36770833333333336" />
         <entry key="app/src/main/res/layout/fragment_accessed_data.xml" value="0.25455927051671734" />
-        <entry key="app/src/main/res/layout/fragment_accessed_data_detail.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/fragment_account.xml" value="0.4527777777777778" />
-        <entry key="app/src/main/res/layout/fragment_adding_children.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/fragment_auto_check_out.xml" value="0.5557291666666667" />
+        <entry key="app/src/main/res/layout/fragment_accessed_data_detail.xml" value="0.4696557971014493" />
+        <entry key="app/src/main/res/layout/fragment_account.xml" value="0.40677083333333336" />
+        <entry key="app/src/main/res/layout/fragment_adding_children.xml" value="0.25455927051671734" />
         <entry key="app/src/main/res/layout/fragment_check_in.xml" value="0.40677083333333336" />
-        <entry key="app/src/main/res/layout/fragment_daily_key.xml" value="0.37962962962962965" />
+        <entry key="app/src/main/res/layout/fragment_confirm_check_in.xml" value="0.19047619047619047" />
+        <entry key="app/src/main/res/layout/fragment_confirm_entry_policy_state.xml" value="0.19047619047619047" />
         <entry key="app/src/main/res/layout/fragment_health_department_key.xml" value="0.40677083333333336" />
         <entry key="app/src/main/res/layout/fragment_history.xml" value="0.3614583333333333" />
         <entry key="app/src/main/res/layout/fragment_meeting.xml" value="0.3614583333333333" />
         <entry key="app/src/main/res/layout/fragment_meeting_detail.xml" value="0.3614583333333333" />
-        <entry key="app/src/main/res/layout/fragment_meeting_history_detail.xml" value="0.346875" />
         <entry key="app/src/main/res/layout/fragment_my_luca.xml" value="0.25455927051671734" />
-        <entry key="app/src/main/res/layout/fragment_onboarding_complete.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/fragment_onboarding_info.xml" value="0.5471794871794872" />
-        <entry key="app/src/main/res/layout/fragment_onboarding_welcome.xml" value="0.346875" />
         <entry key="app/src/main/res/layout/fragment_placeholder.xml" value="0.3614583333333333" />
         <entry key="app/src/main/res/layout/fragment_private_meeting_detail.xml" value="0.3614583333333333" />
-        <entry key="app/src/main/res/layout/fragment_registration_all.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/fragment_venue_details.xml" value="0.5160818713450293" />
-        <entry key="app/src/main/res/layout/fragment_venue_info.xml" value="0.4527777777777778" />
-        <entry key="app/src/main/res/layout/fragment_voluntary_check_in.xml" value="0.4527777777777778" />
-        <entry key="app/src/main/res/layout/fragment_voluntary_checl_in.xml" value="0.37962962962962965" />
-        <entry key="app/src/main/res/layout/fragment_what_is_new_page.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/guest_list_item.xml" value="0.346875" />
-        <entry key="app/src/main/res/layout/history_list_item.xml" value="0.4898148148148148" />
-        <entry key="app/src/main/res/layout/item_accessed_data.xml" value="0.5557291666666667" />
-        <entry key="app/src/main/res/layout/item_account.xml" value="0.3814814814814815" />
-        <entry key="app/src/main/res/layout/item_child.xml" value="0.36770833333333336" />
-        <entry key="app/src/main/res/layout/item_my_luca.xml" value="0.36770833333333336" />
-        <entry key="app/src/main/res/layout/item_select_days.xml" value="0.346875" />
+        <entry key="app/src/main/res/layout/fragment_venue_details.xml" value="0.40677083333333336" />
+        <entry key="app/src/main/res/layout/fragment_voluntary_checkin.xml" value="0.19047619047619047" />
         <entry key="app/src/main/res/layout/layout_dont_ask_again.xml" value="0.5416666666666666" />
-        <entry key="app/src/main/res/layout/my_luca_label_and_text.xml" value="0.346875" />
         <entry key="app/src/main/res/layout/my_luca_list_item.xml" value="0.40677083333333336" />
-        <entry key="app/src/main/res/layout/my_luca_list_items_section_header.xml" value="0.3015625" />
-        <entry key="app/src/main/res/layout/my_luca_list_items_viewpager.xml" value="0.3015625" />
-        <entry key="app/src/main/res/layout/tan_dialog.xml" value="0.3015625" />
         <entry key="app/src/main/res/layout/top_sheet_container.xml" value="0.25455927051671734" />
-        <entry key="app/src/main/res/layout/view_account_item.xml" value="0.5557291666666667" />
-        <entry key="app/src/main/res/layout/view_switch_with_description.xml" value="0.38958333333333334" />
-        <entry key="app/src/main/res/menu/updated_terms_menu.xml" value="0.346875" />
-        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.36302083333333335" />
-        <entry key="app/src/qs/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.36302083333333335" />
+        <entry key="app/src/main/res/layout/view_switch_with_description.xml" value="0.335" />
       </map>
     </option>
   </component>

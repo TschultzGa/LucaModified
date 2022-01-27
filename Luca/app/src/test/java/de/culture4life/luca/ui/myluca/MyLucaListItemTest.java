@@ -1,5 +1,7 @@
 package de.culture4life.luca.ui.myluca;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
@@ -11,8 +13,6 @@ import de.culture4life.luca.R;
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.provider.opentestcheck.OpenTestCheckDocument;
 
-import static org.junit.Assert.assertEquals;
-
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)
 public class MyLucaListItemTest extends LucaUnitTest {
@@ -23,8 +23,9 @@ public class MyLucaListItemTest extends LucaUnitTest {
         Document document = new OpenTestCheckDocument(encodedData).getDocument();
         TestResultItem item = new TestResultItem(application, document);
 
-        assertEquals(application.getString(R.string.document_outcome_negative), item.getTitle());
-        assertEquals(application.getString(R.string.document_type_fast), item.getTopContent().get(0).second);
+        assertThat(item.getTitle())
+                .contains(application.getString(R.string.document_outcome_negative))
+                .contains(application.getString(R.string.document_type_fast));
     }
 
 }

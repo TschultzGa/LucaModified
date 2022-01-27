@@ -14,9 +14,13 @@ import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.util.*
 import de.culture4life.luca.util.SingleUtil.retryWhen
 import io.reactivex.rxjava3.core.*
+import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.bouncycastle.asn1.*
 import org.bouncycastle.asn1.x500.style.BCStyle
+import org.bouncycastle.crypto.digests.SHA256Digest
+import org.bouncycastle.crypto.generators.HKDFBytesGenerator
+import org.bouncycastle.crypto.params.HKDFParameters
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
@@ -141,6 +145,7 @@ open class CryptoManager constructor(
      */
     fun persistKeyStoreToFile(): Completable {
         return getKeyStorePassword()
+            .observeOn(Schedulers.io())
             .flatMapCompletable { passwordChars ->
                 Single.fromCallable { context.openFileOutput(KEYSTORE_FILE_NAME, Context.MODE_PRIVATE) }
                     .flatMapCompletable { outputStream ->
@@ -212,6 +217,163 @@ open class CryptoManager constructor(
             .map(::WrappedSecret)
             .flatMapCompletable { preferencesManager.persist(alias, it) }
             .doOnError { Timber.e("Unable to persist wrapped secret: %s", it.toString()) }
+    }
+
+    /*
+        Hashing
+     */
+
+    fun concatenateHashes(vararg data: ByteArray?): Single<ByteArray> {
+        return Single.fromCallable { data.map { it ?: ByteArray(0) } }
+            .map { Observable.fromIterable(it) }
+            .flatMap(::concatenateHashes)
+    }
+
+    /**
+     * Hash each value using the [.hashProvider] and concatenate the results.
+     */
+    fun concatenateHashes(data: Observable<ByteArray>): Single<ByteArray> {
+        return data.flatMapSingle { hashProvider.hash(it) }
+            .toList()
+            .map { hashes ->
+                var concatenatedHashes = ByteArray(0)
+                for (hash in hashes) {
+                    concatenatedHashes += hash
+                }
+                concatenatedHashes
+            }
+    }
+
+    /*
+        Discrete Logarithm Integrated Encryption Scheme
+     */
+
+    fun dlies(data: ByteArray, receiverPublicKey: PublicKey): Single<DliesResult> {
+        return asymmetricCipherProvider.generateKeyPair("dlies_ephemeral", context)
+            .flatMap { dlies(data, it, receiverPublicKey) }
+    }
+
+    fun dlies(data: ByteArray, ephemeralKeyPair: KeyPair, receiverPublicKey: PublicKey): Single<DliesResult> {
+        return asymmetricCipherProvider.generateSecret(ephemeralKeyPair.private, receiverPublicKey)
+            .flatMap { derivedSecretKey ->
+                Single.zip(
+                    generateDataEncryptionSecret(derivedSecretKey).map { it.toSecretKey() },
+                    generateDataAuthenticationSecret(derivedSecretKey).map { it.toSecretKey() },
+                    { encryptionKey, authenticationKey -> Pair(encryptionKey, authenticationKey) }
+                )
+            }
+            .flatMap { (encryptionKey, authenticationKey) ->
+                symmetricCipherProvider.encrypt(data, encryptionKey)
+                    .map { Pair(it.first, it.second) }
+                    .flatMap { (encryptedData, iv) ->
+                        macProvider.sign(encryptedData, authenticationKey)
+                            .map { mac ->
+                                DliesResult(
+                                    encryptedData = encryptedData,
+                                    iv = iv,
+                                    mac = mac,
+                                    ephemeralPublicKey = ephemeralKeyPair.public
+                                )
+                            }
+                    }
+            }
+    }
+
+    /*
+        HMAC key derivation
+     */
+
+    fun hkdf(ikm: ByteArray, salt: ByteArray?, label: ByteArray, length: Int): Single<ByteArray> {
+        return Single.fromCallable {
+            val digest = SHA256Digest()
+            val parameters = HKDFParameters(ikm, salt, label)
+            val generator = HKDFBytesGenerator(digest)
+            val output = ByteArray(length)
+            generator.init(parameters)
+            generator.generateBytes(output, 0, output.size)
+            output
+        }
+    }
+
+    /*
+        Elliptic-curve Diffie–Hellman
+     */
+
+    fun ecdh(privateKey: PrivateKey, publicKey: PublicKey): Single<ByteArray> {
+        return asymmetricCipherProvider.generateSecret(privateKey, publicKey)
+    }
+
+    /*
+        Elliptic-curve Digital Signature Algorithm
+     */
+
+    fun ecdsa(data: ByteArray, privateKey: PrivateKey): Single<ByteArray> {
+        return signatureProvider.sign(data, privateKey)
+    }
+
+    /*
+        Generic EC key pair CRUD using the [.bouncyCastleKeyStore]
+     */
+
+    /**
+     * Will attempt to restore a key pair that has previously been persisted with the specified alias.
+     * If none is available, a new one will be generated and persisted.
+     */
+    fun getKeyPair(alias: String = "ephemeral"): Single<KeyPair> {
+        return restoreKeyPair(alias)
+            .switchIfEmpty(generateKeyPair(alias)
+                .flatMap { persistKeyPair(alias, it).andThen(Single.just(it)) })
+    }
+
+    /**
+     * Convenience method that will emit the private key from [.getKeyPair].
+     */
+    fun getKeyPairPrivateKey(alias: String = "ephemeral"): Single<ECPrivateKey> {
+        return getKeyPair(alias).map { it.private }
+            .cast(ECPrivateKey::class.java)
+    }
+
+    /**
+     * Convenience method that will emit the public key from [.getKeyPair].
+     */
+    fun getKeyPairPublicKey(alias: String = "ephemeral"): Single<ECPublicKey> {
+        return getKeyPair(alias).map { it.public }
+            .cast(ECPublicKey::class.java)
+    }
+
+    /**
+     * Will generate a new key pair using the [.asymmetricCipherProvider] and persist it.
+     * Existing key store entries with the specified alias will be overwritten.
+     */
+    fun generateKeyPair(alias: String = "ephemeral"): Single<KeyPair> {
+        return asymmetricCipherProvider.generateKeyPair(alias, context)
+            .flatMap { persistKeyPair(alias, it).andThen(Single.just(it)) }
+            .doOnSuccess { Timber.d("Generated new key pair for alias: %s", alias) }
+    }
+
+    /**
+     * Will attempt to restore a key pair that has previously been persisted with the specified alias.
+     */
+    fun restoreKeyPair(alias: String = "ephemeral"): Maybe<KeyPair> {
+        return asymmetricCipherProvider.getKeyPairIfAvailable(alias)
+    }
+
+    /**
+     * Will persist the specified key pair using the specified alias at the [.bouncyCastleKeyStore].
+     */
+    fun persistKeyPair(alias: String = "ephemeral", keyPair: KeyPair): Completable {
+        return asymmetricCipherProvider.setKeyPair(alias, keyPair)
+            .andThen(persistKeyStoreToFile())
+            .doOnComplete { Timber.d("Persisted key pair for alias: %s", alias) }
+    }
+
+    /**
+     * Will delete the key store entry with the specified alias from the [.bouncyCastleKeyStore].
+     */
+    fun deleteKeyPair(alias: String = "ephemeral"): Completable {
+        return bouncyCastleKeyStore.deleteEntry(alias)
+            .andThen(persistKeyStoreToFile())
+            .doOnComplete { Timber.d("Deleted key pair for alias: %s", alias) }
     }
 
     /*
@@ -367,66 +529,6 @@ open class CryptoManager constructor(
     }
 
     /*
-        Guest key pair
-     */
-
-    /**
-     * Get guest key pair or create if not yet generated. The keypair’s private key is used to sign
-     * the encrypted guest data and guest data transfer object. The public key is uploaded to the
-     * luca Server.
-     */
-    open fun getGuestKeyPair(): Single<KeyPair> {
-        return restoreGuestKeyPair()
-            .switchIfEmpty(generateGuestKeyPair()
-                .observeOn(Schedulers.io())
-                .flatMap { persistGuestKeyPair(it).andThen(Single.just(it)) })
-    }
-
-    fun getGuestKeyPairPrivateKey(): Single<ECPrivateKey> {
-        return getGuestKeyPair().map { it.private }
-            .cast(ECPrivateKey::class.java)
-    }
-
-    fun getGuestKeyPairPublicKey(): Single<ECPublicKey> {
-        return getGuestKeyPair().map { it.public }
-            .cast(ECPublicKey::class.java)
-    }
-
-    /**
-     * Generate guest key pair, used to sign encrypted [MeetingGuestData].
-     *
-     * @see [Security
-     * Overview: Secrets](https://luca-app.de/securityoverview/properties/secrets.html.term-guest-keypair)
-     */
-    private fun generateGuestKeyPair(): Single<KeyPair> {
-        return asymmetricCipherProvider.generateKeyPair(ALIAS_GUEST_KEY_PAIR, context)
-            .doOnSuccess { Timber.d("Generated new guest key pair: %s", it.public) }
-    }
-
-    /**
-     * Restore Guest key pair from [.bouncyCastleKeyStore] if available.
-     */
-    private fun restoreGuestKeyPair(): Maybe<KeyPair> {
-        return asymmetricCipherProvider.getKeyPairIfAvailable(ALIAS_GUEST_KEY_PAIR)
-    }
-
-    /**
-     * Persist given guest keypair to [.bouncyCastleKeyStore].
-     */
-    private fun persistGuestKeyPair(keyPair: KeyPair): Completable {
-        return asymmetricCipherProvider.setKeyPair(ALIAS_GUEST_KEY_PAIR, keyPair)
-            .andThen(persistKeyStoreToFile())
-    }
-
-    /**
-     * Deletes the current guest keypair from [.bouncyCastleKeyStore], if available.
-     */
-    public fun deleteGuestKeyPair(): Completable {
-        return bouncyCastleKeyStore.deleteEntry(ALIAS_GUEST_KEY_PAIR)
-            .andThen(persistKeyStoreToFile())
-    }
-
-    /*
         Guest ephemeral key pair
      */
 
@@ -524,7 +626,7 @@ open class CryptoManager constructor(
      * Compute shared DH secret of [DailyKeyPairPublicKeyWrapper] and the guest private key.
      */
     fun generateSharedDiffieHellmanSecret(): Single<ByteArray> {
-        return getGuestKeyPairPrivateKey()
+        return getKeyPairPrivateKey(ALIAS_GUEST_KEY_PAIR)
             .flatMap(this::generateSharedDiffieHellmanSecret)
     }
 
@@ -549,7 +651,7 @@ open class CryptoManager constructor(
     fun generateDataEncryptionSecret(baseSecret: ByteArray): Single<ByteArray> {
         return concatenate(baseSecret, DATA_ENCRYPTION_SECRET_SUFFIX)
             .flatMap(hashProvider::hash)
-            .flatMap { trim(it, HashProvider.TRIMMED_HASH_LENGTH) }
+            .map { it.trim(HashProvider.TRIMMED_HASH_LENGTH) }
     }
 
     /*
@@ -582,6 +684,8 @@ open class CryptoManager constructor(
     }
 
     companion object {
+
+        const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"
 
         /**
          * Substitute outdated Android-provided Bouncy Castle with bundled one.
@@ -651,7 +755,6 @@ private const val KEYSTORE_FILE_NAME = "keys.ks"
 private const val DAILY_PUBLIC_KEY_DATA_KEY = "daily_public_key_data"
 private const val DAILY_PUBLIC_KEY_ISSUER_DATA_KEY = "daily_public_key_issuer_data"
 private const val DATA_SECRET_KEY = "user_data_secret_2"
-private const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"
 private const val ALIAS_GUEST_EPHEMERAL_KEY_PAIR = "user_ephemeral_key_pair"
 private const val ALIAS_KEYSTORE_PASSWORD = "keystore_secret"
 private const val ALIAS_SECRET_WRAPPING_KEY_PAIR = "secret_wrapping_key_pair"
@@ -682,6 +785,15 @@ fun ByteArray.encodeToBase64(flags: Int = Base64.NO_WRAP): String {
     return RxBase64.encode(this, flags).blockingGet()
 }
 
+fun String.decodeFromHex(): ByteArray {
+    check(length % 2 == 0) { "Must have an even length" }
+    return chunked(2)
+        .map { it.toInt(16).toByte() }
+        .toByteArray()
+}
+
+fun ByteArray.encodeToHex() = joinToString("") { "%02x".format(it) }
+
 fun ByteArray.trim(length: Int): ByteArray {
     val trimmedLength = kotlin.math.min(length, this.size)
     val trimmedData = ByteArray(trimmedLength)
@@ -699,4 +811,12 @@ fun ByteArray.toCharArray(): CharArray {
 
 fun ByteArray.toSecretKey(): SecretKey {
     return SecretKeySpec(this, 0, this.size, "AES")
+}
+
+fun ECPublicKey.toByteArray(compressed: Boolean = false): ByteArray {
+    return AsymmetricCipherProvider.encode(this, compressed).blockingGet()
+}
+
+fun ECPublicKey.toCompressedBase64String(): String {
+    return this.toByteArray(true).encodeToBase64()
 }

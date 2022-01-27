@@ -11,7 +11,6 @@ import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
 import timber.log.Timber
-import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
@@ -64,7 +63,7 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
     }
 
     private fun registerNewUser(): Completable {
-        return cryptoManager.deleteGuestKeyPair()
+        return cryptoManager.deleteKeyPair(CryptoManager.ALIAS_GUEST_KEY_PAIR)
             .andThen(Single.fromCallable {
                 RegistrationData().apply {
                     firstName = "Erika"
@@ -83,7 +82,7 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
     }
 
     private fun updateContactData(): Completable {
-        return registrationManager.orCreateRegistrationData
+        return registrationManager.getRegistrationData()
             .map {
                 it.also {
                     it.houseNumber = (Math.random() * 1000).roundToInt().toString()
@@ -96,7 +95,7 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
 
     private fun deleteUser(): Completable {
         return registrationManager.deleteRegistrationOnBackend()
-            .andThen(cryptoManager.deleteGuestKeyPair())
+            .andThen(cryptoManager.deleteKeyPair(CryptoManager.ALIAS_GUEST_KEY_PAIR))
             .doOnSubscribe { Timber.i("Deleting user") }
     }
 

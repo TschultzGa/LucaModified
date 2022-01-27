@@ -3,6 +3,9 @@ package de.culture4life.luca.util
 import android.content.Context
 import de.culture4life.luca.R
 import io.reactivex.rxjava3.core.Single
+import org.joda.time.DateTimeZone
+import org.joda.time.Instant
+import org.joda.time.Period
 import org.joda.time.format.DateTimeFormat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -95,6 +98,29 @@ object TimeUtil {
         return context.getReadableTime(timestamp)
     }
 
+    /**
+     * Calculate duration how a human would do it by adding a specific period instead of fixed timestamps.
+     * e.g. 15.01 + 6 Month is 15.07, result will be != TimeUnit.DAYS.toMillis(30 * 6)
+     *
+     * @return The duration in ms between [startTimestamp] and [startTimestamp] + [addedPeriod]
+     */
+    @JvmStatic
+    fun calculateHumanLikeDuration(startTimestamp: Long, addedPeriod: Period): Long {
+        return Instant
+            .ofEpochMilli(startTimestamp)
+            .toDateTime(DateTimeZone.UTC)
+            .plus(addedPeriod)
+            .millis - startTimestamp
+    }
+
+}
+
+fun Long.toUnixTimestamp(): Long {
+    return TimeUtil.convertToUnixTimestamp(this).blockingGet()
+}
+
+fun Long.fromUnixTimestamp(): Long {
+    return TimeUtil.convertFromUnixTimestamp(this).blockingGet()
 }
 
 fun Context.getReadableTime(timestamp: Long): String {

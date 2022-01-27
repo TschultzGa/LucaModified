@@ -141,7 +141,7 @@ class ChildrenManager(
             LEGACY_KEY_CHILDREN,
             LegacyChildListItemContainer::class.java
         ).map {
-            val lastName = registrationManager.getOrCreateRegistrationData()
+            val lastName = registrationManager.getRegistrationData()
                 .blockingGet().lastName ?: ""
             it.map { childListItem -> Child.from(childListItem.name, lastName) }
         }.flatMapCompletable {

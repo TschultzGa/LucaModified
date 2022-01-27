@@ -43,6 +43,7 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.functions.Predicate;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import timber.log.Timber;
 
 public class DocumentManager extends Manager {
@@ -51,7 +52,10 @@ public class DocumentManager extends Manager {
     public static final String KEY_DOCUMENT_TAG = "test_result_tag_";
     public static final String KEY_PROVIDER_DATA = "document_provider_data";
     public static final String KEY_LAST_RE_VERIFICATION_TIMESTAMP = "last_document_re_verification";
+    public static final String KEY_LAST_EUDCC_MIGRATION_TIMESTAMP = "last_eudcc_migration";
     private static final byte[] DOCUMENT_REDEEM_HASH_SUFFIX = "testRedeemCheck".getBytes(StandardCharsets.UTF_8);
+    private static final long MINIMUM_RE_VERIFICATION_TIMESTAMP = 1634112471927L; // 13.10.2021
+    private static final long MINIMUM_EUDCC_MIGRATION_TIMESTAMP = 1642666115743L; // 20.01.2022
 
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
@@ -94,8 +98,12 @@ public class DocumentManager extends Manager {
         ).andThen(Completable.fromAction(() -> {
             this.eudccDocumentProvider = new EudccDocumentProvider(context);
             this.baercodeDocumentProvider = new BaercodeDocumentProvider(context);
-        })).andThen(deleteExpiredDocuments())
-                .andThen(reVerifyDocumentsIfRequired());
+        }))
+                .andThen(Completable.mergeArray(
+                        deleteExpiredDocuments(),
+                        reVerifyDocumentsIfRequired(),
+                        migrateIsEudccPropertyIfRequired()
+                ));
     }
 
     public Single<Boolean> hasMatchingDocument(@NonNull Predicate<Document> filterFunction) {
@@ -122,7 +130,7 @@ public class DocumentManager extends Manager {
     }
 
     public Single<Document> parseAndValidateEncodedDocument(@NonNull String encodedDocument) {
-        Single<Person> getPerson = registrationManager.getOrCreateRegistrationData()
+        Single<Person> getPerson = registrationManager.getRegistrationData()
                 .map(RegistrationData::getPerson);
 
         Single<Children> getChildren = childrenManager.getChildren();
@@ -325,6 +333,13 @@ public class DocumentManager extends Manager {
                 .flatMapObservable(Observable::fromIterable);
     }
 
+    private Completable persistDocuments() {
+        return getOrRestoreDocuments()
+                .toList()
+                .map(Documents::new)
+                .flatMapCompletable(this::persistDocuments);
+    }
+
     private Completable persistDocuments(@NonNull Documents documents) {
         return preferencesManager.persist(KEY_DOCUMENTS, documents)
                 .doOnSubscribe(disposable -> this.documents = documents);
@@ -348,8 +363,8 @@ public class DocumentManager extends Manager {
 
     private Completable reVerifyDocumentsIfRequired() {
         return preferencesManager.restoreOrDefault(KEY_LAST_RE_VERIFICATION_TIMESTAMP, 0L)
-                .filter(timestamp -> timestamp < 1634112471927L) // before 13.10.2021
-                .flatMapCompletable(timestamp -> reVerifyDocuments());
+                .filter(timestamp -> timestamp < MINIMUM_RE_VERIFICATION_TIMESTAMP)
+                .flatMapCompletable(timestamp -> reVerifyDocuments().onErrorComplete());
     }
 
     public Completable reVerifyDocuments() {
@@ -361,17 +376,32 @@ public class DocumentManager extends Manager {
                         .onErrorReturnItem(false)
                         .doOnSuccess(document::setVerified)
                         .doFinally(() -> Timber.d("Re-verified %s", document))
-                        .ignoreElement());
-
-        Completable persistUpdatedDocuments = getOrRestoreDocuments()
-                .toList()
-                .map(Documents::new)
-                .flatMapCompletable(this::persistDocuments);
+                        .ignoreElement()
+                        .subscribeOn(Schedulers.io()));
 
         return Completable.mergeDelayError(updateVerificationStatus)
-                .andThen(persistUpdatedDocuments)
-                .onErrorComplete()
+                .andThen(persistDocuments())
                 .andThen(preferencesManager.persist(KEY_LAST_RE_VERIFICATION_TIMESTAMP, System.currentTimeMillis()));
+    }
+
+    private Completable migrateIsEudccPropertyIfRequired() {
+        return preferencesManager.restoreOrDefault(KEY_LAST_EUDCC_MIGRATION_TIMESTAMP, 0L)
+                .filter(timestamp -> timestamp < MINIMUM_EUDCC_MIGRATION_TIMESTAMP)
+                .flatMapCompletable(timestamp -> migrateIsEudccProperty().onErrorComplete());
+    }
+
+    private Completable migrateIsEudccProperty() {
+        Flowable<Completable> updateIsEudccProperty = getOrRestoreDocuments()
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .map(document -> eudccDocumentProvider.canParse(document.getEncodedData())
+                        .doOnSuccess(document::setEudcc)
+                        .doFinally(() -> Timber.d("Updated isEudcc: %s", document))
+                        .ignoreElement()
+                        .subscribeOn(Schedulers.computation()));
+
+        return Completable.mergeDelayError(updateIsEudccProperty)
+                .andThen(persistDocuments())
+                .andThen(preferencesManager.persist(KEY_LAST_EUDCC_MIGRATION_TIMESTAMP, System.currentTimeMillis()));
     }
 
     public Completable clearDocuments() {
@@ -385,7 +415,7 @@ public class DocumentManager extends Manager {
     }
 
     private Completable deleteDocumentsExpiredBefore(long timestamp) {
-        return deleteDocuments(document -> timestamp < document.getExpirationTimestamp())
+        return deleteDocuments(document -> timestamp < document.getDeletionTimestamp())
                 .doOnSubscribe(disposable -> Timber.d("Deleting documents expired before %d", timestamp));
     }
 

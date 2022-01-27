@@ -76,6 +76,15 @@ public class CryptoManagerTest extends LucaUnitTest {
     }
 
     @Test
+    public void concatenateHashes_validData_expectedOutput() throws InterruptedException {
+        cryptoManager.concatenateHashes(null, "Test".getBytes(), new byte[0])
+                .flatMap(CryptoManager::encodeToString)
+                .test()
+                .await()
+                .assertValue("47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFVTLqq9lXSIDb92ubjMAIMsIKbsET1oIplVDXpuDzReJeOwxEKY/BwUmvv0yJlvuSQnrkHkZJuTTKSVmRt4UrhV");
+    }
+
+    @Test
     @Ignore("Fails on Jenkins only")
     public void updateDailyKeyPairPublicKey_validKeyPair_verifySuccess() throws InterruptedException {
         mockNetworkResponses(DAILY_PUBLIC_KEY_RESPONSE_DATA, KEY_ISSUER_RESPONSE_DATA);
@@ -138,7 +147,7 @@ public class CryptoManagerTest extends LucaUnitTest {
                 decodePrivateKey(ENCODED_GUEST_KEY_PAIR_PRIVATE_KEY)
         );
         doReturn(Single.just(userMasterKeyPair))
-                .when(cryptoManager).getGuestKeyPair();
+                .when(cryptoManager).getKeyPair(CryptoManager.ALIAS_GUEST_KEY_PAIR);
 
         cryptoManager.generateSharedDiffieHellmanSecret()
                 .flatMap(CryptoManager::encodeToString)

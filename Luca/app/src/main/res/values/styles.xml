@@ -57,10 +57,14 @@
     </style>
 
     <style name="ThemeOverlay.Luca.BottomSheet" parent="Theme.Luca.DayNight">
-        <item name="android:colorBackground">?attr/colorSecondary</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowAnimationStyle">@style/Animation.Design.BottomSheetDialog</item>
-        <item name="bottomSheetStyle">@style/Widget.Design.BottomSheet.Modal</item>
+        <item name="bottomSheetStyle">@style/BottomSheetWrapper</item>
+    </style>
+
+    <style name="BottomSheetWrapper" parent="@style/Widget.Design.BottomSheet.Modal">
+        <item name="android:elevation">8dp</item>
+        <item name="android:background">@drawable/background_bottom_sheet</item>>
     </style>
 
     <style name="ThemeOverlay.Luca.AlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
@@ -246,6 +250,13 @@
         <item name="android:padding">@dimen/spacing_small</item>
         <item name="android:paddingStart">@dimen/spacing_default</item>
         <item name="android:paddingEnd">@dimen/spacing_default</item>
+    </style>
+
+    <style name="Widget.Luca.Button.TextButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="fontFamily">@font/montserrat_bold</item>
+        <item name="android:textSize">@dimen/font_size_default</item>
     </style>
 
     <!-- CardView -->

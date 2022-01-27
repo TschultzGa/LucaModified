@@ -35,20 +35,22 @@ public class TestResultItem extends MyLucaListItem {
     public TestResultItem(@NonNull Context context, @NonNull Document document) {
         super(TYPE_TEST_RESULT, document);
 
-        this.title = getReadableOutcome(context, document);
+        this.title = getReadableTestType(context, document) + ": " + getReadableOutcome(context, document);
         this.provider = getReadableProvider(context, document.getProvider());
-        this.barcode = generateQrCode(document.getEncodedData()).blockingGet();
+        if (document.isEudcc()) {
+            this.barcode = generateQrCode(document.getEncodedData()).blockingGet();
+        }
         this.color = getColor(context, document);
         this.deleteButtonText = context.getString(R.string.delete_test_action);
         this.imageResource = document.isVerified() ? R.drawable.ic_verified : 0;
 
         String duration = TimeUtil.getReadableDurationWithPlural(System.currentTimeMillis() - document.getResultTimestamp(), context).blockingGet();
-        addTopContent(context.getString(R.string.document_type_of_document_label), getReadableTestType(context, document));
+        String time = context.getString(R.string.document_result_time, TimeUtil.getReadableTime(context, document.getResultTimestamp()));
+        addTopContent(context.getString(R.string.document_issued), time);
         addTopContent(context.getString(R.string.document_created_before), duration);
 
-        String time = context.getString(R.string.document_result_time, TimeUtil.getReadableTime(context, document.getResultTimestamp()));
-        addCollapsedContent(context.getString(R.string.document_issued_by), time + "\n" + document.getLabName());
-        addCollapsedContent(context.getString(R.string.document_lab_issuer), document.getLabDoctorName());
+        addCollapsedContent(context.getString(R.string.document_lab_issuer), document.getLabName());
+        addCollapsedContent(context.getString(R.string.document_lab_tester), document.getLabDoctorName());
     }
 
     public static String getReadableTestType(@NonNull Context context, @NonNull Document document) {
@@ -77,6 +79,10 @@ public class TestResultItem extends MyLucaListItem {
                 return context.getString(R.string.document_outcome_unknown);
             }
         }
+    }
+
+    public static String getReadableResult(@NonNull Context context, @NonNull Document document) {
+        return context.getString(R.string.document_outcome, getReadableOutcome(context, document));
     }
 
     @ColorInt

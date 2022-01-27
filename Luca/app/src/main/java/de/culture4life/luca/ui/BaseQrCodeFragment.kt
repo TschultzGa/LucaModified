@@ -31,21 +31,19 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
     protected var cameraPreviewDisposable: Disposable? = null
 
     @CallSuper
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(initializeCameraPreview())
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeCameraPreview()
     }
 
     @CallSuper
-    protected open fun initializeCameraPreview(): Completable {
-        return Completable.fromAction {
-            observe(viewModel!!.shouldShowCameraPreview()) {
-                if (it.showCamera) {
-                    val requestMissingStuff = !it.onlyIfPossible
-                    showCameraPreview(requestMissingStuff, requestMissingStuff)
-                } else {
-                    hideCameraPreview()
-                }
+    protected open fun initializeCameraPreview() {
+        observe(viewModel!!.shouldShowCameraPreview()) {
+            if (it.showCamera) {
+                val requestMissingStuff = !it.onlyIfPossible
+                showCameraPreview(requestMissingStuff, requestMissingStuff)
+            } else {
+                hideCameraPreview()
             }
         }
     }
@@ -151,7 +149,7 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         val preview = Preview.Builder().build()
         val imageAnalysis = ImageAnalysis.Builder()
-            .setTargetResolution(Size(2048, 2048))
+            .setTargetResolution(IMAGE_ANALYSIS_RESOLUTION)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
         imageAnalysis.setAnalyzer(Executors.newSingleThreadExecutor(), viewModel!!)
@@ -255,6 +253,12 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
                 .withResolveAction(Completable.fromAction { showCameraConsentDialog(true) })
                 .build()
         )
+    }
+
+    companion object {
+
+        val IMAGE_ANALYSIS_RESOLUTION = Size(1920, 1080) // maximum resolution is 1080p
+
     }
 
 }

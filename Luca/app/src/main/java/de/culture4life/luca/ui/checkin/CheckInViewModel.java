@@ -1,7 +1,6 @@
 package de.culture4life.luca.ui.checkin;
 
 import static de.culture4life.luca.crypto.HashProvider.TRIMMED_HASH_LENGTH;
-import static de.culture4life.luca.registration.RegistrationManager.USER_ID_KEY;
 import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_NOT_SHARED;
 import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_PCR_TESTED;
 import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_QUICK_TESTED;
@@ -54,6 +53,9 @@ import de.culture4life.luca.registration.RegistrationManager;
 import de.culture4life.luca.ui.BaseQrCodeViewModel;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.ViewEvent;
+import de.culture4life.luca.ui.checkin.flow.ConfirmCheckInViewModel;
+import de.culture4life.luca.ui.checkin.flow.EntryPolicyViewModel;
+import de.culture4life.luca.ui.checkin.flow.VoluntaryCheckInViewModel;
 import de.culture4life.luca.ui.myluca.MyLucaViewModel;
 import de.culture4life.luca.util.SerializationUtil;
 import de.culture4life.luca.util.ThrowableUtil;
@@ -70,8 +72,8 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
     private static final UUID DEBUGGING_SCANNER_ID = UUID.fromString("1444c1a2-1922-4c11-813d-710d9f901227");
     private static final long CHECK_IN_POLLING_INTERVAL = TimeUnit.SECONDS.toMillis(3);
-    private static final String KEY_SKIP_CHECK_IN_CONFIRMATION = "dont_ask_confirmation";
-    private static final boolean FEATURE_ANONYMOUS_CHECKIN_DISABLED = true;
+    public static final boolean FEATURE_ANONYMOUS_CHECKIN_DISABLED = true;
+    public static final boolean FEATURE_ENTRY_POLICY_CHECKIN_DISABLED = true;
 
     private final RegistrationManager registrationManager;
     private final CheckInManager checkInManager;
@@ -88,8 +90,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     private final MutableLiveData<Boolean> contactDataMissing = new MutableLiveData<>();
     private final MutableLiveData<Boolean> updateRequired = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<String>> privateMeetingUrl = new MutableLiveData<>();
-    private final MutableLiveData<ViewEvent<Pair<String, String>>> confirmCheckIn = new MutableLiveData<>();
-    private final MutableLiveData<ViewEvent<Pair<String, String>>> voluntaryCheckIn = new MutableLiveData<>();
+    private final MutableLiveData<ViewEvent<Pair<String, LocationResponseData>>> checkInMultiConfirm = new MutableLiveData<>();
 
     private MyLucaViewModel myLucaViewModel;
 
@@ -127,7 +128,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                         networkManager.initialize(application),
                         documentManager.initialize(application)
                 ))
-                .andThen(preferencesManager.restore(USER_ID_KEY, UUID.class)
+                .andThen(registrationManager.getUserIdIfAvailable()
                         .doOnSuccess(uuid -> this.userId = uuid)
                         .ignoreElement())
                 .andThen(Completable.fromAction(() -> modelDisposable.add(getCameraConsentGiven()
@@ -237,10 +238,11 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     private Single<QrCodeData> generateQrCodeData() {
-        return generateQrCodeData(false);
+        return preferencesManager.restoreOrDefault(CheckInManager.KEY_INCLUDE_ENTRY_POLICY, false)
+                .flatMap(includeEntryPolicy -> generateQrCodeData(false, includeEntryPolicy));
     }
 
-    private Single<QrCodeData> generateQrCodeData(boolean isAnonymous) {
+    private Single<QrCodeData> generateQrCodeData(boolean isAnonymous, boolean shareEntryPolicy) {
         return Single.just(new QrCodeData())
                 .flatMap(qrCodeData -> checkInManager.getTraceIdWrapper(userId)
                         .flatMapCompletable(userTraceIdWrapper -> Completable.mergeArray(
@@ -260,24 +262,25 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                                 TimeUtil.encodeUnixTimestamp(userTraceIdWrapper.getTimestamp())
                                         .doOnSuccess(qrCodeData::setTimestamp)
                                         .ignoreElement(),
-                                getQrCodeEntryPolicy()
+                                getQrCodeEntryPolicy(shareEntryPolicy)
                                         .doOnSuccess(qrCodeData::setEntryPolicy)
                                         .ignoreElement(),
                                 Completable.fromAction(() -> qrCodeData.setTraceId(userTraceIdWrapper.getTraceId()))))
                         .andThen(Single.just(qrCodeData)));
     }
 
-    private Single<Byte> getQrCodeEntryPolicy() {
-        return preferencesManager.restoreOrDefault(CheckInManager.KEY_INCLUDE_ENTRY_POLICY, false)
+    private Single<Byte> getQrCodeEntryPolicy(boolean shareEntryPolicy) {
+        return Single.just(shareEntryPolicy)
                 .flatMap(includeEntryPolicy -> {
                     if (!includeEntryPolicy) {
                         return Single.just(ENTRY_POLICY_NOT_SHARED);
                     } else {
-                        return getEntryPolicyIfAvailable(documentManager.hasVaccinationDocument(), ENTRY_POLICY_VACCINATED)
-                                .switchIfEmpty(getEntryPolicyIfAvailable(documentManager.hasRecoveryDocument(), ENTRY_POLICY_RECOVERED))
-                                .switchIfEmpty(getEntryPolicyIfAvailable(documentManager.hasPcrTestDocument(), ENTRY_POLICY_PCR_TESTED))
-                                .switchIfEmpty(getEntryPolicyIfAvailable(documentManager.hasQuickTestDocument(), ENTRY_POLICY_QUICK_TESTED))
-                                .defaultIfEmpty(ENTRY_POLICY_NOT_SHARED);
+                        return Maybe.mergeArray(
+                                getEntryPolicyIfAvailable(documentManager.hasQuickTestDocument(), ENTRY_POLICY_QUICK_TESTED),
+                                getEntryPolicyIfAvailable(documentManager.hasPcrTestDocument(), ENTRY_POLICY_PCR_TESTED),
+                                getEntryPolicyIfAvailable(documentManager.hasRecoveryDocument(), ENTRY_POLICY_RECOVERED),
+                                getEntryPolicyIfAvailable(documentManager.hasVaccinationDocument(), ENTRY_POLICY_VACCINATED)
+                        ).reduce(Integer::sum).defaultIfEmpty(ENTRY_POLICY_NOT_SHARED);
                     }
                 })
                 .map(entryPolicy -> (byte) (int) entryPolicy);
@@ -435,7 +438,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
             if (MeetingManager.isPrivateMeeting(url)) {
                 return handleMeetingCheckInDeepLink(url);
             } else if (CheckInManager.isSelfCheckInUrl(url)) {
-                return processMandatoryOrVoluntarySelfCheckIn(url);
+                return processConfirmCheckInFlow(url);
             } else {
                 return Completable.error(new InvalidCheckInLinkException());
             }
@@ -473,12 +476,12 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
         Single<UUID> scannerId = getScannerIdFromUrl(url);
         Single<String> additionalData = registrationManager
-                .getOrCreateRegistrationData()
+                .getRegistrationData()
                 .map(MeetingAdditionalData::new)
                 .map(meetingAdditionalData -> new Gson().toJson(meetingAdditionalData));
 
         return extractMeetingHostName.andThen(Single.zip(scannerId, additionalData, Pair::new))
-                .flatMapCompletable(scannerIdAndAdditionalData -> performSelfCheckIn(scannerIdAndAdditionalData.first, scannerIdAndAdditionalData.second, true, false));
+                .flatMapCompletable(scannerIdAndAdditionalData -> performSelfCheckIn(scannerIdAndAdditionalData.first, scannerIdAndAdditionalData.second, true, false, false));
     }
 
     private static Single<MeetingAdditionalData> getMeetingAdditionalDataFromUrl(@NonNull String url) {
@@ -487,39 +490,60 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .map(json -> new Gson().fromJson(json, MeetingAdditionalData.class));
     }
 
-    private Completable processMandatoryOrVoluntarySelfCheckIn(@NonNull String url) {
+    private Completable processConfirmCheckInFlow(@NonNull String url) {
         return getScannerIdFromUrl(url)
                 .flatMap(uuid -> checkInManager.getLocationDataFromScannerId(uuid.toString()))
-                .flatMapCompletable(locationResponseData -> {
-                    // disable anonymous checkin for now, remove when not necessary anymore
-                    if (locationResponseData.isContactDataMandatory() || FEATURE_ANONYMOUS_CHECKIN_DISABLED) {
-                        return handleSelfCheckInDeepLinkConfirmIfNecessary(url, locationResponseData);
-                    } else {
-                        return handleVoluntarySelfCheckIn(url, locationResponseData);
-                    }
-                });
+                .flatMapCompletable(locationResponseData ->
+                        shouldShowConfirmCheckInFlow(locationResponseData)
+                                .flatMapCompletable(shouldShow -> {
+                                    if (shouldShow) {
+                                        return update(checkInMultiConfirm, new ViewEvent<>(new Pair<>(url, locationResponseData)));
+                                    } else {
+                                        // check-in directly, get checkin parameters from location and user settings
+                                        return handleSelfCheckInDeepLink(
+                                                url,
+                                                isCheckInAnonymous(locationResponseData),
+                                                isShareEntryPolicyState(locationResponseData));
+                                    }
+                                })
+                );
     }
 
-    private Completable handleSelfCheckInDeepLinkConfirmIfNecessary(@NonNull String url, @NonNull LocationResponseData locationResponseData) {
-        return preferencesManager.restoreOrDefault(KEY_SKIP_CHECK_IN_CONFIRMATION, false)
-                .flatMapCompletable(skipConfirmation -> {
-                    if (skipConfirmation) {
-                        return handleSelfCheckInDeepLink(url);
-                    } else {
-                        return update(confirmCheckIn, new ViewEvent<>(new Pair<>(url, locationResponseData.getGroupName())));
-                    }
-                });
+    private Single<Boolean> shouldShowConfirmCheckInFlow(@NonNull LocationResponseData locationResponseData) {
+        return Single.zip(
+                preferencesManager.restoreOrDefault(ConfirmCheckInViewModel.KEY_SKIP_CHECK_IN_CONFIRMATION, false),
+                preferencesManager.restoreOrDefault(VoluntaryCheckInViewModel.KEY_ALWAYS_CHECK_IN_VOLUNTARY, false),
+                preferencesManager.restoreOrDefault(EntryPolicyViewModel.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS, false),
+                (alwaysSkipConfirmation, alwaysCheckInVoluntary, alwaysShareEntryPolicy) -> {
+                    boolean shouldShowEntryPolicyPage = (!alwaysShareEntryPolicy && locationResponseData.getEntryPolicy() != null && !FEATURE_ENTRY_POLICY_CHECKIN_DISABLED);
+                    boolean shouldShowVoluntaryCheckInPage = (!alwaysCheckInVoluntary && !locationResponseData.isContactDataMandatory() && !FEATURE_ANONYMOUS_CHECKIN_DISABLED);
+                    boolean shouldShowCheckInConfirmationPage = !alwaysSkipConfirmation && (locationResponseData.isContactDataMandatory() || FEATURE_ANONYMOUS_CHECKIN_DISABLED);
+                    return shouldShowEntryPolicyPage || shouldShowVoluntaryCheckInPage || shouldShowCheckInConfirmationPage;
+                }
+        );
     }
 
-    private Completable handleVoluntarySelfCheckIn(@NonNull String url, @NonNull LocationResponseData locationResponseData) {
-        return update(voluntaryCheckIn, new ViewEvent<>(new Pair<>(url, locationResponseData.getGroupName())));
+    private boolean isCheckInAnonymous(@NonNull LocationResponseData locationResponseData) {
+        boolean alwaysCheckInVoluntary = preferencesManager
+                .restoreOrDefault(EntryPolicyViewModel.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS, false)
+                .blockingGet();
+
+        return (locationResponseData.getEntryPolicy() != null && alwaysCheckInVoluntary) && !FEATURE_ANONYMOUS_CHECKIN_DISABLED;
+    }
+
+    private boolean isShareEntryPolicyState(@NonNull LocationResponseData locationResponseData) {
+        boolean shareEntryPolicyStatus = preferencesManager
+                .restoreOrDefault(VoluntaryCheckInViewModel.KEY_ALWAYS_CHECK_IN_VOLUNTARY, false)
+                .blockingGet();
+
+        return (!locationResponseData.isContactDataMandatory() && shareEntryPolicyStatus) && !FEATURE_ENTRY_POLICY_CHECKIN_DISABLED;
     }
 
     public Completable handleSelfCheckInDeepLink(@NonNull String url) {
-        return handleSelfCheckInDeepLink(url, false);
+        return handleSelfCheckInDeepLink(url, false, false);
     }
 
-    public Completable handleSelfCheckInDeepLink(@NonNull String url, boolean isAnonymous) {
+    public Completable handleSelfCheckInDeepLink(@NonNull String url, boolean isAnonymous, boolean shareEntryPolicyState) {
         Single<UUID> scannerId = getScannerIdFromUrl(url);
         Single<String> additionalData = getAdditionalDataFromUrlIfAvailable(url).defaultIfEmpty("");
 
@@ -528,12 +552,18 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                         scannerIdAndAdditionalData.first,
                         scannerIdAndAdditionalData.second,
                         false,
-                        isAnonymous
+                        isAnonymous,
+                        shareEntryPolicyState
                 ));
     }
 
-    private Completable performSelfCheckIn(UUID scannerId, @Nullable String additionalData, boolean requirePrivateMeeting, boolean isAnonymousCheckIn) {
-        return generateQrCodeData(isAnonymousCheckIn)
+    private Completable performSelfCheckIn(
+            UUID scannerId,
+            @Nullable String additionalData,
+            boolean requirePrivateMeeting,
+            boolean isAnonymousCheckIn,
+            boolean shareEntryPolicyState) {
+        return generateQrCodeData(isAnonymousCheckIn, shareEntryPolicyState)
                 .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
                 .andThen(Completable.defer(() -> {
                     if (requirePrivateMeeting) {
@@ -582,32 +612,17 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 ));
     }
 
-    public void onCheckInConfirmationApproved(@NonNull String url, boolean skipConfirmation) {
-        persistSkipCheckInConfirmation(skipConfirmation)
-                .andThen(handleSelfCheckInDeepLink(url))
+    public void onCheckInRequested(@NonNull String url, boolean isAnonymous, boolean shareEntryPolicyStatus) {
+        handleSelfCheckInDeepLink(url, isAnonymous, shareEntryPolicyStatus)
                 .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe();
-    }
-
-    public void onCheckInConfirmationDismissed(@NonNull String url, boolean skipConfirmation) {
-        persistSkipCheckInConfirmation(skipConfirmation)
-                .andThen(update(getShowCameraPreview(), new CameraRequest(true, true)))
-                .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe();
-    }
-
-    public void onVoluntaryCheckInConfirmationApproved(@NonNull String url, boolean shareContactData) {
-        handleSelfCheckInDeepLink(url, !shareContactData)
-                .onErrorComplete()
+                .doOnSubscribe(disposable -> {
+                    updateAsSideEffect(isLoading, true);
+                })
                 .subscribeOn(Schedulers.io())
                 .subscribe();
     }
 
-    public void onVoluntaryCheckInConfirmationDismissed() {
+    public void onCheckInMultiConfirmDismissed() {
         updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
     }
 
@@ -671,10 +686,6 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
     public void onUpdateRequiredDialogDismissed() {
         updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
-    }
-
-    private Completable persistSkipCheckInConfirmation(boolean skipCheckInConfirmation) {
-        return preferencesManager.persist(KEY_SKIP_CHECK_IN_CONFIRMATION, skipCheckInConfirmation);
     }
 
     private Completable createPrivateMeeting() {
@@ -755,12 +766,8 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         return checkInData;
     }
 
-    public LiveData<ViewEvent<Pair<String, String>>> getConfirmCheckIn() {
-        return confirmCheckIn;
-    }
-
-    public LiveData<ViewEvent<Pair<String, String>>> getVoluntaryCheckIn() {
-        return voluntaryCheckIn;
+    public LiveData<ViewEvent<Pair<String, LocationResponseData>>> getCheckInMultiConfirm() {
+        return checkInMultiConfirm;
     }
 
     public LiveData<ViewEvent<String>> getConfirmPrivateMeeting() {

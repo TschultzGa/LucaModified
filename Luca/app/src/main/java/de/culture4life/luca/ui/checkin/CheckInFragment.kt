@@ -4,9 +4,6 @@ package de.culture4life.luca.ui.checkin
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
-import android.view.ContextThemeWrapper
-import android.view.View
-import android.widget.CheckBox
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -18,8 +15,11 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentCheckInBinding
+import de.culture4life.luca.network.pojo.LocationResponseData
 import de.culture4life.luca.ui.BaseQrCodeFragment
 import de.culture4life.luca.ui.BaseQrCodeViewModel.Companion.BARCODE_DATA_KEY
+import de.culture4life.luca.ui.checkin.flow.CheckInFlowBottomSheetFragment
+import de.culture4life.luca.ui.checkin.flow.CheckInFlowViewModel
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.registration.RegistrationActivity
 import de.culture4life.luca.util.addTo
@@ -31,10 +31,11 @@ import java.util.concurrent.TimeUnit
 class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.OnDestinationChangedListener {
 
     private var qrCodeBottomSheet: QrCodeBottomSheetFragment? = null
-    private lateinit var voluntaryCheckInBottomSheet: VoluntaryCheckInBottomSheetFragment
+    private val checkInFlowBottomSheet by lazy { CheckInFlowBottomSheetFragment.newInstance() }
 
     private lateinit var qrCodeBottomSheetViewModel: QrCodeBottomSheetViewModel
-    private lateinit var voluntaryCheckInViewModel: VoluntaryCheckInViewModel
+    private lateinit var checkInFlowViewModel: CheckInFlowViewModel
+
     private lateinit var binding: FragmentCheckInBinding
 
     override fun getViewBinding(): ViewBinding {
@@ -53,118 +54,107 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
                 viewModel.setupViewModelReference(requireActivity())
                 qrCodeBottomSheetViewModel = ViewModelProvider(requireActivity())
                     .get(QrCodeBottomSheetViewModel::class.java)
-                voluntaryCheckInViewModel = ViewModelProvider(requireActivity())
-                    .get(VoluntaryCheckInViewModel::class.java)
+                checkInFlowViewModel = ViewModelProvider(requireActivity())
+                    .get(CheckInFlowViewModel::class.java)
             }
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(initializeQrCodeBottomSheet())
-            .andThen(initializeVoluntaryCheckInBottomSheet())
-            .andThen(initializeMiscellaneous())
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeQrCodeBottomSheet()
+        initializeCheckInMultiConfirmBottomSheet()
+        initializeMiscellaneous()
     }
 
-    override fun initializeCameraPreview(): Completable {
-        return super.initializeCameraPreview()
-            .andThen(Completable.fromAction {
-                cameraPreviewView = binding.cameraPreviewView
-                binding.cameraContainerConstraintLayout.setOnClickListener {
-                    showCameraPreview(requestConsent = true, requestPermission = true)
-                }
-                binding.flashLightButtonImageView.setOnClickListener { toggleTorch() }
-            })
+    override fun initializeCameraPreview() {
+        super.initializeCameraPreview()
+        cameraPreviewView = binding.cameraPreviewView
+        binding.cameraContainerConstraintLayout.setOnClickListener {
+            showCameraPreview(requestConsent = true, requestPermission = true)
+        }
+        binding.flashLightButtonImageView.setOnClickListener { toggleTorch() }
     }
 
-    private fun initializeQrCodeBottomSheet(): Completable {
-        return Completable.fromAction {
-            binding.showQrCodeButton.setOnClickListener { showQrCodeBottomSheet() }
-            observe(viewModel.qrCode) {
-                qrCodeBottomSheet?.setQrCodeBitmap(it)
-            }
-            observe(qrCodeBottomSheetViewModel.onBottomSheetClosed) {
-                if (!it.hasBeenHandled()) {
-                    it.setHandled(true)
-                    if (isAdded) {
-                        showCameraPreview(requestConsent = false, requestPermission = false)
-                    }
+    private fun initializeQrCodeBottomSheet() {
+        binding.showQrCodeButton.setOnClickListener { showQrCodeBottomSheet() }
+        observe(viewModel.qrCode) {
+            qrCodeBottomSheet?.setQrCodeBitmap(it)
+        }
+        observe(qrCodeBottomSheetViewModel.onBottomSheetClosed) {
+            if (!it.hasBeenHandled()) {
+                it.setHandled(true)
+                if (isAdded) {
+                    showCameraPreview(requestConsent = false, requestPermission = false)
                 }
             }
-            observe(qrCodeBottomSheetViewModel.onDebuggingCheckInRequested) {
-                if (!it.hasBeenHandled()) {
-                    it.setHandled(true)
-                    if (BuildConfig.DEBUG) {
-                        viewModel.onDebuggingCheckInRequested()
-                    }
+        }
+        observe(qrCodeBottomSheetViewModel.onDebuggingCheckInRequested) {
+            if (!it.hasBeenHandled()) {
+                it.setHandled(true)
+                if (BuildConfig.DEBUG) {
+                    viewModel.onDebuggingCheckInRequested()
                 }
             }
         }
     }
 
-    private fun initializeVoluntaryCheckInBottomSheet(): Completable {
-        return Completable.fromAction {
-            voluntaryCheckInBottomSheet = VoluntaryCheckInBottomSheetFragment.newInstance()
-
-            observe(viewModel.voluntaryCheckIn) {
-                if (!it.hasBeenHandled()) {
-                    val urlAndName = it.valueAndMarkAsHandled
-                    showVoluntaryCheckInDialog(urlAndName.first, urlAndName.second)
-                }
+    private fun initializeCheckInMultiConfirmBottomSheet() {
+        observe(viewModel.checkInMultiConfirm) {
+            if (!it.hasBeenHandled()) {
+                val urlAndLocationResponseData = it.valueAndMarkAsHandled
+                showCheckInConfirmFlow(urlAndLocationResponseData.first, urlAndLocationResponseData.second)
             }
+        }
 
-            observe(voluntaryCheckInViewModel.onVoluntaryCheckInButtonPressed) {
-                if (!it.hasBeenHandled()) {
-                    val response = it.valueAndMarkAsHandled
-                    viewModel.onVoluntaryCheckInConfirmationApproved(response.url, response.shareContactData)
-                }
-            }
+        observe(checkInFlowViewModel.onCheckInRequested) {
+            if (!it.hasBeenHandled()) {
+                val checkInRequest = it.valueAndMarkAsHandled
 
-            observe(voluntaryCheckInViewModel.onViewDismissed) {
-                viewModel.onVoluntaryCheckInConfirmationDismissed()
+                viewModel.onCheckInRequested(
+                    checkInRequest.url,
+                    checkInRequest.isAnonymous,
+                    checkInRequest.shareEntryPolicyStatus
+                )
             }
+        }
+
+        observe(checkInFlowViewModel.onViewDismissed) {
+            viewModel.onCheckInMultiConfirmDismissed()
         }
     }
 
-    private fun initializeMiscellaneous(): Completable {
-        return Completable.fromAction {
-            observe(viewModel.bundle) { processBundle(it) }
-            observe(viewModel.possibleDocumentData) {
-                if (!it.hasBeenHandled()) {
-                    showImportDocumentDialog(it.valueAndMarkAsHandled)
-                }
+    private fun initializeMiscellaneous() {
+        observe(viewModel.bundle) { processBundle(it) }
+        observe(viewModel.possibleDocumentData) {
+            if (!it.hasBeenHandled()) {
+                showImportDocumentDialog(it.valueAndMarkAsHandled)
             }
-            observe(viewModel.isLoading) {
-                qrCodeBottomSheet?.setIsLoading(it)
-                binding.checkingInLoadingLayout.isVisible = it
+        }
+        observe(viewModel.isLoading) {
+            qrCodeBottomSheet?.setIsLoading(it)
+            binding.checkingInLoadingLayout.isVisible = it
+        }
+        observe(viewModel.isNetworkAvailable) {
+            qrCodeBottomSheet?.setNoNetworkWarningVisible(!it)
+        }
+        observe(viewModel.isUpdateRequired) {
+            if (it) {
+                showUpdateRequiredDialog()
             }
-            observe(viewModel.isNetworkAvailable) {
-                qrCodeBottomSheet?.setNoNetworkWarningVisible(!it)
+        }
+        observe(viewModel.isContactDataMissing) {
+            if (it) {
+                showContactDataMissingDialog()
             }
-            observe(viewModel.isUpdateRequired) {
-                if (it) {
-                    showUpdateRequiredDialog()
-                }
+        }
+        binding.createMeetingButton.setOnClickListener { showCreatePrivateMeetingDialog() }
+        observe(viewModel.confirmPrivateMeeting) {
+            if (!it.hasBeenHandled()) {
+                showJoinPrivateMeetingDialog(it.valueAndMarkAsHandled)
             }
-            observe(viewModel.isContactDataMissing) {
-                if (it) {
-                    showContactDataMissingDialog()
-                }
-            }
-            binding.createMeetingButton.setOnClickListener { showCreatePrivateMeetingDialog() }
-            observe(viewModel.confirmPrivateMeeting) {
-                if (!it.hasBeenHandled()) {
-                    showJoinPrivateMeetingDialog(it.valueAndMarkAsHandled)
-                }
-            }
-            binding.historyActionBarMenuImageView.setOnClickListener {
-                safeNavigateFromNavController(R.id.action_checkInFragment_to_history)
-            }
-            observe(viewModel.confirmCheckIn) {
-                if (!it.hasBeenHandled()) {
-                    val urlAndName = it.valueAndMarkAsHandled
-                    showConfirmCheckInDialog(urlAndName.first, urlAndName.second)
-                }
-            }
+        }
+        binding.historyActionBarMenuImageView.setOnClickListener {
+            safeNavigateFromNavController(R.id.action_checkInFragment_to_history)
         }
     }
 
@@ -223,36 +213,15 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
         }
     }
 
-    private fun showVoluntaryCheckInDialog(url: String, locationName: String) {
+    private fun showCheckInConfirmFlow(url: String, locationResponseData: LocationResponseData) {
         hideCameraPreview()
-        voluntaryCheckInBottomSheet.arguments = Bundle().apply {
-            putString(VoluntaryCheckInBottomSheetFragment.KEY_LOCATION_URL, url)
-        }
-        voluntaryCheckInBottomSheet.show(parentFragmentManager, VoluntaryCheckInBottomSheetFragment.TAG)
-    }
 
-    private fun showConfirmCheckInDialog(url: String, locationName: String) {
-        hideCameraPreview()
-        val skipCheckInConfirmationView = View.inflate(
-            ContextThemeWrapper(context, R.style.ThemeOverlay_Luca_AlertDialog),
-            R.layout.layout_dont_ask_again,
-            null
-        )
-        val skipCheckInConfirmationCheckBox = skipCheckInConfirmationView.findViewById<CheckBox>(R.id.dontAskAgainCheckbox)
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.venue_check_in_confirmation_title)
-            .setView(skipCheckInConfirmationView)
-            .setMessage(getString(R.string.venue_check_in_confirmation_description, locationName))
-            .setPositiveButton(R.string.action_confirm) { _, _ ->
-                viewModel.onCheckInConfirmationApproved(url, skipCheckInConfirmationCheckBox.isChecked)
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
-            .apply {
-                setOnDismissListener {
-                    viewModel.onCheckInConfirmationDismissed(url, skipCheckInConfirmationCheckBox.isChecked)
-                }
-                show()
-            }
+        checkInFlowBottomSheet.arguments = Bundle().apply {
+            putString(CheckInFlowBottomSheetFragment.KEY_LOCATION_URL, url)
+            putSerializable(CheckInFlowBottomSheetFragment.KEY_LOCATION_RESPONSE_DATA, locationResponseData)
+        }
+
+        checkInFlowBottomSheet.show(parentFragmentManager, CheckInFlowBottomSheetFragment.TAG)
     }
 
     private fun showJoinPrivateMeetingDialog(privateMeetingUrl: String) {

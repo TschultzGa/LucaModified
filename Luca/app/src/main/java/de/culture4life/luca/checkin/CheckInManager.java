@@ -139,6 +139,9 @@ public class CheckInManager extends Manager {
     @Nullable
     private Disposable automaticCheckoutDisposable;
 
+    @Nullable
+    private Disposable checkOutReminderDisposable;
+
     private WorkManager workManager;
 
     public CheckInManager(@NonNull PreferencesManager preferencesManager, @NonNull NetworkManager networkManager, @NonNull GeofenceManager geofenceManager, @NonNull LocationManager locationManager, @NonNull HistoryManager historyManager, @NonNull CryptoManager cryptoManager, @NonNull LucaNotificationManager notificationManager) {
@@ -173,7 +176,8 @@ public class CheckInManager extends Manager {
                         this.workManager = WorkManager.getInstance(context);
                     }
                 })
-        )).andThen(initializeCheckInDataUpdates());
+        )).andThen(initializeCheckInDataUpdates())
+                .andThen(enableCheckOutReminderNotification());
     }
 
     /*
@@ -317,7 +321,8 @@ public class CheckInManager extends Manager {
                         return Completable.complete();
                     }
                 }))
-                .andThen(persistCheckInData(checkInData));
+                .andThen(persistCheckInData(checkInData))
+                .andThen(enableCheckOutReminderNotification());
     }
 
     public Single<ECPublicKey> getLocationPublicKey(@NonNull UUID scannerId) {
@@ -591,7 +596,8 @@ public class CheckInManager extends Manager {
                 .flatMapCompletable(historyManager::addCheckOutItem)
                 .andThen(removeCheckInData())
                 .andThen(removeAdditionalCheckInProperties())
-                .andThen(disableAutomaticCheckOut());
+                .andThen(disableAutomaticCheckOut())
+                .andThen(disableCheckOutReminderNotification());
     }
 
     /**
@@ -727,6 +733,41 @@ public class CheckInManager extends Manager {
                 .flatMapCompletable(isCheckedOut -> processCheckOut());
     }
 
+    public Completable enableCheckOutReminderNotification() {
+        return isCheckedIn()
+                .filter(isCheckedIn -> isCheckedIn)
+                .ignoreElement()
+                .andThen(disableCheckOutReminderNotification())
+                .andThen(calculateDurationToCheckOutReminder())
+                .flatMapCompletable(delay -> Completable.fromAction(() ->
+                        checkOutReminderDisposable = Completable.timer(delay, TimeUnit.MILLISECONDS, Schedulers.io())
+                                .andThen(showCheckOutReminderNotification())
+                                .doOnError(throwable -> Timber.w("Could not show check-out reminder: %s", throwable.toString()))
+                                .onErrorComplete()
+                                .subscribe(() -> Timber.d("Show check-out reminder in %s", TimeUtil.getReadableDurationWithPlural(delay, context).blockingGet()))
+                ));
+    }
+
+    public Completable disableCheckOutReminderNotification() {
+        return Completable.fromAction(() -> {
+            if (checkOutReminderDisposable != null && !checkOutReminderDisposable.isDisposed()) {
+                checkOutReminderDisposable.dispose();
+            }
+        });
+    }
+
+    @NonNull
+    private Completable showCheckOutReminderNotification() {
+        return notificationManager.showNotificationUntilDisposed(
+                LucaNotificationManager.NOTIFICATION_ID_CHECKOUT_REMINDER,
+                notificationManager.createCheckOutReminderNotificationBuilder(MainActivity.class).build());
+    }
+
+    private Maybe<Long> calculateDurationToCheckOutReminder() {
+        return Maybe.zip(getAverageCheckInDurationIfAvailable(), getCurrentCheckInDuration(),
+                (averageCheckInDuration, currentCheckInDuration) -> averageCheckInDuration - currentCheckInDuration);
+    }
+
     /*
         Deletion
      */
@@ -763,7 +804,7 @@ public class CheckInManager extends Manager {
         });
     }
 
-    private Completable deleteCheckInLocally(@NonNull String traceId) {
+    public Completable deleteCheckInLocally(@NonNull String traceId) {
         return historyManager.deleteItems(historyItem -> traceId.equals(historyItem.getRelatedId()));
     }
 
@@ -851,6 +892,12 @@ public class CheckInManager extends Manager {
         return Maybe.fromCallable(() -> checkInData);
     }
 
+    private Maybe<Long> getAverageCheckInDurationIfAvailable() {
+        return getCheckInDataIfAvailable()
+                .map(CheckInData::getAverageCheckInDuration)
+                .filter(averageCheckInDuration -> averageCheckInDuration > 0);
+    }
+
     public Observable<CheckInData> getCheckInDataAndChanges() {
         return preferencesManager.restoreIfAvailableAndGetChanges(KEY_CHECK_IN_DATA, CheckInData.class);
     }
@@ -887,6 +934,7 @@ public class CheckInManager extends Manager {
                                 }
                                 checkInData.setRadius(location.getRadius());
                                 checkInData.setMinimumDuration(MINIMUM_CHECK_IN_DURATION);
+                                checkInData.setAverageCheckInDuration(TimeUnit.MINUTES.toMillis(location.getAverageCheckInDuration()));
                                 return checkInData;
                             }).toMaybe();
 

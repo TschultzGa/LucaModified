@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.net.Uri
 import android.text.TextUtils
 import androidx.annotation.StringRes
+import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.R
 import de.culture4life.luca.checkin.CheckInData
 import de.culture4life.luca.document.Document
@@ -22,12 +23,38 @@ import dgca.verifier.app.decoder.model.RecoveryStatement
 import dgca.verifier.app.decoder.model.Test
 import dgca.verifier.app.decoder.model.Vaccination
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 
 class AccountViewModel(application: Application) : BaseViewModel(application) {
+
+    private val connectManager = this.application.connectManager
+
+    val connectEnrollmentSupportedStatus = MutableLiveData<Boolean>()
+
+    override fun initialize(): Completable {
+        return super.initialize()
+            .andThen(connectManager.initialize(application))
+    }
+
+    override fun keepDataUpdated(): Completable {
+        return Completable.mergeArray(
+            super.keepDataUpdated(),
+            keepConnectEnrollmentSupportedStatusUpdated()
+        )
+    }
+
+    private fun keepConnectEnrollmentSupportedStatusUpdated(): Completable {
+        return connectManager.getEnrollmentSupportedStatusAndChanges()
+            .flatMapCompletable { updateIfRequired(connectEnrollmentSupportedStatus, it) }
+    }
+
+    fun openLucaConnectView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_lucaConnectFragment)
+    }
 
     fun openDailyKeyView() {
         navigationController?.navigate(R.id.action_accountFragment_to_dailyKeyFragment)
@@ -117,7 +144,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
     }
 
     private fun serializeContactData(): Single<String> {
-        return application.registrationManager.orCreateRegistrationData
+        return application.registrationManager.getRegistrationData()
             .map { registrationData ->
                 """
                     ${application.getString(R.string.data_request_contact_data_title)}
@@ -325,7 +352,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
             """
                 ${printProperty(R.string.data_request_document_type, R.string.data_request_document_type_test)}
                 ${printProperty(R.string.data_request_test_type, TestResultItem.getReadableTestType(application, document.document))}
-                ${printProperty(R.string.data_request_test_result, TestResultItem.getReadableOutcome(application, document.document))}
+                ${printProperty(R.string.data_request_test_result, TestResultItem.getReadableResult(application, document.document))}
                 ${printProperty(R.string.data_request_test_date, application.getReadableTime(document.document.resultTimestamp))}
                 ${printProperty(R.string.data_request_test_provider, document.document.provider)}
                 ${printProperty(R.string.data_request_test_lab, document.document.labName)}

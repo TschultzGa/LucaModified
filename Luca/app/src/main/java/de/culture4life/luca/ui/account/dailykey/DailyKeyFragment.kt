@@ -5,7 +5,6 @@ import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentDailyKeyBinding
 import de.culture4life.luca.ui.BaseFragment
-import io.reactivex.rxjava3.core.Completable
 import org.joda.time.format.DateTimeFormat
 
 class DailyKeyFragment : BaseFragment<DailyKeyViewModel>() {
@@ -20,9 +19,9 @@ class DailyKeyFragment : BaseFragment<DailyKeyViewModel>() {
     override fun getViewModelClass(): Class<DailyKeyViewModel> =
         DailyKeyViewModel::class.java
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen { initializeObservers() }
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeObservers()
     }
 
     private fun initializeObservers() {

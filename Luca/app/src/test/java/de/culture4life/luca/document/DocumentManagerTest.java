@@ -129,7 +129,7 @@ public class DocumentManagerTest extends LucaUnitTest {
         RegistrationData registrationData = new RegistrationData();
         registrationData.setFirstName("any");
         registrationData.setLastName("any");
-        doReturn(Single.just(registrationData)).when(registrationManager).getOrCreateRegistrationData();
+        doReturn(Single.just(registrationData)).when(registrationManager).getRegistrationData();
 
         Document validDocument = new Appointment(VALID_APPOINTMENT).getDocument();
         Document invalidDocument = new OpenTestCheckDocument(UNVERIFIED_TEST_RESULT).getDocument();
@@ -155,7 +155,7 @@ public class DocumentManagerTest extends LucaUnitTest {
         RegistrationData registrationData = new RegistrationData();
         registrationData.setFirstName("Any");
         registrationData.setLastName("Parent");
-        doReturn(Single.just(registrationData)).when(registrationManager).getOrCreateRegistrationData();
+        doReturn(Single.just(registrationData)).when(registrationManager).getRegistrationData();
 
         EudccDocumentProvider eudccDocumentProvider = spy(new EudccDocumentProvider(application));
         doReturn(Completable.complete()).when(eudccDocumentProvider).verify(EudccDocumentProviderTest.EUDCC_FULLY_VACCINATED);
@@ -178,7 +178,7 @@ public class DocumentManagerTest extends LucaUnitTest {
     }
 
     @Test
-    public void reVerifyDocuments_previouslyVerifiedNowUnverifiable_updatesVerifiedStatus() {
+    public void reVerifyDocuments_previouslyVerifiedNowUnverifiable_updatesVerifiedStatus() throws InterruptedException {
         EudccDocumentProvider eudccDocumentProvider = spy(new EudccDocumentProvider(application));
         doReturn(Completable.error(new DocumentVerificationException(DocumentVerificationException.Reason.INVALID_SIGNATURE)))
                 .when(eudccDocumentProvider).verify(EudccDocumentProviderTest.EUDCC_FULLY_VACCINATED);
@@ -191,6 +191,7 @@ public class DocumentManagerTest extends LucaUnitTest {
                 .andThen(documentManager.reVerifyDocuments())
                 .andThen(documentManager.getOrRestoreDocuments())
                 .test()
+                .await()
                 .assertValue(document -> !document.isVerified());
     }
 

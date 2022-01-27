@@ -1,5 +1,6 @@
 package de.culture4life.luca.util
 
+import de.culture4life.luca.network.NetworkManager
 import java.net.ConnectException
 import java.net.SocketException
 import java.net.SocketTimeoutException
@@ -29,4 +30,8 @@ object ThrowableUtil {
 
 fun Throwable.isCause(throwableClass: Class<out Throwable>): Boolean {
     return ThrowableUtil.isCause(throwableClass, this)
+}
+
+fun Throwable.isHttpException(vararg expectedStatusCodes: Int): Boolean {
+    return NetworkManager.isHttpException(this, *expectedStatusCodes.toTypedArray())
 }

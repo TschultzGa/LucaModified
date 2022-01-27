@@ -15,7 +15,6 @@ import de.culture4life.luca.databinding.FragmentAccountBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.registration.RegistrationActivity
-import io.reactivex.rxjava3.core.Completable
 
 class AccountFragment : BaseFragment<AccountViewModel>() {
 
@@ -38,11 +37,10 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
         return binding.root
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen {
-                initializeOnClickListeners()
-            }
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeOnClickListeners()
+        initializeObservers()
     }
 
     private fun initializeOnClickListeners() {
@@ -51,6 +49,7 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         }
+        binding.lucaConnectItem.setOnClickListener { viewModel.openLucaConnectView() }
 
         binding.guidesItem.setOnClickListener { viewModel.openNewsView() }
         binding.faqItem.setOnClickListener { application.openUrl(getString(R.string.url_faq)) }
@@ -66,6 +65,13 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
         binding.sourceCodeItem.setOnClickListener { showGitlabDialog() }
 
         binding.deleteAccountItem.setOnClickListener { showDeleteAccountDialog() }
+    }
+
+    private fun initializeObservers() {
+        observe(viewModel.connectEnrollmentSupportedStatus) {
+            binding.lucaConnectItem.visibility = if (it) View.VISIBLE else View.GONE
+            binding.editContactDataItem.showSeparator(it)
+        }
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {

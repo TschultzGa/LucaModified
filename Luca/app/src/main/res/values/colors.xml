@@ -59,8 +59,11 @@
     <color name="document_outcome_fully_vaccinated">@color/green_200</color>
     <color name="document_outcome_fully_vaccinated_but_not_yet_valid">@color/document_outcome_partially_vaccinated</color>
     <color name="document_outcome_fully_recovered">@color/document_outcome_fully_vaccinated</color>
+    <color name="document_outcome_expired">@color/document_outcome_partially_vaccinated</color>
     <color name="document_outcome_unknown">@color/grey_100</color>
     <color name="document_appointment">@color/blue_100</color>
+
+    <color name="scan_qr_code_background">#2a2a2a</color>
 
     <!-- material design overwrites -->
 

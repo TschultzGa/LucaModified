@@ -49,6 +49,10 @@ data class CheckInData(
     @Expose
     var minimumDuration: Long = 0,
 
+    @SerializedName("averageCheckInDuration")
+    @Expose
+    var averageCheckInDuration: Long = 0,
+
     @SerializedName("isPrivateMeeting")
     @Expose
     var isPrivateMeeting: Boolean = false,

@@ -9,14 +9,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
-import de.culture4life.luca.dataaccess.AccessedTraceData
 import de.culture4life.luca.databinding.FragmentMyLucaBinding
 import de.culture4life.luca.databinding.LayoutTopSheetBinding
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.registration.Person
 import de.culture4life.luca.ui.BaseQrCodeFragment
 import de.culture4life.luca.ui.BaseQrCodeViewModel
-import de.culture4life.luca.ui.accesseddata.AccessedDataListItem
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.myluca.MyLucaListAdapter.MyLucaListClickListener
 import de.culture4life.luca.util.addTo
@@ -46,20 +44,16 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
             .doOnComplete { viewModel.setupViewModelReference(requireActivity()) }
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(Completable.fromAction {
-                initializeMyLucaItemsViews()
-                initializeImportViews()
-                initializeBanners()
-            })
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeMyLucaItemsViews()
+        initializeImportViews()
+        initializeBanners()
     }
 
-    override fun initializeCameraPreview(): Completable {
-        return super.initializeCameraPreview()
-            .andThen(Completable.fromAction {
-                cameraPreviewView = binding.cameraPreviewView
-            })
+    override fun initializeCameraPreview() {
+        super.initializeCameraPreview()
+        cameraPreviewView = binding.cameraPreviewView
     }
 
     private fun initializeMyLucaItemsViews() {
@@ -129,12 +123,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
     }
 
     private fun initializeBanners() {
-        observe(viewModel.isGenuineTime) {
-            refreshBanners(it, viewModel.accessNotificationsPerLevel.value!!)
-        }
-        observe(viewModel.accessNotificationsPerLevel) {
-            refreshBanners(viewModel.isGenuineTime.value!!, it)
-        }
+        observe(viewModel.isGenuineTime, ::refreshBanners)
     }
 
     override fun onResume() {
@@ -167,7 +156,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         }
     }
 
-    private fun refreshBanners(isGenuineTime: Boolean, accessNotifications: HashMap<Int, AccessedDataListItem>) {
+    private fun refreshBanners(isGenuineTime: Boolean) {
         val container = binding.bannerLayout
         container.removeAllViews()
         if (!isGenuineTime) {
@@ -178,15 +167,6 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
                 val intent = Intent(Settings.ACTION_DATE_SETTINGS)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(intent)
-            }
-        }
-        for (warningLevel in 1..AccessedTraceData.NUMBER_OF_WARNING_LEVELS) {
-            if (accessNotifications.containsKey(warningLevel)) {
-                val bannerBinding = LayoutTopSheetBinding.inflate(layoutInflater, container, true)
-                bannerBinding.sheetActionButton.setText(R.string.accessed_data_banner_action_show)
-                bannerBinding.sheetIconImageView.setImageResource(R.drawable.ic_eye)
-                bannerBinding.sheetDescriptionTextView.text = accessNotifications[warningLevel]!!.bannerText
-                bannerBinding.sheetActionButton.setOnClickListener { viewModel.onShowAccessedDataRequested(warningLevel) }
             }
         }
     }

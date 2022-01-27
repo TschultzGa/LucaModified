@@ -1,24 +1,15 @@
 package de.culture4life.luca.ui.onboarding;
 
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
-import android.widget.CompoundButton;
-import android.widget.TextView;
 
-import androidx.core.content.ContextCompat;
-
-import com.google.android.material.checkbox.MaterialCheckBox;
-import com.google.android.material.color.MaterialColors;
-
-import de.culture4life.luca.R;
 import de.culture4life.luca.databinding.FragmentOnboardingInfoBinding;
 import de.culture4life.luca.databinding.FragmentOnboardingWelcomeBinding;
 import de.culture4life.luca.ui.BaseActivity;
 import de.culture4life.luca.ui.registration.RegistrationActivity;
 import de.culture4life.luca.ui.terms.UpdatedTermsUtil;
+import de.culture4life.luca.util.ViewRequiredUtil;
 
 public class OnboardingActivity extends BaseActivity {
 
@@ -26,9 +17,6 @@ public class OnboardingActivity extends BaseActivity {
 
     private FragmentOnboardingWelcomeBinding welcomeBinding;
     private FragmentOnboardingInfoBinding infoBinding;
-    private int errorTint;
-    private int normalTint;
-    private Drawable errorDrawable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,29 +43,12 @@ public class OnboardingActivity extends BaseActivity {
             }
         });
 
-        CompoundButton.OnCheckedChangeListener checkBoxListener = (view, isChecked) -> {
-            if (welcomeBinding.termsCheckBox.isChecked()) {
-                setErrorFor(welcomeBinding.termsCheckBox, welcomeBinding.termsTextView, false);
-            }
-        };
-
-        welcomeBinding.termsCheckBox.setOnCheckedChangeListener(checkBoxListener);
         welcomeBinding.termsTextView.setMovementMethod(LinkMovementMethod.getInstance());
         welcomeBinding.privacyTextView.setMovementMethod(LinkMovementMethod.getInstance());
-
-        errorTint = MaterialColors.getColor(welcomeBinding.termsCheckBox, R.attr.colorWarning);
-        normalTint = welcomeBinding.termsCheckBox.getButtonTintList().getDefaultColor();
-        errorDrawable = ContextCompat.getDrawable(this, R.drawable.ic_error_outline);
-        errorDrawable.setTint(errorTint);
-    }
-
-    private void setErrorFor(MaterialCheckBox checkBox, TextView textView, boolean hasError) {
-        checkBox.setButtonTintList(ColorStateList.valueOf(hasError ? errorTint : normalTint));
-        textView.setCompoundDrawablesWithIntrinsicBounds(null, null, hasError ? errorDrawable : null, null);
     }
 
     private void showCheckboxErrors() {
-        setErrorFor(welcomeBinding.termsCheckBox, welcomeBinding.termsTextView, !welcomeBinding.termsCheckBox.isChecked());
+        ViewRequiredUtil.INSTANCE.showCheckBoxRequiredError(welcomeBinding.termsCheckBox, welcomeBinding.termsTextView);
     }
 
     private void showInfoScreen() {

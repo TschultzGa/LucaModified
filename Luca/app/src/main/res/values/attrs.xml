@@ -18,4 +18,9 @@
         <attr name="showSeparator" format="boolean" />
     </declare-styleable>
 
+    <declare-styleable name="DescriptionSwitchView">
+        <attr name="showInfoIcon" format="boolean" />
+        <attr name="infoText" format="string" />
+    </declare-styleable>
+
 </resources>

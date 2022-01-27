@@ -5,7 +5,6 @@ import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.databinding.FragmentMeetingHistoryDetailBinding
 import de.culture4life.luca.databinding.ItemGuestBinding
 import de.culture4life.luca.ui.BaseFragment
-import io.reactivex.rxjava3.core.Completable
 
 class MeetingHistoryDetailFragment : BaseFragment<MeetingHistoryDetailViewModel>() {
 
@@ -20,30 +19,28 @@ class MeetingHistoryDetailFragment : BaseFragment<MeetingHistoryDetailViewModel>
         return MeetingHistoryDetailViewModel::class.java
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(Completable.fromAction {
-                observe(viewModel.privateMeetingItem) {
-                    binding.actionBarTitleTextView.text = it.title
-                    binding.subtitleTextView.text = it.subtitle
-                    binding.descriptionTextView.text = it.description
-                    binding.guestsTitleView.text = it.guestsTitle
-                    binding.guestsListContainer.removeAllViews()
-                    it.guests.forEachIndexed { index, name ->
-                        with(ItemGuestBinding.inflate(layoutInflater)) {
-                            guestNumberTextView.apply {
-                                text = (index + 1).toString()
-                                setTextColor(Color.WHITE)
-                            }
-                            guestNameTextView.apply {
-                                text = name
-                                setTextColor(Color.WHITE)
-                            }
-                            binding.guestsListContainer.addView(root)
-                        }
+    override fun initializeViews() {
+        super.initializeViews()
+        observe(viewModel.privateMeetingItem) {
+            binding.actionBarTitleTextView.text = it.title
+            binding.subtitleTextView.text = it.subtitle
+            binding.descriptionTextView.text = it.description
+            binding.guestsTitleView.text = it.guestsTitle
+            binding.guestsListContainer.removeAllViews()
+            it.guests.forEachIndexed { index, name ->
+                with(ItemGuestBinding.inflate(layoutInflater)) {
+                    guestNumberTextView.apply {
+                        text = (index + 1).toString()
+                        setTextColor(Color.WHITE)
                     }
+                    guestNameTextView.apply {
+                        text = name
+                        setTextColor(Color.WHITE)
+                    }
+                    binding.guestsListContainer.addView(root)
                 }
-            })
+            }
+        }
     }
 
     companion object {

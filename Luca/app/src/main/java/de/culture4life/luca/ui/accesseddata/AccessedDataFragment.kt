@@ -9,7 +9,6 @@ import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.accesseddata.AccessedDataDetailFragment.Companion.KEY_ACCESSED_DATA_LIST_ITEM
 import de.culture4life.luca.ui.history.HistoryFragment
 import de.culture4life.luca.ui.history.HistoryFragment.NO_WARNING_LEVEL_FILTER
-import io.reactivex.rxjava3.core.Completable
 
 class AccessedDataFragment : BaseFragment<AccessedDataViewModel>() {
 
@@ -25,12 +24,10 @@ class AccessedDataFragment : BaseFragment<AccessedDataViewModel>() {
         return AccessedDataViewModel::class.java
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(Completable.fromAction {
-                initializeAccessedDataItemsViews()
-                initializeEmptyStateViews()
-            })
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeAccessedDataItemsViews()
+        initializeEmptyStateViews()
     }
 
     private fun initializeAccessedDataItemsViews() {

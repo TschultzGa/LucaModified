@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/registrationScrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="@dimen/spacing_default"
+    android:fadingEdgeLength="@dimen/spacing_default"
+    android:fillViewport="true"
+    android:orientation="vertical"
+    android:requiresFadingEdge="vertical"
+    tools:context=".ui.MainActivity">
+
+    <LinearLayout
+        android:id="@+id/inputFieldsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_default"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/heading"
+            style="@style/MaterialAlertDialog.Luca.Title.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_default"
+            android:text="@string/luca_connect_share_data_title"
+            android:textAlignment="center" />
+
+        <TextView
+            android:id="@+id/info"
+            style="@style/TextAppearance.Luca.Body3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_large"
+            android:text="@string/luca_connect_share_data_description" />
+
+        <TextView
+            android:id="@+id/name_label"
+            style="@style/TextAppearance.Luca.Body1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:text="@string/luca_connect_share_data_name" />
+
+        <TextView
+            android:id="@+id/name"
+            style="@style/TextAppearance.Luca.Body1.Bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_large"
+            tools:text="@string/dummy_heading" />
+
+        <TextView
+            android:id="@+id/birth_label"
+            style="@style/TextAppearance.Luca.Body1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:text="@string/luca_connect_share_data_birthday" />
+
+        <TextView
+            android:id="@+id/date_of_birth"
+            style="@style/TextAppearance.Luca.Body1.Bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_large"
+            tools:text="@string/dummy_heading" />
+
+        <TextView
+            android:id="@+id/address_label"
+            style="@style/TextAppearance.Luca.Body1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:text="@string/luca_connect_share_data_address" />
+
+        <TextView
+            android:id="@+id/address_line1"
+            style="@style/TextAppearance.Luca.Body1.Bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            tools:text="@string/dummy_heading" />
+
+        <TextView
+            android:id="@+id/address_line2"
+            style="@style/TextAppearance.Luca.Body1.Bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_large"
+            tools:text="@string/dummy_heading" />
+
+        <TextView
+            android:id="@+id/phone_label"
+            style="@style/TextAppearance.Luca.Body1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:text="@string/luca_connect_share_data_phone" />
+
+        <TextView
+            android:id="@+id/phone"
+            style="@style/TextAppearance.Luca.Body1.Bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_large"
+            tools:text="@string/dummy_heading" />
+
+        <TextView
+            android:id="@+id/email_label"
+            style="@style/TextAppearance.Luca.Body1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_small"
+            android:text="@string/luca_connect_share_data_mail" />
+
+        <TextView
+            android:id="@+id/email"
+            style="@style/TextAppearance.Luca.Body1.Bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_large"
+            tools:text="@string/dummy_heading" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionButton"
+            style="@style/Widget.Luca.Button.PrimaryActionButton"
+            android:text="@string/luca_connect_share_data_action" />
+    </LinearLayout>
+</ScrollView>

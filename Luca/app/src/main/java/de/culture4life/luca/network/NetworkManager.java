@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.BuildConfig;
@@ -210,12 +211,12 @@ public class NetworkManager extends Manager {
         }
     }
 
-    public static boolean isHttpException(@NonNull Throwable throwable, int expectedStatusCode) {
+    public static boolean isHttpException(@NonNull Throwable throwable, Integer... expectedStatusCodes) {
         if (!(throwable instanceof HttpException)) {
             return false;
         }
         int actualStatusCode = ((HttpException) throwable).code();
-        return expectedStatusCode == actualStatusCode;
+        return Arrays.asList(expectedStatusCodes).contains(actualStatusCode);
     }
 
     public Observable<Boolean> getConnectivityStateAndChanges() {

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import de.culture4life.luca.R;
 import de.culture4life.luca.ui.BaseActivity;
 import de.culture4life.luca.ui.MainActivity;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class RegistrationActivity extends BaseActivity {
 
@@ -24,12 +25,16 @@ public class RegistrationActivity extends BaseActivity {
     }
 
     public void onEditingContactDataCompleted() {
-        finish();
+        if (!isFinishing()) {
+            finish();
+        }
     }
 
     public void onRegistrationCompleted() {
         if (hasSeenRegistrationCompletedScreenBefore()) {
-            finish();
+            if (!isFinishing()) {
+                finish();
+            }
         } else {
             showRegistrationCompletedScreen();
         }
@@ -39,13 +44,16 @@ public class RegistrationActivity extends BaseActivity {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
-        finish();
+        if (!isFinishing()) {
+            finish();
+        }
     }
 
     private void showRegistrationCompletedScreen() {
         activityDisposable.add(application.getPreferencesManager()
                 .persist(REGISTRATION_COMPLETED_SCREEN_SEEN_KEY, true)
                 .onErrorComplete()
+                .subscribeOn(Schedulers.io())
                 .subscribe());
 
         setContentView(R.layout.fragment_onboarding_complete);

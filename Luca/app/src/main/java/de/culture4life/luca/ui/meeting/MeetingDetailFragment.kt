@@ -5,7 +5,6 @@ import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentMeetingDetailBinding
 import de.culture4life.luca.ui.BaseFragment
-import io.reactivex.rxjava3.core.Completable
 
 class MeetingDetailFragment : BaseFragment<MeetingViewModel>() {
 
@@ -21,16 +20,14 @@ class MeetingDetailFragment : BaseFragment<MeetingViewModel>() {
         return binding
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(Completable.fromAction {
-                guestListAdapter = GuestListAdapter(viewModel.allGuests.value ?: emptyList())
-                binding.guestsNamesRecyclerView.adapter = guestListAdapter
-                binding.guestsNamesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-                binding.startTimeTextView.text = viewModel.startTime.value
-                binding.guestsNumberTextView.text = getString(R.string.meeting_details_guests, getCheckedInGuestsCount(viewModel.allGuests.value))
-                initializeObservers()
-            })
+    override fun initializeViews() {
+        super.initializeViews()
+        guestListAdapter = GuestListAdapter(viewModel.allGuests.value ?: emptyList())
+        binding.guestsNamesRecyclerView.adapter = guestListAdapter
+        binding.guestsNamesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.startTimeTextView.text = viewModel.startTime.value
+        binding.guestsNumberTextView.text = getString(R.string.meeting_details_guests, getCheckedInGuestsCount(viewModel.allGuests.value))
+        initializeObservers()
     }
 
     private fun initializeObservers() {

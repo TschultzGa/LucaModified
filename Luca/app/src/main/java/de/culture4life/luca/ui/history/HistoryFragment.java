@@ -25,12 +25,8 @@ import de.culture4life.luca.dataaccess.AccessedTraceData;
 import de.culture4life.luca.databinding.FragmentHistoryBinding;
 import de.culture4life.luca.history.HistoryManager;
 import de.culture4life.luca.ui.BaseFragment;
-import de.culture4life.luca.ui.MainActivity;
 import de.culture4life.luca.ui.dialog.BaseDialogFragment;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import timber.log.Timber;
 
 public class HistoryFragment extends BaseFragment<HistoryViewModel> {
 
@@ -63,19 +59,17 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     }
 
     @Override
-    protected Completable initializeViews() {
-        return super.initializeViews()
-                .andThen(Completable.fromAction(() -> {
-                    initializeHistoryItemsViews();
-                    initializeShareHistoryViews();
-                    initializeAccessedDataViews();
-                    initializeDeleteHistoryListener();
-                    initializeEmptyStateViews();
-                }));
+    protected void initializeViews() {
+        super.initializeViews();
+        initializeHistoryItemsViews();
+        initializeShareHistoryViews();
+        initializeAccessedDataViews();
+        initializeDeleteHistoryViews();
+        initializeEmptyStateViews();
     }
 
-    private void initializeDeleteHistoryListener() {
-        binding.deleteHistoryActionBarMenuImageView.setOnClickListener(v -> showClearHistoryConfirmationDialog());
+    private void initializeDeleteHistoryViews() {
+        binding.editHistoryActionBarMenuImageView.setOnClickListener(l -> safeNavigateFromNavController(R.id.historyEditFragment));
     }
 
     private void initializeHistoryItemsViews() {
@@ -99,9 +93,13 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
             public void showTraceInformation(@NonNull HistoryListItem item) {
                 showHistoryItemDetailsDialog(item, item.getAdditionalTitleDetails());
             }
+
+            @Override
+            public void onItemCheckBoxToggled(@NonNull HistoryListItem item, boolean isChecked) {
+            }
         });
         binding.historyListView.setAdapter(historyListAdapter);
-        observe(viewModel.getHistoryItems(), items -> historyListAdapter.setHistoryItems(HistoryViewModel.filterHistoryListItems(items, warningLevelFilter)));
+        observe(viewModel.getHistoryItems(), items -> historyListAdapter.setHistoryItems(HistoryViewModel.Companion.filterHistoryListItems(items, warningLevelFilter)));
     }
 
     private int getTitleFor(int warningLevelFilter) {
@@ -135,7 +133,6 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     private void initializeAccessedDataViews() {
         observe(viewModel.getNewAccessedData(), accessedDataEvent -> {
             if (!accessedDataEvent.hasBeenHandled()) {
-                ((MainActivity) getActivity()).updateHistoryBadge();
                 showAccessedDataDialog(accessedDataEvent.getValueAndMarkAsHandled());
             }
         });
@@ -150,22 +147,6 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
             binding.emptyStateGroup.setVisibility(emptyStateVisibility);
             binding.historyContentGroup.setVisibility(contentVisibility);
         });
-    }
-
-    private void showClearHistoryConfirmationDialog() {
-        new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
-                .setTitle(R.string.history_clear_title)
-                .setMessage(R.string.history_clear_description)
-                .setPositiveButton(R.string.history_clear_action, (dialog, which) -> {
-                    application.getHistoryManager().clearItems()
-                            .subscribeOn(Schedulers.io())
-                            .subscribe(
-                                    () -> Timber.i("History cleared"),
-                                    throwable -> Timber.w("Unable to clear history: %s", throwable.toString())
-                            );
-                })
-                .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.dismiss()))
-                .show();
     }
 
     private void showHistoryItemDetailsDialog(@NonNull HistoryListItem item, String additionalDetails) {

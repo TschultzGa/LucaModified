@@ -34,14 +34,15 @@ import de.culture4life.luca.network.endpoints.LucaEndpointsV4;
 import de.culture4life.luca.network.pojo.NotifyingHealthDepartment;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
-import de.culture4life.luca.ui.MainActivity;
 import de.culture4life.luca.ui.accesseddata.AccessedDataListItem;
+import de.culture4life.luca.ui.messages.MessageListItem;
 import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import okhttp3.ResponseBody;
 import timber.log.Timber;
 
@@ -75,6 +76,7 @@ public class DataAccessManager extends Manager {
 
     @Nullable
     private AccessedData accessedData;
+    private final BehaviorSubject<Boolean> hasNewNotifications = BehaviorSubject.create();
 
     @Nullable
     private Single<NotificationConfig> cachedNotificationConfig;
@@ -122,7 +124,7 @@ public class DataAccessManager extends Manager {
                 .flatMapCompletable(initialDelay -> Completable.fromAction(() -> {
                     if (workManager == null) {
                         managerDisposable.add(Observable.interval(initialDelay, UPDATE_INTERVAL, TimeUnit.MILLISECONDS, Schedulers.io())
-                                .flatMapCompletable(tick -> updateIfNecessary()
+                                .flatMapCompletable(tick -> DataAccessUpdateWorker.createWork(getApplication())
                                         .doOnError(throwable -> Timber.w("Unable to update: %s", throwable.toString()))
                                         .onErrorComplete())
                                 .subscribeOn(Schedulers.io())
@@ -205,7 +207,7 @@ public class DataAccessManager extends Manager {
         return Observable.fromIterable(accessedTraceDataList)
                 .sorted((access1, access2) -> Integer.compare(access2.getWarningLevel(), access1.getWarningLevel()))
                 .flatMapCompletable(accessedTraceData -> getNotificationTexts(accessedTraceData)
-                        .map(notificationTexts -> notificationManager.createDataAccessedNotificationBuilder(MainActivity.class)
+                        .map(notificationTexts -> notificationManager.createDataAccessedNotificationBuilder()
                                 .setContentTitle(notificationTexts.getTitle())
                                 .setContentText(notificationTexts.getShortMessage())
                                 .build())
@@ -389,12 +391,17 @@ public class DataAccessManager extends Manager {
 
     public Single<AccessedData> restoreAccessedData() {
         return preferencesManager.restoreOrDefault(ACCESSED_DATA_KEY, new AccessedData())
-                .doOnSuccess(restoredData -> this.accessedData = restoredData);
+                .doOnSuccess(this::setAccessedDataAndPublish);
     }
 
     public Completable persistAccessedData(@NonNull AccessedData accessedData) {
         return preferencesManager.persist(ACCESSED_DATA_KEY, accessedData)
-                .doOnSubscribe(disposable -> this.accessedData = accessedData);
+                .doOnSubscribe(disposable -> setAccessedDataAndPublish(accessedData));
+    }
+
+    private void setAccessedDataAndPublish(@NonNull AccessedData accessedData) {
+        this.accessedData = accessedData;
+        hasNewNotifications.onNext(hasNewNotifications().blockingGet());
     }
 
     /**
@@ -405,6 +412,10 @@ public class DataAccessManager extends Manager {
                 .filter(AccessedTraceData::getIsNew)
                 .isEmpty()
                 .map(isEmpty -> !isEmpty);
+    }
+
+    public Observable<Boolean> observeNewNotificationsChanges() {
+        return hasNewNotifications.distinctUntilChanged();
     }
 
     /**
@@ -489,6 +500,7 @@ public class DataAccessManager extends Manager {
                         accessedTraceData.getWarningLevel(),
                         accessedTraceData.getHealthDepartment().getId()
                 ))
+                .doOnError(throwable -> Timber.w("Unable to get notification texts from config: %s", throwable.toString()))
                 .onErrorResumeWith(getFallbackNotificationTexts(accessedTraceData));
     }
 
@@ -545,6 +557,11 @@ public class DataAccessManager extends Manager {
     public Single<AccessedDataListItem> createAccessDataListItem(@NonNull AccessedTraceData accessedTraceData) {
         return getNotificationTexts(accessedTraceData)
                 .map(notificationTexts -> AccessedDataListItem.from(context, accessedTraceData, notificationTexts));
+    }
+
+    public Single<MessageListItem> createMessagesListItem(@NonNull AccessedTraceData accessedTraceData) {
+        return getNotificationTexts(accessedTraceData)
+                .map(notificationTexts -> new MessageListItem.AccessedDataListItem(accessedTraceData, notificationTexts));
     }
 
     /*

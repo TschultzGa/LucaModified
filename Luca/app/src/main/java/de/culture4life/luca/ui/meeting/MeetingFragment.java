@@ -16,7 +16,6 @@ import de.culture4life.luca.databinding.FragmentMeetingBinding;
 import de.culture4life.luca.ui.BaseFragment;
 import de.culture4life.luca.ui.dialog.BaseDialogFragment;
 import de.culture4life.luca.util.AccessibilityServiceUtil;
-import io.reactivex.rxjava3.core.Completable;
 
 public class MeetingFragment extends BaseFragment<MeetingViewModel> {
 
@@ -35,39 +34,37 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
     }
 
     @Override
-    protected Completable initializeViews() {
-        return super.initializeViews()
-                .andThen(Completable.fromAction(() -> {
-                    observe(viewModel.getIsHostingMeeting(), isHostingMeeting -> {
-                        if (!isHostingMeeting) {
-                            safeNavigateFromNavController(R.id.action_meetingFragment_to_checkInFragment, viewModel.getBundle().getValue());
-                        }
-                        AccessibilityServiceUtil.speak(getContext(), getString(R.string.meeting_was_ended_hint));
-                    });
-                    observe(viewModel.getQrCode(), value -> binding.qrCodeImageView.setImageBitmap(value));
-                    observe(viewModel.getIsLoading(), loading -> binding.loadingLayout.setVisibility(loading ? View.VISIBLE : View.GONE));
-                    observe(viewModel.getDuration(), value -> binding.durationTextView.setText(value));
-                    observe(viewModel.getAllGuests(), value -> {
-                        long checkedInGuestsCount = value.stream().filter(Guest::isCheckedIn).count();
-                        binding.guestsCountTextView.setText(String.valueOf(checkedInGuestsCount));
-                    });
-                    binding.meetingGuestsInfoImageView.setOnClickListener(v -> showMeetingMembersInfo());
-                    binding.slideToActView.setOnSlideCompleteListener(view -> viewModel.onMeetingEndRequested());
-                    binding.slideToActView.setOnSlideUserFailedListener((view, isOutside) -> {
-                        if (AccessibilityServiceUtil.isGoogleTalkbackActive(getContext())) {
-                            viewModel.onMeetingEndRequested();
-                        } else {
-                            Toast.makeText(getContext(), R.string.venue_slider_clicked, Toast.LENGTH_SHORT).show();
-                        }
-                    });
+    protected void initializeViews() {
+        super.initializeViews();
+        observe(viewModel.getIsHostingMeeting(), isHostingMeeting -> {
+            if (!isHostingMeeting) {
+                safeNavigateFromNavController(R.id.action_meetingFragment_to_checkInFragment, viewModel.getBundle().getValue());
+            }
+            AccessibilityServiceUtil.speak(getContext(), getString(R.string.meeting_was_ended_hint));
+        });
+        observe(viewModel.getQrCode(), value -> binding.qrCodeImageView.setImageBitmap(value));
+        observe(viewModel.getIsLoading(), loading -> binding.loadingLayout.setVisibility(loading ? View.VISIBLE : View.GONE));
+        observe(viewModel.getDuration(), value -> binding.durationTextView.setText(value));
+        observe(viewModel.getAllGuests(), value -> {
+            long checkedInGuestsCount = value.stream().filter(Guest::isCheckedIn).count();
+            binding.guestsCountTextView.setText(String.valueOf(checkedInGuestsCount));
+        });
+        binding.meetingGuestsInfoImageView.setOnClickListener(v -> showMeetingMembersInfo());
+        binding.slideToActView.setOnSlideCompleteListener(view -> viewModel.onMeetingEndRequested());
+        binding.slideToActView.setOnSlideUserFailedListener((view, isOutside) -> {
+            if (AccessibilityServiceUtil.isGoogleTalkbackActive(getContext())) {
+                viewModel.onMeetingEndRequested();
+            } else {
+                Toast.makeText(getContext(), R.string.venue_slider_clicked, Toast.LENGTH_SHORT).show();
+            }
+        });
 
-                    observe(viewModel.getIsLoading(), loading -> {
-                        if (!loading) {
-                            binding.slideToActView.resetSlider();
-                        }
-                    });
-                    observe(viewModel.getBundle(), this::processBundle);
-                }));
+        observe(viewModel.getIsLoading(), loading -> {
+            if (!loading) {
+                binding.slideToActView.resetSlider();
+            }
+        });
+        observe(viewModel.getBundle(), this::processBundle);
     }
 
     @Override

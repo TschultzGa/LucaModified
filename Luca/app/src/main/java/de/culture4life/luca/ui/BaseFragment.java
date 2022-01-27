@@ -53,6 +53,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import timber.log.Timber;
 
@@ -119,8 +120,10 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
         // TODO: 08.01.21 java.lang.IllegalStateException: Cannot invoke observe on a background thread; happened on emulator twice
         initializeViewModel()
                 .observeOn(AndroidSchedulers.mainThread())
-                .andThen(initializeViews())
-                .doOnComplete(() -> this.initialized = true)
+                .doOnComplete(() -> {
+                    initializeViews();
+                    this.initialized = true;
+                })
                 .subscribe(
                         () -> Timber.d("Initialized %s with %s", this, viewModel),
                         throwable -> Timber.e(throwable, "Unable to initialize %s with %s: %s", this, viewModel, throwable.toString())
@@ -133,15 +136,19 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
     @Override
     public void onAttach(@NonNull @NotNull Context context) {
         super.onAttach(context);
-        getActivityResult = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), activityResults::onNext);
+        getActivityResult = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), this::emitActivityResult);
+    }
+
+    private void emitActivityResult(ActivityResult activityResult) {
+        viewDisposable.add(Completable.fromAction(() -> activityResults.onNext(activityResult))
+                .subscribeOn(Schedulers.io())
+                .subscribe());
     }
 
     @CallSuper
     @Override
     public void onStart() {
         super.onStart();
-        observeErrors();
-        observeRequiredPermissions();
         viewDisposable = new CompositeDisposable();
         viewDisposable.add(waitUntilInitializationCompleted()
                 .andThen(viewModel.processArguments(getArguments()))
@@ -198,20 +205,18 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
     }
 
     @CallSuper
-    protected Completable initializeViews() {
-        return setupBackButton();
+    protected void initializeViews() {
+        setupBackButton();
+        observeErrors();
+        observeRequiredPermissions();
     }
 
-    protected Completable setupBackButton() {
-        return Completable.fromAction(() -> {
-            backImageView = getView().findViewById(R.id.actionBarBackButtonImageView);
-            if (backImageView == null) {
-                return;
-            }
-            backImageView.setOnClickListener(view -> {
-                navigationController.popBackStack();
-            });
-        });
+    protected void setupBackButton() {
+        backImageView = getView().findViewById(R.id.actionBarBackButtonImageView);
+        if (backImageView == null) {
+            return;
+        }
+        backImageView.setOnClickListener(view -> navigationController.popBackStack());
     }
 
     protected boolean onMenuItemClick(MenuItem item) {
@@ -268,7 +273,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
     }
 
     protected void indicateErrors(@NonNull Set<ViewError> errors) {
-        Timber.d("indicateErrors() called with: errors = [%s]", errors);
+        Timber.d("indicateErrors() called on %s with: errors = [%s]", this, errors);
         for (ViewError error : errors) {
             showErrorAsDialog(error);
         }
@@ -323,11 +328,12 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
                 .setMessage(error.getDescription());
 
         if (error.isResolvable()) {
-            builder.setPositiveButton(error.getResolveLabel(), (dialog, which) -> viewDisposable.add(error.getResolveAction()
-                    .subscribe(
-                            () -> Timber.d("Error resolved"),
-                            throwable -> Timber.w("Unable to resolve error: %s", throwable.toString())
-                    )));
+            builder.setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.cancel())
+                    .setPositiveButton(error.getResolveLabel(), (dialog, which) -> viewDisposable.add(error.getResolveAction()
+                            .subscribe(
+                                    () -> Timber.d("Error resolved"),
+                                    throwable -> Timber.w("Unable to resolve error: %s", throwable.toString())
+                            )));
         } else {
             builder.setPositiveButton(R.string.action_ok, (dialog, which) -> {
                 // do nothing
@@ -370,6 +376,18 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
                     .createIntent(getContext(), fileName);
             createFileIntent.addCategory(Intent.CATEGORY_OPENABLE);
             createFileIntent.setType("text/plain");
+            getActivityResult.launch(createFileIntent);
+            return activityResults;
+        }).firstOrError()
+                .filter(activityResult -> activityResult.getResultCode() == Activity.RESULT_OK)
+                .map(activityResult -> activityResult.getData().getData())
+                .switchIfEmpty(Single.error(new UserCancelledException()));
+    }
+
+    protected Single<Uri> getFileImportUri(@NonNull String[] mimeTypes) {
+        return Observable.defer(() -> {
+            Intent createFileIntent = new ActivityResultContracts.OpenDocument()
+                    .createIntent(getContext(), mimeTypes);
             getActivityResult.launch(createFileIntent);
             return activityResults;
         }).firstOrError()

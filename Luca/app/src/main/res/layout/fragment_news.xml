@@ -54,9 +54,16 @@
                         android:id="@+id/pageGroup2"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:showSeparator="false"
                         app:showStartIcon="false"
                         app:text="@string/what_is_new_series_check_in" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/pageGroup3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:showSeparator="false"
+                        app:showStartIcon="false"
+                        app:text="@string/what_is_new_series_notification_tab" />
 
                 </LinearLayout>
 

@@ -50,10 +50,12 @@ public abstract class BaseViewModel extends AndroidViewModel {
     protected final PreferencesManager preferencesManager;
 
     protected final CompositeDisposable modelDisposable = new CompositeDisposable();
+    protected final MutableLiveData<Boolean> isInitialized = new MutableLiveData<>(false);
     protected final MutableLiveData<Bundle> arguments = new MutableLiveData<>();
     protected final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     protected final MutableLiveData<Set<ViewError>> errors = new MutableLiveData<>(new HashSet<>());
     protected final MutableLiveData<ViewEvent<? extends Set<String>>> requiredPermissions = new MutableLiveData<>();
+
 
     @Nullable
     protected NavController navigationController;
@@ -72,9 +74,12 @@ public abstract class BaseViewModel extends AndroidViewModel {
 
     @CallSuper
     public Completable initialize() {
-        return updateRequiredPermissions()
+        return Single.fromCallable(isInitialized::getValue)
+                .filter(alreadyInitialized -> !alreadyInitialized)
+                .flatMapCompletable(alreadyInitialized -> updateRequiredPermissions())
                 .andThen(preferencesManager.initialize(application))
-                .andThen(navigateForDeepLinkIfAvailable());
+                .andThen(navigateForDeepLinkIfAvailable())
+                .doOnComplete(() -> updateAsSideEffect(isInitialized, true));
     }
 
     @CallSuper
@@ -160,8 +165,8 @@ public abstract class BaseViewModel extends AndroidViewModel {
                 })
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        () -> Timber.d("Added error: %s", viewError),
-                        throwable -> Timber.w("Unable to add error: %s: %s", viewError, throwable.toString())
+                        () -> Timber.d("Added error on %s: %s", this, viewError),
+                        throwable -> Timber.w("Unable to add error on %s: %s: %s", this, viewError, throwable.toString())
                 ));
     }
 
@@ -198,20 +203,20 @@ public abstract class BaseViewModel extends AndroidViewModel {
                 })
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        () -> Timber.d("Removed error: %s", viewError),
-                        throwable -> Timber.w("Unable to remove error: %s: %s", viewError, throwable.toString())
+                        () -> Timber.d("Removed error on %s: %s", this, viewError),
+                        throwable -> Timber.w("Unable to remove error on %s: %s: %s", this, viewError, throwable.toString())
                 ));
     }
 
     public void onErrorShown(@Nullable ViewError viewError) {
-        Timber.d("onErrorShown() called with: viewError = [%s]", viewError);
+        Timber.d("onErrorShown() called on %s with: viewError = [%s]", this, viewError);
         if (viewError != null && viewError.getRemoveWhenShown()) {
             removeError(viewError);
         }
     }
 
     public void onErrorDismissed(@Nullable ViewError viewError) {
-        Timber.d("onErrorDismissed() called with: viewError = [%s]", viewError);
+        Timber.d("onErrorDismissed() called on %s with: viewError = [%s]", this, viewError);
         removeError(viewError);
     }
 
@@ -301,4 +306,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
         return this.getClass().getSimpleName();
     }
 
+    public LiveData<Boolean> getIsInitialized() {
+        return isInitialized;
+    }
 }

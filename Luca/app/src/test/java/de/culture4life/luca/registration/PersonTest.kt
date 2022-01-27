@@ -6,6 +6,11 @@ import org.junit.Test
 class PersonTest {
 
     @Test
+    fun getSimplifiedFullName_nameWithEdgeCases_expectedOutput() {
+        assertEquals("TOM SSSMEIER", Person("Prof. Dr. Tom Jerry", "Süßmeier").getSimplifiedFullName())
+    }
+
+    @Test
     fun equals_sameNames_returnsTrue() {
         assertEquals(Person("a", "b"), Person("a", "b"))
     }

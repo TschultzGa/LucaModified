@@ -17,7 +17,7 @@ import timber.log.Timber;
 
 
 public class SplashActivity extends BaseActivity {
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTheme(R.style.Theme_Luca_DayNight);

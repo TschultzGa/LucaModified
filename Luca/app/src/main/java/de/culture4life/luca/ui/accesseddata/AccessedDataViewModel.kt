@@ -41,6 +41,7 @@ class AccessedDataViewModel(application: Application) : BaseViewModel(applicatio
             .flattenAsObservable { it.traceData }
             .flatMapSingle { dataAccessManager.createAccessDataListItem(it) }
             .toList()
+            .map { it.sortedByDescending { item -> item.accessTimestamp } }
             .flatMapCompletable { items -> update(accessedDataItems, items) }
     }
 

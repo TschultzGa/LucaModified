@@ -6,7 +6,6 @@
     <string name="url_privacy_policy">https://www.luca-app.de/app-privacy-policy/</string>
     <string name="url_imprint">https://luca-app.de/imprint</string>
     <string name="url_faq">https://www.luca-app.de/faq/</string>
-    <string name="mail_support">hello@luca-app.de</string>
     <string name="qr_code">QR Code</string>
     <string name="qr_code_scanner">QR Code Scanner</string>
     <string name="additional_details_content_description">Mehr Details</string>
@@ -33,7 +32,10 @@
     <string name="action_change">Wechseln</string>
     <string name="action_back">Zurück</string>
     <string name="action_accept">Einwilligen</string>
+    <string name="action_check_in">Einchecken</string>
     <string name="action_open">Öffnen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_delete_selected">Auswahl Löschen</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Etwas lief schief</string>
@@ -61,8 +63,12 @@
     <string name="notification_channel_status_description">Zeigt den aktuellen Status von luca.</string>
     <string name="notification_channel_access_title">Datenzugriffe</string>
     <string name="notification_channel_access_description">Informiert dich, sollte ein Gesundheitsamt im Rahmen der Kontaktnachverfolgung auf deine Daten zugegriffen haben.</string>
+    <string name="notification_channel_connect_title">luca Connect</string>
+    <string name="notification_channel_connect_description">Informiert dich, sollte dein zusatändiges Gesundheitsamt Nachrichten für dich haben.</string>
     <string name="notification_channel_event_title">Informationen</string>
     <string name="notification_channel_event_description">Informiert dich über Events der luca App.</string>
+    <string name="notification_channel_check_out_reminder_title">Check-out Erinnerung</string>
+    <string name="notification_channel_check_out_reminder_description">Informiert dich, wenn du länger als üblich eingecheckt bist.</string>
     <string name="notification_service_title">Eingecheckt</string>
     <string name="notification_service_description">@string/notification_checked_in_at_description</string>
     <string name="notification_error_title">luca ist auf ein Promlem gestoßen</string>
@@ -75,9 +81,14 @@
     <string name="notification_data_accessed_description">Ein Gesundheitsamt hat im Rahmen einer Datenanfrage deine Kontaktdaten erhalten.</string>
     <string name="notification_auto_checkout_triggered_title">@string/auto_checkout_info_title</string>
     <string name="notification_auto_checkout_triggered_description">Du hast den Standort verlassen und wurdest darum automatisch ausgecheckt.</string>
+    <string name="notification_check_out_reminder_title">Auschecken?</string>
+    <string name="notification_check_out_reminder_description">Du bist länger eingecheckt, als es bei der Location durchschnittlich der Fall ist. Jetzt auschecken?</string>
+    <string name="notification_luca_connect_supported_title">Aktiviere luca Connect – persönliche Meldungen</string>
+    <string name="notification_luca_connect_supported_description">Dein zuständiges Gesundheitsamt bietet jetzt luca Connect und persönliche Meldungen an! Aktiviere luca Connect, um dein Gesundheitsamt zu unterstützen und wichtige Informationen von ihm direkt in der luca App zu erhalten.</string>
     <string name="notification_action_stop_service">Service stoppen</string>
     <string name="notification_action_check_out">Auschecken</string>
     <string name="notification_action_end_meeting">@string/meeting_end_action</string>
+    <string name="notification_action_enroll_connect">@string/luca_connect_intro_action</string>
 
     <!-- Welcome -->
     <string name="welcome_app_slogan">Gemeinsam erleben.</string>
@@ -125,6 +136,13 @@
     <string name="registration_address_mandatory">Gastgeber müssen im Rahmen der Kontaktdatenerfassung deine Adresse aufnehmen. Deshalb ist die Angabe der Adresse für die Nutzung von luca verpflichtend.</string>
     <string name="registration_contact_info">Bitte gib eine korrekte Mobil- oder Festnetznummer an. Die Nummer wird für die Verifizierung verwendet. Du kannst selbst entscheiden, ob du zusätzlich eine E-Mail-Adresse angibst.</string>
     <string name="registration_address_info">Gastgeber:innen müssen im Rahmen der Kontaktdatenerfassung in der Regel auch deine Adresse aufnehmen. Deshalb ist die Angabe der Adresse für die Nutzung von luca verpflichtend.</string>
+    <string name="registration_update_postalCode_luca_connect_notice_title">Postleitzahl ändern?</string>
+    <string name="registration_update_postalCode_luca_connect_notice_description">Du bist dabei, deine Postleitzahl zu ändern. Die Änderung führt dazu, dass persönliche luca Connect und Meldungen durch dein zuständiges Gesundheitsamt deaktiviert werden. Im Meldungen-Tab oder in deinem Account kannst du luca Connect wieder aktivieren, wenn dein neues Gesundheitsamt luca und diese Funktion nutzt.</string>
+    <string name="registration_update_postalCode_luca_connect_notice_action">Trotzdem ändern</string>
+    <string name="registration_update_name_luca_connect_notice_title">Namen ändern?</string>
+    <string name="registration_update_name_luca_connect_notice_description">Du bist dabei, deinen Namen zu ändern. Wenn du deinen Namen änderst, werden die Dokumente, die du in der App hinterlegt hast, gelöscht. Die Änderung führt außerdem dazu, dass luca Connect und damit persönliche Meldungen durch dein zuständiges Gesundheitsamt deaktiviert werden. Im Meldungen-Tab oder in deinem Account kannst du luca Connect wieder aktivieren. Möchtest du fortfahren?</string>
+    <string name="registration_update_any_luca_connect_notice_title">Kontaktdaten ändern?</string>
+    <string name="registration_update_any_luca_connect_notice_description">Du bist dabei, deine Kontaktdaten (Anschrift) zu ändern. Die Änderung führt dazu, dass die Daten, die du für luca Connect und persönliche Meldungen durch dein Gesundheitsamt freigegeben hast, angepasst werden. Möchtest du fortfahren?</string>
 
     <!-- Onboarding -->
     <string name="onboarding_info_heading">Deine Daten</string>
@@ -137,14 +155,15 @@
     <!-- What is new -->
     <string name="what_is_new_series_luca_2_0">luca 2.0</string>
     <string name="what_is_new_series_check_in">Check-In</string>
+    <string name="what_is_new_series_notification_tab">Meldungen Tab</string>
 
     <string name="what_is_new_back">Zurück</string>
     <string name="what_is_new_next">Weiter</string>
     <string name="what_is_new_skip">Überspringen</string>
     <string name="what_is_new_close">Schließen</string>
     <string name="what_is_new_lets_go">Los geht\'s</string>
-    <string name="what_is_new_intro_heading">Es gibt wieder Neuigkeiten</string>
-    <string name="what_is_new_intro_description">Wir haben uns für euch ins Zeug gelegt und die Check-ins erleichtert.</string>
+    <string name="what_is_new_intro_heading">Neuigkeiten in der luca App</string>
+    <string name="what_is_new_intro_description">Es gibt wieder etwas Neues in der App: den Meldungen-Tab!</string>
     <string name="what_is_new_outro_heading">Das war\'s auch schon!</string>
     <string name="what_is_new_outro_description">Alle Infos und weiteren Erklärungen findest du auch nochmal unter Neuigkeiten im „Account“-Tab.\n\nPS: Auschecken nicht vergessen!</string>
 
@@ -164,6 +183,10 @@
     <string name="what_is_new_6_description">Teile deinen 2G/3G-Status direkt in deinem luca-QR-Code beim Check-in. Erleichtere das Einscannen für dich und die Betreiber:innen.</string>
     <string name="what_is_new_7_heading">Speisekarte und mehr</string>
     <string name="what_is_new_7_description">Betreiber:innen haben nun die Möglichkeit, Speisekarten, Lagepläne, Programme, ihre Webseite oder weitere Infos zu hinterlegen. Du findest sie nach dem Einchecken hinter dem jeweiligen Button.</string>
+    <string name="what_is_new_8_heading">Der neue Meldungen-Tab</string>
+    <string name="what_is_new_8_description">Im neuen Meldungen-Tab werden dir Mitteilungen von Gesundheitsämtern und dem luca-System angezeigt.</string>
+    <string name="what_is_new_9_heading">luca Connect</string>
+    <string name="what_is_new_9_description">Mit luca Connect kannst du freiwillig deine Kontaktdaten und deinen Impf-oder Genensenstatus mit deinem zuständigen Gesundheitsamt teilen. Mit diesen Informationen können Gesundheitsämter schnellere Risikoeinschätzung vornehmen und dich individuell über die luca App über z.B. Handlungsanweisungen informieren.</string>
 
     <!-- Navigation -->
     <string name="navigation_check_in">Einchecken</string>
@@ -177,11 +200,12 @@
     <string name="navigation_accessed_data_details">Datenzugriffsdetails</string>
     <string name="navigation_my_luca">@string/my_luca_heading</string>
     <string name="navigation_account">Account</string>
+    <string name="navigation_messages">@string/accessed_data_heading</string>
+    <string name="navigation_messages_details">@string/navigation_accessed_data_details</string>
 
     <!-- Menu -->
     <string name="menu_more_content_description">Mehr Menu</string>
     <string name="menu_contact_data">Kontaktdaten</string>
-    <string name="menu_clear_history">Historie löschen</string>
     <string name="menu_privacy_policy">Datenschutzerklärung</string>
     <string name="menu_terms_and_conditions">Nutzungsbedingungen</string>
     <string name="menu_faq">FAQ</string>
@@ -209,7 +233,8 @@
     <string name="check_in_invalid_deeplink_error">Der von dir gescannte QR-Code ist kein valider Check-in Link.\n\nInhalt des QR-Codes:\n<xliff:g example="https://www.luca-app.de/" id="deeplink">%1$s</xliff:g></string>
     <string name="check_in_voluntary_info_title">Freiwilliger Check-in</string>
     <string name="check_in_voluntary_info_description">Der Check-in an diesem Standort ist freiwillig. Wenn du trotzdem bei der Kontaktnachverfolgung helfen und im Risikofall gewarnt werden möchtest, kannst du dich freiwillig und sogar anonym einchecken. Beim anonymen Check-in werden deine Kontaktdaten nicht mit dem Gesundheitsamt geteilt.</string>
-    <string name="check_in_voluntary_info_checkbox">Freiwillig Kontaktdaten für das Gesundheitsamt freigeben</string>
+    <string name="check_in_voluntary_info_checkbox">Diese Einstellung für zukünftige Check-Ins merken</string>
+    <string name="check_in_voluntary_info_text_switch">Kontaktdaten mit Gesundheitsamt teilen</string>
     <string name="check_in_voluntary_info_action_button">Freiwillig einchecken</string>
     <string name="check_in_include_entry_policy_title">2G/3G-Status teilen</string>
     <string name="check_in_include_entry_policy_description">luca Standorte können Zugangsbeschränkungen haben, die einen 2G/3G-Nachweis erfordern. Wenn du deinen Status teilst, erhalten Standorte die Information, ob du ihre Zugangsregelung erfüllst, sehen aber nicht deine Nachweise.</string>
@@ -217,6 +242,10 @@
     <string name="check_in_include_entry_policy_consent_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
     <string name="check_in_documents_unavailable_title">@string/check_in_include_entry_policy_title</string>
     <string name="check_in_documents_unavailable_description">Du hast in deinem „Mein luca“-Tab aktuell keine Dokumente hinterlegt und kannst deinen 2G/3G-Status deswegen nicht teilen. Bitte zeige wenn du eingecheckt bist manuell deinen 2G/3G-Nachweis vor. Falls du beim nächsten Check-in deinen 2G/3G-Status automatisch teilen möchtest, füge deinen Nachweis im „Mein luca“-Tab hinzu.</string>
+    <string name="check_in_consent_entry_policy_sharing_title">Einverständnis</string>
+    <string name="check_in_consent_entry_policy_sharing_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
+    <string name="check_in_consent_entry_policy_sharing_button">AKZEPTIEREN</string>
+    <string name="check_in_dont_show_again_default_text">Zukünftig nicht mehr fragen und Einstellung merken</string>
 
     <!-- Private Meeting -->
     <string name="meeting_heading">Privates Treffen</string>
@@ -266,7 +295,13 @@
     <string name="venue_check_in_document_redirect_description">Hey, du scannst gerade den QR-Code eines Dokuments und nicht den eines luca-Standorts. Wenn du ein Dokument hinzufügen möchtest, klicke auf „WEITER“.</string>
     <string name="venue_check_in_confirmation_title">Check-In</string>
     <string name="venue_check_in_confirmation_description">Du willst dich bei <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g> einchecken?</string>
-    <string name="venue_check_in_confirmation_dont_show_again">Nicht mehr anzeigen</string>
+    <string name="venue_check_in_confirmation_dont_show_again">Zukünftig nicht mehr nachfragen und direkt einchecken</string>
+    <string name="venue_check_in_share_entry_policy_title">2G/3G-Status teilen</string>
+    <string name="venue_check_in_share_entry_policy_description">Dieser Standort fordert einen Nachweis deines 2G/3G-Status. Füge Nachweise über Impfung, Genesung oder negative Tests im „Mein luca“-Tab hinzu. Wenn du deinen Status teilst, erhalten Standorte die Information, ob du ihre Zugangsregelung erfüllst, sehen aber nicht deine Nachweise.</string>
+    <string name="venue_check_in_share_entry_policy_toggle_text">@string/venue_check_in_share_entry_policy_title</string>
+    <string name="venue_check_in_share_entry_policy_info_text">luca Standorte können Zugangsbeschränkungen haben, die einen 2G/3G-Nachweis erfordern. Wenn du deinen Status teilst, erhalten Standorte die Information, ob du ihre Zugangsregelung erfüllst, sehen aber nicht deine Nachweise.</string>
+    <string name="venue_check_in_share_entry_policy_checkbox_text">Aktiviere, wenn du deine Einstellung zum Teilen des 2G/3G-Status dauerhaft speichern möchtest. Diese Einstellung kann im Account Tab geändert werden.</string>
+    <string name="venue_check_in_share_entry_policy_no_proof_warning">Du hast in deinem „Mein luca“-Tab aktuell keine Dokumente hinterlegt und kannst deinen 2G/3G-Status deswegen nicht teilen. Bitte zeige wenn du eingecheckt bist manuell deinen 2G/3G-Nachweis vor. Falls du beim nächsten Check-in deinen 2G/3G-Status automatisch teilen möchtest, füge deinen Nachweis im „Mein luca“-Tab hinzu.</string>
     <string name="venue_change_location_title">Location wechseln?</string>
     <string name="venue_change_location_description">Du bist bereits eingecheckt. Möchtest du die Location wechseln?</string>
 
@@ -319,6 +354,55 @@
     <string name="venue_url_type_website">Webseite</string>
     <string name="venue_url_type_general">Allgemeine Infos</string>
 
+    <!-- Messages -->
+    <string name="messages_empty_title">Du hast noch keine Meldungen erhalten</string>
+    <string name="messages_empty_description">Hier erscheinen Meldungen, sobald auf deine Daten zugegriffen worden ist oder dein Gesundheitsamt dir wichtige Informationen zukommen lassen will.\nMögliche Meldungen: Systeminformationen, Informationen über mögliches / erhöhtes Infektionsrisiko &amp; Datenzugriffe.</string>
+    <string name="messages_luca_connect_action">Luca Connect</string>
+
+    <!-- Luca connect -->
+    <string name="luca_connect_intro_title">Aktiviere luca Connect</string>
+    <string name="luca_connect_intro_description">Unterstütze dein Gesundheitsamt und erhalte wichtige Informationen und Meldungen direkt persönlich in der luca App./n/nGesundheitsämter können mit deinen Informationen schneller und effizienter arbeiten und den Warnprozess verbessern – du kannst dein Umfeld so besser schützen. Um luca Connect zu aktivieren, benötigst du einen Impf- oder Genesenennachweis.</string>
+    <string name="luca_connect_intro_action">Aktivieren</string>
+
+    <string name="luca_connect_provide_proof_title">luca Connect aktivieren: Nachweis bereitstellen</string>
+    <string name="luca_connect_provide_proof_description">Um persönliche Meldungen zu aktivieren, muss ein Impf- oder Genesenennachweis in deiner luca App hinterlegt sein.\n\nDeine Daten werden verschlüsselt an dein zuständiges Gesundheitsamt übermittelt und können nur von diesem verarbeitet werden. Sie werden nur bei Suchen durch Gesundheitsamtsmitarbeiter:innen angezeigt.</string>
+    <string name="luca_connect_provide_proof_shared_data">Geteilte Nachweise:</string>
+    <string name="luca_connect_provide_proof_certificate">Impf- und/ oder Genesenennachweis</string>
+    <string name="luca_connect_provide_proof_no_certificate">Du hast noch keinen Nachweis in luca hinterlegt.</string>
+    <string name="luca_connect_provide_proof_action">Bereitstellen</string>
+    <string name="luca_connect_provide_proof_add_certificate_action">Nachweis hinzufügen</string>
+
+    <string name="luca_connect_add_certificate_intro_title">Nachweis hinzufügen: Bildimport oder Scan</string>
+    <string name="luca_connect_add_certificate_intro_description">Wähle ein Bild vom QR-Code deines Nachweises aus, um ihn in luca hinzuzufügen.\n\nScanne alternativ den QR-Code deines Nachweises (digitales EU-Impf- oder Genesenen-Zertifikat), um ihn in luca hinzuzufügen.\n\nHast du deinen Nachweis schon in einer anderen App hinzugefügt, kannst du den dort angezeigten QR-Code nutzen, um den Nachweis auch in luca zu hinterlegen.</string>
+    <string name="luca_connect_add_certificate_intro_import_image_action">Bild importieren</string>
+    <string name="luca_connect_add_certificate_intro_scan_qr_code_action">QR-Code scannen</string>
+    <string name="luca_connect_add_certificate_scan_qr_code_title">Nachweis per Scan hinzufügen</string>
+    <string name="luca_connect_add_certificate_scan_qr_code_description">Scanne den QR-Code deines Nachweises (digitales EU-Impf- oder Genesenen-Zertifikat).</string>
+    <string name="luca_connect_add_certificate_outro_title">Nachweis erfolgreich hinzugefügt!</string>
+    <string name="luca_connect_add_certificate_outro_description">Du kannst luca Connect jetzt aktivieren. Zusätzlich findest du deinen Nachweis jetzt in deinem „Mein luca“ Tab. Hier kannst du ihn auch immer vorzeigen, wenn du danach gefragt wirst.</string>
+    <string name="luca_connect_add_certificate_error_title">@string/document_import_error_title</string>
+    <string name="luca_connect_add_certificate_no_qr_code_error_description">In dem importierten Bild konnte kein QR-Code gefunden werden.</string>
+
+    <string name="luca_connect_share_data_title">Daten</string>
+    <string name="luca_connect_share_data_description">Neben deinem Nachweis werden auch deine Kontaktinformationen verschlüsselt übermittelt. Du kannst deine Daten in deinem Account bearbeiten.</string>
+    <string name="luca_connect_share_data_name">Vor- und Nachname</string>
+    <string name="luca_connect_share_data_birthday">@string/data_request_document_birthdate</string>
+    <string name="luca_connect_share_data_address">@string/data_request_contact_data_address</string>
+    <string name="luca_connect_share_data_phone">@string/data_request_contact_data_phone_number</string>
+    <string name="luca_connect_share_data_mail">@string/data_request_contact_data_mail</string>
+    <string name="luca_connect_share_data_action">Freigeben</string>
+
+    <string name="luca_connect_consent_title">Einverständniserklärung</string>
+    <string name="luca_connect_consent_checkbox">Hiermit bestätige ich den Wahrheitsgehalt meiner hinterlegten Kontaktdaten. Der Impf-/Genesenennachweis gehört zu meiner Person.</string>
+    <string name="luca_connect_consent_description">Ich erkläre mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, mein Impf- oder Genesenenzertifikat sowie meine bereits in der luca App hinterlegten Kontaktdaten meinem für mich zuständigen Gesundheitsamt über das luca System zur Verfügung zu stellen. Das Gesundheitsamt kann mich bei Bedarf im luca System suchen, auf meine übermittelten Daten zugreifen, und mir über die luca App Meldungen zukommen lassen. Mein Einverständnis kann ich jederzeit über den Account Tab in meiner luca App widerrufen. Die Löschung erfolgt automatisch, spätestens nach 7 Tagen Inaktivität.</string>
+    <string name="luca_connect_consent_action">zustimmen</string>
+
+    <string name="luca_connect_outro_title">Vielen Dank für deine Mithilfe!</string>
+    <string name="luca_connect_outro_description">Durch deine Beteiligung an luca Connect hilfst du deinem zuständigen Gesundheitsamt mit der Bereitstellung deines Genesenen- oder Impfnachweises sowie deiner Kontaktdaten beim frühzeitigen Stoppen von Infektionsketten.\nDein Gesundheitsamt kann dich mit wichtigen Informationen und Meldungen schnell und direkt über die luca App versorgen.</string>
+    <string name="luca_connect_outro_action">@string/what_is_new_close</string>
+
+    <string name="luca_connect_activation_error_title">luca Connect Aktivierung fehlgeschlagen</string>
+
     <!-- History -->
     <string name="history_empty_title">Keine Einträge</string>
     <string name="history_empty_description">Deine Historie sammelt alle Aktivitäten der letzten <xliff:g example="28" id="count">%1$d</xliff:g>&#160;Tage. Im Moment hast du keine Einträge aus diesem Zeitraum.</string>
@@ -350,10 +434,13 @@
     <string name="history_data_cleared_description">Alle Einträge wurden von diesem Gerät entfernt.</string>
     <string name="history_data_shared_title">Daten freigegeben</string>
     <string name="history_data_shared_description">Du hast deine Kontaktdaten und Historie der letzten <xliff:g example="14" id="count">%1$d</xliff:g>&#160;Tage für das Gesundheitsamt freigegeben.</string>
-    <string name="history_clear_title">Möchtest du deine Historie wirklich leeren?</string>
-    <string name="history_clear_description">Vergangene Einträge werden in deiner App nicht mehr angezeigt, bleiben aber noch bis zu 28&#160;Tage im System und werden bei einer Datenfreigabe mit dem Gesundheitsamt geteilt.</string>
+    <string name="history_clear_title">Historie in der App löschen</string>
+    <string name="history_clear_description">Willst du deine Historie wirklich aus der App löschen?\n\nWenn du deine Historie löschst, werden dir keine Einträge mehr angezeigt. Die Einträge bleiben jedoch entsprechend der Löschfristen im System und können auch weiterhin von dir mit dem Gesundheitsamt geteilt werden.</string>
     <string name="history_clear_content_description">Lösche Historien Einträge</string>
-    <string name="history_clear_action">Leeren</string>
+    <string name="history_edit_content_description">Bearbeite Historie</string>
+    <string name="history_delete_selected_title">Auswahl löschen?</string>
+    <string name="history_delete_selected_description">Willst du die ausgewählten Check-ins endgültig löschen?</string>
+    <string name="history_delete_select_content_description">Zum Löschen auswählen</string>
     <string name="history_children_title">Kinder: <xliff:g example="John Doe, Jane Doe" id="children">%1$s</xliff:g></string>
 
     <!-- Accessed Data -->
@@ -415,8 +502,9 @@
     <string name="document_import_check_in_redirect_description">Hey, du scannst gerade den QR-Code eines luca-Standorts und keinen Dokument-QR-Code. Klicke „WEITER“ um eingecheckt zu werden.</string>
     <string name="document_import_error_different_birth_dates_title">Vorgang fehlgeschlagen</string>
     <string name="document_import_error_different_birth_dates_description">Das Dokument konnte nicht hinzugefügt werden, da die Geburtsdaten nicht übereinstimmen.</string>
-    <string name="document_outcome_negative">Testergebnis Negativ</string>
-    <string name="document_outcome_positive">Testergebnis Positiv</string>
+    <string name="document_outcome">Testergebnis <xliff:g example="Positiv" id="outcome">%1$s</xliff:g></string>
+    <string name="document_outcome_negative">Negativ</string>
+    <string name="document_outcome_positive">Positiv</string>
     <string name="document_outcome_partially_immune">Teilweise Immunisiert %1$s</string>
     <string name="document_outcome_partially_vaccinated">Partieller Impfschutz %1$s</string>
     <string name="document_outcome_fully_vaccinated">Vollständiger Impfschutz %1$s</string>
@@ -429,13 +517,13 @@
     <string name="document_type_vaccination">IMPFNACHWEIS</string>
     <string name="document_type_unknown">@string/document_outcome_unknown</string>
     <string name="document_type_of_document_label">Testart:</string>
-    <string name="document_issued_by">Ausgestellt:</string>
+    <string name="document_issued">Ausgestellt:</string>
     <string name="vaccination_date_label">Impfdatum:</string>
     <string name="document_issued_at">Datum:</string>
     <string name="document_created_before">Erstellt vor:</string>
     <string name="document_valid_until">Gültig bis:</string>
-    <string name="document_lab_issuer">Durchgeführt von:</string>
-    <string name="document_doctor_title">Arzt:</string>
+    <string name="document_lab_issuer">Aussteller:</string>
+    <string name="document_lab_tester">Tester:</string>
     <string name="item_delete_action">Löschen</string>
     <string name="delete_test_action">Test löschen</string>
     <string name="delete_appointment_action">Termin löschen</string>
@@ -506,6 +594,9 @@
     <!-- Account tab -->
     <string name="account_tab_section_settings">Einstellungen</string>
     <string name="account_tab_item_edit_contact_data">Kontaktdaten</string>
+    <string name="account_tab_item_luca_connect">luca Connect</string>
+    <string name="account_tab_item_luca_connect_switch_title">luca Connect aktivieren</string>
+    <string name="account_tab_item_luca_connect_description">Aktivierst du luca Connect, unterstützt du dein Gesundheitsamt und erhältst wichtige Meldungen vom zuständigen Gesundheitsamt persönlich direkt in deiner luca App.\n\nDeine Daten werden verschlüsselt an dein zuständiges Gesundheitsamt übermittelt und können nur von diesem verarbeitet werden. Sie werden nur bei Suchen durch Gesundheitsamtsmitarbeiter:innen angezeigt.</string>
 
     <string name="account_tab_section_help">Hilfe</string>
     <string name="account_tab_item_guides">Neuigkeiten</string>
@@ -638,5 +729,9 @@
     <string name="updated_terms_info">Tippe auf „ZUSTIMMEN”, um die aktualisierten <b><a href="https://www.luca-app.de/app-terms-and-conditions-2/">Nutzungsbedingungen</a></b> und die <b><a href="https://www.luca-app.de/app-privacy-policy/">Datenschutzerklärung</a></b> zu akzeptieren.</string>
     <string name="updated_terms_button_agree">ZUSTIMMEN</string>
     <string name="updated_terms_changes_action">Änderungen</string>
+
+    <!-- Notification Settings -->
+    <string name="notification_setting_activation_title">luca möchte dir Benachrichtigungen senden</string>
+    <string name="notification_setting_activation_description">Aktiviere Benachrichtigungen in deinen Einstellungen, damit du keine wichtigen luca Connect Meldungen verpasst.</string>
 
 </resources>

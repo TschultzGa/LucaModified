@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ItemMyLucaBinding
@@ -21,9 +22,11 @@ class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.
         binding.itemTitleTextView.text = item.title
         binding.itemTitleImageView.setImageResource(item.imageResource)
         binding.qrCodeImageView.setImageBitmap(item.barcode)
+        binding.qrCodeImageView.isVisible = item.barcode != null
         binding.providerTextView.text = item.provider
+        binding.providerTextView.isVisible = item.barcode != null
         binding.deleteItemButton.text = item.deleteButtonText
-        binding.collapseLayout.visibility = if (item.isExpanded) View.VISIBLE else View.GONE
+        binding.collapseLayout.isVisible = item.isExpanded
         binding.collapseIndicator.rotationX = if (item.isExpanded) 180F else 0F
         setupDynamicContent(item.topContent, binding.topContent)
         setupDynamicContent(item.collapsedContent, binding.collapsedContent)

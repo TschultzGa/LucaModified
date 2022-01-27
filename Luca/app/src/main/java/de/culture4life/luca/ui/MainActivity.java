@@ -2,10 +2,12 @@ package de.culture4life.luca.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -15,11 +17,12 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
 
+import java.util.concurrent.TimeUnit;
+
 import de.culture4life.luca.R;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.ui.registration.RegistrationActivity;
 import five.star.me.FiveStarMe;
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -29,11 +32,15 @@ public class MainActivity extends BaseActivity {
 
     private NavController navigationController;
     private BottomNavigationView bottomNavigationView;
+    private MainViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        viewModel.initialize().subscribe();
+
         initializeNavigation();
         hideActionBar();
         setupKeyboardListener();
@@ -49,7 +56,7 @@ public class MainActivity extends BaseActivity {
 
     private void initializeNavigation() {
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.checkInFragment, R.id.myLucaFragment, R.id.accountFragment
+                R.id.checkInFragment, R.id.myLucaFragment, R.id.accountFragment, R.id.messagesFragment
         ).build();
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.navigationHostFragment);
@@ -57,6 +64,7 @@ public class MainActivity extends BaseActivity {
         navigationController.setGraph(R.navigation.mobile_navigation);
         NavigationUI.setupActionBarWithNavController(this, navigationController, appBarConfiguration);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        bottomNavigationView.setItemIconTintList(/* Don't tint icons, we will control states changes by self. */ null);
         NavigationUI.setupWithNavController(bottomNavigationView, navigationController);
 
         bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
@@ -107,9 +115,13 @@ public class MainActivity extends BaseActivity {
     private Completable processNotificationAction(int action) {
         return Completable.fromAction(() -> {
             switch (action) {
-                case LucaNotificationManager.ACTION_SHOW_ACCESSED_DATA:
-                    Timber.d("Showing accessed data");
-                    navigationController.navigate(R.id.historyFragment);
+                case LucaNotificationManager.ACTION_SHOW_CHECKIN_TAB:
+                    Timber.d("Showing checkin tab");
+                    navigationController.navigate(R.id.checkInFragment);
+                    break;
+                case LucaNotificationManager.ACTION_SHOW_MESSAGES:
+                    Timber.d("Showing messages");
+                    navigationController.navigate(R.id.messagesFragment);
                     break;
                 default:
                     Timber.w("Unknown notification action: %d", action);
@@ -118,10 +130,22 @@ public class MainActivity extends BaseActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        activityDisposable.add(viewModel.keepDataUpdated()
+                .doOnSubscribe(disposable -> Timber.d("Keeping data updated for %s", this))
+                .doOnError(throwable -> Timber.w(throwable, "Unable to keep data updated for %s", this))
+                .retryWhen(errors -> errors.delay(1, TimeUnit.SECONDS))
+                .doFinally(() -> Timber.d("Stopping to keep data updated for %s", this))
+                .subscribeOn(Schedulers.io())
+                .subscribe());
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         showRegistrationIfRequired();
-        updateHistoryBadge();
+        viewModel.getHasNewMessages().observe(this, this::updateMessagesMenuIcon);
     }
 
     private void showRegistrationIfRequired() {
@@ -157,26 +181,13 @@ public class MainActivity extends BaseActivity {
         });
     }
 
-    /**
-     * Refresh the history badge indicator for access notifications
-     */
-    public void updateHistoryBadge() {
-        activityDisposable.add(application.getDataAccessManager()
-                .initialize(application)
-                .andThen(application.getDataAccessManager().hasNewNotifications())
-                .onErrorReturnItem(false)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::setHistoryBadge)
-        );
-    }
-
-    private void setHistoryBadge(boolean enabled) {
-        if (enabled) {
-            bottomNavigationView.getOrCreateBadge(R.id.historyFragment).setBackgroundColor(ContextCompat.getColor(this, R.color.highlightColor));
+    private void updateMessagesMenuIcon(boolean hasNewMessages) {
+        Menu menu = bottomNavigationView.getMenu();
+        MenuItem messagesMenuItem = menu.findItem(R.id.messagesFragment);
+        if (hasNewMessages) {
+            messagesMenuItem.setIcon(R.drawable.ic_navigation_messages_new);
         } else {
-            bottomNavigationView.removeBadge(R.id.historyFragment);
+            messagesMenuItem.setIcon(R.drawable.ic_navigation_messages);
         }
     }
-
 }

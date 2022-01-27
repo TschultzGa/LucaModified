@@ -88,7 +88,7 @@ public interface LucaEndpointsV3 {
     @Headers("Content-Type: application/json")
     Completable addAdditionalCheckInProperties(@Body AdditionalCheckInPropertiesRequestData data);
 
-    @DELETE("traces")
+    @HTTP(method = "DELETE", path = "traces", hasBody = true)
     @Headers("Content-Type: application/json")
     Completable deleteTrace(@Body TraceDeletionRequestData data);
 

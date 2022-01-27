@@ -14,14 +14,22 @@ class DataAccessUpdateWorker(
 ) : RxWorker(appContext, workerParams) {
 
     override fun createWork(): Single<Result> {
-        return Completable.defer {
-            val application = applicationContext as LucaApplication
-            val dataAccessManager = application.dataAccessManager
-            dataAccessManager.initialize(application)
-                .andThen(dataAccessManager.updateIfNecessary())
-                .subscribeOn(Schedulers.io())
-        }.andThen(Single.just(Result.success()))
+        return Companion.createWork(applicationContext as LucaApplication)
+            .andThen(Single.just(Result.success()))
             .onErrorReturnItem(Result.failure())
+            .subscribeOn(Schedulers.io())
+    }
+
+    companion object {
+
+        @JvmStatic
+        fun createWork(application: LucaApplication): Completable {
+            with(application.dataAccessManager) {
+                return initialize(application)
+                    .andThen(updateIfNecessary())
+            }
+        }
+
     }
 
 }

@@ -25,7 +25,9 @@ import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.R;
+import de.culture4life.luca.connect.ConnectManager;
 import de.culture4life.luca.document.DocumentManager;
+import de.culture4life.luca.health.HealthDepartmentManager;
 import de.culture4life.luca.network.NetworkManager;
 import de.culture4life.luca.preference.PreferencesManager;
 import de.culture4life.luca.registration.RegistrationData;
@@ -60,6 +62,8 @@ public class RegistrationViewModel extends BaseViewModel {
     private final RegistrationManager registrationManager;
     private final PreferencesManager preferencesManager;
     private final DocumentManager documentManager;
+    private final HealthDepartmentManager healthDepartmentManager;
+    private final ConnectManager connectManager;
     private final PhoneNumberUtil phoneNumberUtil;
 
     private final MutableLiveData<Double> progress = new MutableLiveData<>(0D);
@@ -78,12 +82,16 @@ public class RegistrationViewModel extends BaseViewModel {
     private final MutableLiveData<Boolean> shouldRequestNewVerificationTan = new MutableLiveData<>(true);
     private final MutableLiveData<Long> nextPossibleTanRequestTimestamp = new MutableLiveData<>();
     private final MutableLiveData<Boolean> completed = new MutableLiveData<>(false);
+    private final MutableLiveData<Boolean> connectEnrollmentStatus = new MutableLiveData<>(false);
 
     private RegistrationData registrationData;
     private ViewError registrationError;
 
     private boolean isInEditMode;
     private boolean shouldReImportTestData;
+    private boolean isNameChanged;
+    private boolean isPostalCodeChanged;
+    private boolean isAnyContactDataChanged;
     private boolean isRegisteringUser;
 
     public RegistrationViewModel(@NonNull Application application) {
@@ -91,6 +99,8 @@ public class RegistrationViewModel extends BaseViewModel {
         preferencesManager = this.application.getPreferencesManager();
         registrationManager = this.application.getRegistrationManager();
         documentManager = this.application.getDocumentManager();
+        healthDepartmentManager = this.application.getHealthDepartmentManager();
+        connectManager = this.application.getConnectManager();
         phoneNumberUtil = PhoneNumberUtil.getInstance();
 
         formValueSubjects = new HashMap<>();
@@ -126,7 +136,7 @@ public class RegistrationViewModel extends BaseViewModel {
     }
 
     private Completable initializeRegistrationData() {
-        return registrationManager.getOrCreateRegistrationData()
+        return registrationManager.getRegistrationData()
                 .doOnSuccess(registrationData -> this.registrationData = registrationData)
                 .ignoreElement();
     }
@@ -143,7 +153,8 @@ public class RegistrationViewModel extends BaseViewModel {
                 super.keepDataUpdated(),
                 validateFormValueChanges(),
                 observeRegistrationDataChanges(),
-                observePhoneNumberVerificationChanges()
+                observePhoneNumberVerificationChanges(),
+                keepConnectEnrollmentStatusUpdated()
         );
     }
 
@@ -202,13 +213,7 @@ public class RegistrationViewModel extends BaseViewModel {
         modelDisposable.add(updateRegistrationDataWithFormValues()
                 .andThen(registrationManager.updateUser())
                 .andThen(persistUserDataUpdateInHistory())
-                .andThen(Completable.defer(() -> {
-                    if (shouldReImportTestData) {
-                        return documentManager.reImportDocuments();
-                    } else {
-                        return Completable.complete();
-                    }
-                }))
+                .andThen(additionalStepsAfterUpdate())
                 .doOnSubscribe(disposable -> {
                     updateAsSideEffect(isLoading, true);
                     removeError(registrationError);
@@ -230,6 +235,41 @@ public class RegistrationViewModel extends BaseViewModel {
                 ));
     }
 
+    private Completable additionalStepsAfterUpdate() {
+        return Completable.mergeArray(
+                unEnrollIfRequired(),
+                updateSharedDataIfRequired(),
+                reImportDocumentsIfRequired(),
+                updateResponsibleHealthDepartmentIfRequired()
+        );
+    }
+
+    private Completable updateResponsibleHealthDepartmentIfRequired() {
+        return Single.fromCallable(this::isPostalCodeChanged)
+                .filter(shouldUnEnroll -> shouldUnEnroll)
+                .flatMapCompletable(shouldUnEnroll ->
+                        healthDepartmentManager.deleteResponsibleHealthDepartment()
+                                .andThen(healthDepartmentManager.updateResponsibleHealthDepartmentIfRequired()));
+    }
+
+    private Completable unEnrollIfRequired() {
+        return Single.fromCallable(this::getShouldUnEnrollLucaConnect)
+                .filter(shouldUnEnroll -> shouldUnEnroll)
+                .flatMapCompletable(shouldUnEnroll -> connectManager.unEnroll());
+    }
+
+    private Completable updateSharedDataIfRequired() {
+        return Single.fromCallable(this::getShouldUpdateLucaConnectSharedData)
+                .filter(shouldUpdate -> shouldUpdate)
+                .flatMapCompletable(shouldUpdate -> connectManager.reEnroll());
+    }
+
+    private Completable reImportDocumentsIfRequired() {
+        return Single.fromCallable(this::getShouldReImportTestData)
+                .filter(shouldReImport -> shouldReImport)
+                .flatMapCompletable(shouldReImport -> documentManager.reImportDocuments());
+    }
+
     public void onRegistrationRequested() {
         if (isRegisteringUser) {
             // prevent multiple calls due to double click
@@ -239,6 +279,7 @@ public class RegistrationViewModel extends BaseViewModel {
         modelDisposable.add(updateRegistrationDataWithFormValues()
                 .andThen(registrationManager.registerUser())
                 .andThen(persistUserDataUpdateInHistory())
+                .andThen(healthDepartmentManager.invokeResponsibleHealthDepartmentUpdateIfRequired())
                 .doOnSubscribe(disposable -> {
                     updateAsSideEffect(isLoading, true);
                     removeError(registrationError);
@@ -266,6 +307,7 @@ public class RegistrationViewModel extends BaseViewModel {
     public void updateRegistrationDataWithFormValuesAsSideEffect() {
         modelDisposable.add(updateRegistrationDataWithFormValues()
                 .onErrorComplete()
+                .subscribeOn(Schedulers.io())
                 .subscribe());
     }
 
@@ -277,23 +319,31 @@ public class RegistrationViewModel extends BaseViewModel {
     public Completable updateRegistrationDataWithFormValues() {
         return Completable.mergeArray(
                 updatePhoneNumberVerificationStatus(),
-                updateShouldReImportingTestData()
-        ).andThen(Completable.fromAction(() -> {
-            registrationData.setFirstName(firstName.getValue());
-            registrationData.setLastName(lastName.getValue());
-            if (!isInEditMode || SKIP_PHONE_NUMBER_VERIFICATION) {
-                registrationData.setPhoneNumber(phoneNumber.getValue());
-            }
-            String email = this.email.getValue();
-            if (email != null && (isValidEMailAddress(email) || email.isEmpty())) {
-                // email is optional and should only be set when valid or empty (to delete value)
-                registrationData.setEmail(email);
-            }
-            registrationData.setStreet(street.getValue());
-            registrationData.setHouseNumber(houseNumber.getValue());
-            registrationData.setCity(city.getValue());
-            registrationData.setPostalCode(postalCode.getValue());
-        })).andThen(preferencesManager.persist(REGISTRATION_DATA_KEY, registrationData));
+                updateShouldReImportingTestData(),
+                updateLucaConnectUpdatesRequired()
+        )
+                .andThen(Single.fromCallable(() -> buildUpdateRegistrationData(registrationData)))
+                .flatMapCompletable(data -> registrationManager.persistRegistrationData(registrationData));
+    }
+
+    private RegistrationData buildUpdateRegistrationData(RegistrationData registrationData) {
+        registrationData.setId(registrationData.getId());
+        registrationData.setRegistrationTimestamp(registrationData.getRegistrationTimestamp());
+        registrationData.setFirstName(getSanitizedString(firstName.getValue()));
+        registrationData.setLastName(getSanitizedString(lastName.getValue()));
+        if (!isInEditMode || SKIP_PHONE_NUMBER_VERIFICATION) {
+            registrationData.setPhoneNumber(getSanitizedString(phoneNumber.getValue()));
+        }
+        String email = this.email.getValue();
+        if (email != null && (isValidEMailAddress(email) || email.isEmpty())) {
+            // email is optional and should only be set when valid or empty (to delete value)
+            registrationData.setEmail(email);
+        }
+        registrationData.setStreet(getSanitizedString(street.getValue()));
+        registrationData.setHouseNumber(getSanitizedString(houseNumber.getValue()));
+        registrationData.setCity(getSanitizedString(city.getValue()));
+        registrationData.setPostalCode(getSanitizedString(postalCode.getValue()));
+        return registrationData;
     }
 
     private Completable updateFormValuesWithRegistrationData() {
@@ -320,7 +370,7 @@ public class RegistrationViewModel extends BaseViewModel {
             registrationData.setPostalCode("12345");
             registrationData.setCity("City");
         }).andThen(Completable.mergeArray(
-                preferencesManager.persist(REGISTRATION_DATA_KEY, registrationData),
+                registrationManager.persistRegistrationData(registrationData),
                 updateFormValuesWithRegistrationData()
         ));
     }
@@ -502,9 +552,7 @@ public class RegistrationViewModel extends BaseViewModel {
                     updateAsSideEffect(isLoading, true);
                 })
                 .doOnError(throwable -> {
-                    boolean isForbidden = NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_FORBIDDEN);
-                    boolean isBadRequest = NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_BAD_REQUEST);
-                    if (isForbidden || isBadRequest) {
+                    if (NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_FORBIDDEN, HttpURLConnection.HTTP_BAD_REQUEST)) {
                         // TAN was incorrect
                         // No need to create an error here, this will be handled in the TAN dialog
                         return;
@@ -549,6 +597,36 @@ public class RegistrationViewModel extends BaseViewModel {
 
     private Completable clearRecentTanChallengeIds() {
         return preferencesManager.delete(RECENT_TAN_CHALLENGE_IDS_KEY);
+    }
+
+    private Completable keepConnectEnrollmentStatusUpdated() {
+        return connectManager.getEnrollmentStatusAndChanges()
+                .flatMapCompletable(status -> updateIfRequired(connectEnrollmentStatus, status));
+    }
+
+    private boolean isLucaConnectEnrolled() {
+        return connectEnrollmentStatus.getValue();
+    }
+
+    public boolean isLucaConnectNoticeRequired() {
+        boolean isLucaConnectEnrolled = isLucaConnectEnrolled();
+        return isLucaConnectEnrolled && (getShouldUnEnrollLucaConnect() || isAnyContactPropertyChanged());
+    }
+
+    public Completable updateLucaConnectUpdatesRequired() {
+        return Completable.fromAction(() -> {
+            isNameChanged = !registrationData.hasSameName(buildUpdateRegistrationData(new RegistrationData()));
+            isPostalCodeChanged = !registrationData.hasSamePostalCode(buildUpdateRegistrationData(new RegistrationData()));
+            isAnyContactDataChanged = !registrationData.equals(buildUpdateRegistrationData(new RegistrationData()));
+        });
+    }
+
+    public boolean getShouldUnEnrollLucaConnect() {
+        return isLucaConnectEnrolled() && (isNameChanged || isPostalCodeChanged);
+    }
+
+    public boolean getShouldUpdateLucaConnectSharedData() {
+        return isLucaConnectEnrolled() && !getShouldUnEnrollLucaConnect() && isAnyContactDataChanged;
     }
 
     public String getFormattedPhoneNumber() {
@@ -626,6 +704,10 @@ public class RegistrationViewModel extends BaseViewModel {
         return city.length() > 0;
     }
 
+    static String getSanitizedString(String value) {
+        return StringSanitizeUtil.sanitize(value).trim();
+    }
+
     public LiveData<String> getFirstName() {
         return firstName;
     }
@@ -686,4 +768,15 @@ public class RegistrationViewModel extends BaseViewModel {
         return shouldReImportTestData;
     }
 
+    public boolean isNameChanged() {
+        return isNameChanged;
+    }
+
+    public boolean isPostalCodeChanged() {
+        return isPostalCodeChanged;
+    }
+
+    public boolean isAnyContactPropertyChanged() {
+        return isAnyContactDataChanged;
+    }
 }

@@ -50,36 +50,34 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         return VenueDetailsViewModel::class.java
     }
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews()
-            .andThen(Completable.fromAction {
-                observe(viewModel.subtitle) {
-                    binding.actionBarSubTitleTextView.text = it
-                    binding.actionBarSubTitleTextView.visibility = if (it == null) View.GONE else View.VISIBLE
-                }
-                observe(viewModel.title) { value -> binding.actionBarTitleTextView.text = value }
-                observe(viewModel.checkInTime) { value ->
-                    binding.checkInTimeTextView.text = getFormattedString(R.string.venue_checked_in_time, value)
-                }
-                observe(viewModel.additionalDataTitle) { binding.additionalDataTitleTextView.text = it }
-                observe(viewModel.additionalDataValue) { binding.additionalDataValueTextView.text = it }
-                observe(viewModel.showAdditionalData) { setAdditionalDataVisibility(if (it) View.VISIBLE else View.GONE) }
-                binding.childCounterTextView.setOnClickListener { viewModel.openChildrenView() }
-                observe(viewModel.childCounter) {
-                    if (it == 0) {
-                        binding.childCounterTextView.visibility = View.GONE
-                    } else {
-                        binding.childCounterTextView.visibility = View.VISIBLE
-                        binding.childCounterTextView.text = it.toString()
-                    }
-                }
-                binding.childrenActionBarMenuImageView.setOnClickListener { viewModel.openChildrenView() }
-                observe(viewModel.checkInDuration) { binding.checkInDurationTextView.text = it }
-                initializeUrlViews()
-                initializeAutomaticCheckoutViews()
-                initializeSlideToActView()
-                observe(viewModel.bundle, ::processBundle)
-            })
+    override fun initializeViews() {
+        super.initializeViews()
+        observe(viewModel.subtitle) {
+            binding.actionBarSubTitleTextView.text = it
+            binding.actionBarSubTitleTextView.visibility = if (it == null) View.GONE else View.VISIBLE
+        }
+        observe(viewModel.title) { value -> binding.actionBarTitleTextView.text = value }
+        observe(viewModel.checkInTime) { value ->
+            binding.checkInTimeTextView.text = getFormattedString(R.string.venue_checked_in_time, value)
+        }
+        observe(viewModel.additionalDataTitle) { binding.additionalDataTitleTextView.text = it }
+        observe(viewModel.additionalDataValue) { binding.additionalDataValueTextView.text = it }
+        observe(viewModel.showAdditionalData) { setAdditionalDataVisibility(if (it) View.VISIBLE else View.GONE) }
+        binding.childCounterTextView.setOnClickListener { viewModel.openChildrenView() }
+        observe(viewModel.childCounter) {
+            if (it == 0) {
+                binding.childCounterTextView.visibility = View.GONE
+            } else {
+                binding.childCounterTextView.visibility = View.VISIBLE
+                binding.childCounterTextView.text = it.toString()
+            }
+        }
+        binding.childrenActionBarMenuImageView.setOnClickListener { viewModel.openChildrenView() }
+        observe(viewModel.checkInDuration) { binding.checkInDurationTextView.text = it }
+        initializeUrlViews()
+        initializeAutomaticCheckoutViews()
+        initializeSlideToActView()
+        observe(viewModel.bundle, ::processBundle)
     }
 
     override fun onResume() {

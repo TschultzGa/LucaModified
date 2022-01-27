@@ -140,7 +140,7 @@ public class MeetingViewModel extends BaseViewModel {
                 .toSingle()
                 .map(MeetingData::getScannerId);
 
-        Single<String> additionalData = registrationManager.getOrCreateRegistrationData()
+        Single<String> additionalData = registrationManager.getRegistrationData()
                 .map(MeetingAdditionalData::new)
                 .map(meetingAdditionalData -> new Gson().toJson(meetingAdditionalData))
                 .map(json -> json.getBytes(StandardCharsets.UTF_8))

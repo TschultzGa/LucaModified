@@ -2,7 +2,14 @@ package de.culture4life.luca.network.pojo;
 
 import com.google.gson.annotations.SerializedName;
 
-public class LocationResponseData {
+import java.io.Serializable;
+
+public class LocationResponseData implements Serializable {
+
+    public enum EntryPolicy {
+        @SerializedName("2G") POLICY_2G,
+        @SerializedName("3G") POLICY_3G
+    }
 
     @SerializedName("locationId")
     private String locationId;
@@ -27,6 +34,12 @@ public class LocationResponseData {
 
     @SerializedName("isContactDataMandatory")
     private boolean isContactDataMandatory = true;
+
+    @SerializedName("entryPolicy")
+    private EntryPolicy entryPolicy = null;
+
+    @SerializedName("averageCheckinTime")
+    private long averageCheckInDuration;
 
     public String getLocationId() {
         return locationId;
@@ -92,6 +105,22 @@ public class LocationResponseData {
         this.isContactDataMandatory = isMandatory;
     }
 
+    public EntryPolicy getEntryPolicy() {
+        return entryPolicy;
+    }
+
+    public void setEntryPolicy(EntryPolicy entryPolicy) {
+        this.entryPolicy = entryPolicy;
+    }
+
+    public long getAverageCheckInDuration() {
+        return averageCheckInDuration;
+    }
+
+    public void setAverageCheckInDuration(long averageCheckInDuration) {
+        this.averageCheckInDuration = averageCheckInDuration;
+    }
+
     @Override
     public String toString() {
         return "LocationResponseData{" +
@@ -103,7 +132,8 @@ public class LocationResponseData {
                 ", radius=" + radius +
                 ", isPrivate=" + isPrivate +
                 ", isContactDataMandatory=" + isContactDataMandatory +
+                ", entryPolicy=" + entryPolicy +
+                ", averageCheckInDuration=" + averageCheckInDuration +
                 '}';
     }
-
 }

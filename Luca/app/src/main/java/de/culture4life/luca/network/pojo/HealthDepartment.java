@@ -10,11 +10,14 @@ public class HealthDepartment {
     @SerializedName("name")
     private String name;
 
-    @SerializedName("publicHDEKP")
-    private String publicHDEKP;
+    @SerializedName("signedPublicHDEKP")
+    private String encryptionKeyJwt;
 
-    @SerializedName("publicHDSKP")
-    private String publicHDSKP;
+    @SerializedName("signedPublicHDSKP")
+    private String signingKeyJwt;
+
+    @SerializedName("connectEnabled")
+    private boolean connectEnrollmentSupported;
 
     public String getId() {
         return id;
@@ -32,20 +35,28 @@ public class HealthDepartment {
         this.name = name;
     }
 
-    public String getPublicHDEKP() {
-        return publicHDEKP;
+    public String getEncryptionKeyJwt() {
+        return encryptionKeyJwt;
     }
 
-    public void setPublicHDEKP(String publicHDEKP) {
-        this.publicHDEKP = publicHDEKP;
+    public void setEncryptionKeyJwt(String encryptionKeyJwt) {
+        this.encryptionKeyJwt = encryptionKeyJwt;
     }
 
-    public String getPublicHDSKP() {
-        return publicHDSKP;
+    public String getSigningKeyJwt() {
+        return signingKeyJwt;
     }
 
-    public void setPublicHDSKP(String publicHDSKP) {
-        this.publicHDSKP = publicHDSKP;
+    public void setSigningKeyJwt(String signingKeyJwt) {
+        this.signingKeyJwt = signingKeyJwt;
+    }
+
+    public boolean getConnectEnrollmentSupported() {
+        return connectEnrollmentSupported;
+    }
+
+    public void setConnectEnrollmentSupported(boolean connectEnrollmentSupported) {
+        this.connectEnrollmentSupported = connectEnrollmentSupported;
     }
 
     @Override
@@ -53,9 +64,9 @@ public class HealthDepartment {
         return "HealthDepartment{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", publicHDEKP='" + publicHDEKP + '\'' +
-                ", publicHDSKP='" + publicHDSKP + '\'' +
+                ", encryptionKeyJwt='" + encryptionKeyJwt + '\'' +
+                ", signingKeyJwt='" + signingKeyJwt + '\'' +
+                ", connectEnrollmentSupported='" + connectEnrollmentSupported + '\'' +
                 '}';
     }
-
 }

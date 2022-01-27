@@ -8,11 +8,16 @@ import androidx.annotation.NonNull;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import org.joda.time.Months;
+import org.joda.time.Period;
+import org.joda.time.Years;
+
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.registration.Person;
+import de.culture4life.luca.util.TimeUtil;
 
 public class Document {
 
@@ -74,7 +79,8 @@ public class Document {
     public static final long MAXIMUM_RECOVERY_VALIDITY = TimeUnit.DAYS.toMillis(30 * 6);
     public static final long MAXIMUM_APPOINTMENT_VALIDITY = TimeUnit.HOURS.toMillis(2);
     public static final long TIME_UNTIL_VACCINATION_IS_VALID = TimeUnit.DAYS.toMillis(15);
-    public static final long MAXIMUM_VACCINATION_VALIDITY = TimeUnit.DAYS.toMillis(365);
+    public static final Period MAXIMUM_VACCINATION_VAILIDITY = Months.NINE.toPeriod();
+    public static final Period TIME_UNTIL_VACCINATION_IS_DELETED = Years.ONE.toPeriod();
     public static final long TIME_UNTIL_RECOVERY_IS_VALID = TimeUnit.DAYS.toMillis(15);
     public static final long MAXIMUM_FAST_TEST_VALIDITY = TimeUnit.DAYS.toMillis(2);
     public static final long MAXIMUM_NEGATIVE_PCR_TEST_VALIDITY = TimeUnit.DAYS.toMillis(3);
@@ -180,6 +186,10 @@ public class Document {
     @Expose
     @SerializedName("procedures")
     private ArrayList<Procedure> procedures;
+
+    @Expose
+    @SerializedName("isEudcc")
+    private boolean isEudcc;
 
     public String getId() {
         return id;
@@ -319,6 +329,14 @@ public class Document {
         this.procedures = procedures;
     }
 
+    public boolean isEudcc() {
+        return isEudcc;
+    }
+
+    public void setEudcc(boolean eudcc) {
+        this.isEudcc = eudcc;
+    }
+
     /**
      * @return timestamp from which the document becomes valid. This is immediately for tests and
      * after two weeks for vaccinations.
@@ -348,6 +366,18 @@ public class Document {
     }
 
     /**
+     * The timestamp after which the document should be deleted. Depends on {@link #type}
+     * and {@link #testingTimestamp} or the values set directly from a certificate.
+     */
+    public long getDeletionTimestamp() {
+        if (type == TYPE_VACCINATION) {
+            return getTestingTimestamp() + TimeUtil.calculateHumanLikeDuration(getTestingTimestamp(), TIME_UNTIL_VACCINATION_IS_DELETED);
+        } else {
+            return getExpirationTimestamp();
+        }
+    }
+
+    /**
      * The timestamp after which the document should be treated as invalid. Depends on {@link #type}
      * and {@link #testingTimestamp} or the values set directly from a certificate.
      */
@@ -373,7 +403,7 @@ public class Document {
                     return MAXIMUM_NEGATIVE_PCR_TEST_VALIDITY;
                 }
             case TYPE_VACCINATION:
-                return MAXIMUM_VACCINATION_VALIDITY;
+                return TimeUtil.calculateHumanLikeDuration(getTestingTimestamp(), MAXIMUM_VACCINATION_VAILIDITY);
             case TYPE_RECOVERY:
                 return MAXIMUM_RECOVERY_VALIDITY;
             case TYPE_APPOINTMENT:
@@ -430,6 +460,7 @@ public class Document {
         );
     }
 
+    @NonNull
     @Override
     public String toString() {
         return "Document{" +
@@ -451,7 +482,8 @@ public class Document {
                 ", encodedData='" + encodedData + '\'' +
                 ", hashableEncodedData='" + hashableEncodedData + '\'' +
                 ", procedures=" + procedures +
+                ", isEudcc=" + isEudcc +
                 '}';
     }
-
+    
 }

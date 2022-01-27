@@ -7,7 +7,6 @@ import de.culture4life.luca.databinding.FragmentNewsBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.whatisnew.WhatIsNewActivity
 import de.culture4life.luca.whatisnew.WhatIsNewManager
-import io.reactivex.rxjava3.core.Completable
 
 class NewsFragment : BaseFragment<NewsViewModel>() {
 
@@ -21,15 +20,15 @@ class NewsFragment : BaseFragment<NewsViewModel>() {
     override fun getViewModelClass(): Class<NewsViewModel> =
         NewsViewModel::class.java
 
-    override fun initializeViews(): Completable {
-        return super.initializeViews().andThen {
-            initializeObservers()
-        }
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeObservers()
     }
 
     private fun initializeObservers() {
         binding.pageGroup1.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_0) }
         binding.pageGroup2.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_2) }
+        binding.pageGroup3.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_4) }
     }
 
     private fun showPageGroup(pageGroup: WhatIsNewManager.PageGroup) {

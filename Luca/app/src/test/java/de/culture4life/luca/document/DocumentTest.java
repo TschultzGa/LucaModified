@@ -4,6 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import static de.culture4life.luca.document.Document.MAXIMUM_VACCINATION_VAILIDITY;
+import static de.culture4life.luca.document.Document.TIME_UNTIL_VACCINATION_IS_DELETED;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Instant;
+import org.joda.time.Months;
+import org.joda.time.Years;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,7 +87,12 @@ public class DocumentTest {
 
     @Test
     public void getExpirationDuration_typeVaccination_isOneYear() {
-        assertEquals(TimeUnit.DAYS.toMillis(365), document.getExpirationDuration(Document.TYPE_VACCINATION));
+        long oneYearDurationFromTesting = Instant
+                .ofEpochMilli(document.getTestingTimestamp())
+                .toDateTime(DateTimeZone.UTC)
+                .plus(MAXIMUM_VACCINATION_VAILIDITY)
+                .getMillis() - document.getTestingTimestamp();
+        assertEquals(oneYearDurationFromTesting, document.getExpirationDuration(Document.TYPE_VACCINATION));
     }
 
     @Test
@@ -135,6 +148,15 @@ public class DocumentTest {
         document.setOutcome(Document.OUTCOME_POSITIVE);
         document.setTestingTimestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
         assertFalse(document.isValidRecovery());
+    }
+
+    @Test
+    public void getDeletionTimestamp_forValidVaccination_isInFuture() {
+        document.setType(Document.TYPE_VACCINATION);
+        DateTime testingTime = DateTime.now();
+        DateTime deletionTime = testingTime.plus(TIME_UNTIL_VACCINATION_IS_DELETED);
+        document.setTestingTimestamp(testingTime.getMillis());
+        assertEquals(deletionTime.getMillis(), document.getDeletionTimestamp());
     }
 
 }

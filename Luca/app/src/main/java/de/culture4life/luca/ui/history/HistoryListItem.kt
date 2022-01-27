@@ -15,6 +15,7 @@ data class HistoryListItem(
     var accessedTraceData: List<AccessedTraceData> = listOf(),
     var isPrivateMeeting: Boolean = false,
     var isContactDataMandatory: Boolean = true,
+    var isSelectedForDeletion: Boolean = false,
     var guests: List<String> = listOf()
 ) {
 

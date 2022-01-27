@@ -36,7 +36,19 @@ open class Person(
         return getFullName() == other.getFullName()
     }
 
+    override fun hashCode(): Int {
+        var result = firstName.hashCode()
+        result = 31 * result + lastName.hashCode()
+        return result
+    }
+
     override fun toString() = getFullName()
+
+    private fun String.simplify() = simplify(this)
+
+    private fun String.removeAcademicTitles() = removeAcademicTitles(this)
+
+    private fun String.removeMultipleNames() = removeMultipleNames(this)
 
     companion object {
 
@@ -55,12 +67,6 @@ open class Person(
         }
 
     }
-
-    private fun String.simplify() = simplify(this)
-
-    private fun String.removeAcademicTitles() = removeAcademicTitles(this)
-
-    private fun String.removeMultipleNames() = removeMultipleNames(this)
 
 }
 

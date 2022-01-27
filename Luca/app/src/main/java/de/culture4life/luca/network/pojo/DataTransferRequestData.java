@@ -64,7 +64,7 @@ public class DataTransferRequestData {
         return dailyKeyPairPublicKeyId;
     }
 
-    public void setDailyPublicKeyId(int rotatingBackendKeyId) {
+    public void setDailyKeyPairPublicKeyId(int rotatingBackendKeyId) {
         this.dailyKeyPairPublicKeyId = rotatingBackendKeyId;
     }
 

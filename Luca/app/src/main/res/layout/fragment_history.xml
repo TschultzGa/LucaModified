@@ -19,10 +19,10 @@
         tools:ignore="MissingConstraints" />
 
     <ImageView
-        android:id="@+id/deleteHistoryActionBarMenuImageView"
+        android:id="@+id/editHistoryActionBarMenuImageView"
         style="@style/ActionBarMenuImageView"
-        android:contentDescription="@string/history_clear_content_description"
-        android:src="@drawable/ic_bin"
+        android:contentDescription="@string/history_edit_content_description"
+        android:src="@drawable/ic_edit"
         tools:ignore="MissingConstraints" />
 
     <View
@@ -91,6 +91,6 @@
         android:id="@+id/historyContentGroup"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:constraint_referenced_ids="historyListView, primaryActionButton, deleteHistoryActionBarMenuImageView" />
+        app:constraint_referenced_ids="historyListView, primaryActionButton, editHistoryActionBarMenuImageView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

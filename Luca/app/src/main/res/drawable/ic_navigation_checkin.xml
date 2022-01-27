@@ -6,32 +6,32 @@
     <path
         android:fillColor="#00000000"
         android:fillType="evenOdd"
-        android:pathData="M2,12L22,12"
+        android:pathData="M1,12L23,12"
         android:strokeWidth="2"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round" />
     <path
         android:fillColor="#FFFFFF"
         android:fillType="nonZero"
-        android:pathData="M21,21L15,21L15,23L21,23C22.1046,23 23,22.1046 23,21L23,15L21,15L21,21Z"
+        android:pathData="M22,22L16,22L16,24L22,24C23.1046,24 24,23.1046 24,22L24,16L22,16L22,22Z"
         android:strokeWidth="1"
         android:strokeColor="#00000000" />
     <path
         android:fillColor="#FFFFFF"
         android:fillType="nonZero"
-        android:pathData="M21,1L15,1L15,3L21,3L21,9L23,9L23,3C23,1.8954 22.1046,1 21,1Z"
+        android:pathData="M22,0L16,0L16,2L22,2L22,8L24,8L24,2C24,0.8954 23.1046,0 22,0Z"
         android:strokeWidth="1"
         android:strokeColor="#00000000" />
     <path
         android:fillColor="#FFFFFF"
         android:fillType="nonZero"
-        android:pathData="M3,3L9,3L9,1L3,1C1.8954,1 1,1.8954 1,3L1,9L3,9L3,3Z"
+        android:pathData="M2,2L8,2L8,0L2,0C0.8954,0 0,0.8954 0,2L0,8L2,8L2,2Z"
         android:strokeWidth="1"
         android:strokeColor="#00000000" />
     <path
         android:fillColor="#FFFFFF"
         android:fillType="nonZero"
-        android:pathData="M3,15L1,15L1,21C1,22.1046 1.8954,23 3,23L9,23L9,21L3,21L3,15Z"
+        android:pathData="M2,16L0,16L0,22C0,23.1046 0.8954,24 2,24L8,24L8,22L2,22L2,16Z"
         android:strokeWidth="1"
         android:strokeColor="#00000000" />
 </vector>

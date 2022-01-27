@@ -1,7 +1,5 @@
 package de.culture4life.luca.ui.myluca;
 
-import static de.culture4life.luca.ui.accesseddata.AccessedDataDetailFragment.KEY_ACCESSED_DATA_LIST_ITEM;
-
 import android.app.Application;
 import android.os.Bundle;
 import android.webkit.URLUtil;
@@ -15,7 +13,6 @@ import androidx.lifecycle.ViewModelProvider;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -23,8 +20,6 @@ import de.culture4life.luca.R;
 import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.children.Children;
 import de.culture4life.luca.children.ChildrenManager;
-import de.culture4life.luca.dataaccess.AccessedData;
-import de.culture4life.luca.dataaccess.DataAccessManager;
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.DocumentAlreadyImportedException;
 import de.culture4life.luca.document.DocumentExpiredException;
@@ -40,14 +35,9 @@ import de.culture4life.luca.registration.RegistrationManager;
 import de.culture4life.luca.ui.BaseQrCodeViewModel;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.ViewEvent;
-import de.culture4life.luca.ui.accesseddata.AccessedDataListItem;
 import de.culture4life.luca.ui.checkin.CheckInViewModel;
-import de.culture4life.luca.ui.history.HistoryFragment;
 import de.culture4life.luca.util.TimeUtil;
-import dgca.verifier.app.decoder.BuildConfig;
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.CompletableSource;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -60,7 +50,6 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     private final RegistrationManager registrationManager;
     private final GenuinityManager genuinityManager;
     private final ChildrenManager childrenManager;
-    private final DataAccessManager dataAccessManager;
 
     private final MutableLiveData<Bundle> bundle = new MutableLiveData<>();
     private final MutableLiveData<Person> user = new MutableLiveData<>();
@@ -73,7 +62,6 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     private final MutableLiveData<Boolean> isGenuineTime = new MutableLiveData<>(true);
     private final MutableLiveData<Children> children = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<Document>> showBirthDateHint = new MutableLiveData<>();
-    private final MutableLiveData<HashMap<Integer, AccessedDataListItem>> accessNotificationsPerLevel = new MutableLiveData<>();
 
     private CheckInViewModel checkInViewModel;
 
@@ -86,7 +74,6 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
         this.registrationManager = this.application.getRegistrationManager();
         this.genuinityManager = this.application.getGenuinityManager();
         this.childrenManager = this.application.getChildrenManager();
-        this.dataAccessManager = this.application.getDataAccessManager();
     }
 
     public void setupViewModelReference(FragmentActivity activity) {
@@ -103,14 +90,12 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
                         documentManager.initialize(application),
                         registrationManager.initialize(application),
                         genuinityManager.initialize(application),
-                        childrenManager.initialize(application),
-                        dataAccessManager.initialize(application)
+                        childrenManager.initialize(application)
                 ))
                 .andThen(updateUserName())
                 .andThen(invokeListUpdate())
                 .andThen(invokeIsGenuineTimeUpdate())
                 .andThen(updateChildCounter())
-                .andThen(updateAccessNotifications())
                 .doOnComplete(this::handleApplicationDeepLinkIfAvailable);
     }
 
@@ -124,7 +109,7 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     }
 
     public Completable updateUserName() {
-        return registrationManager.getOrCreateRegistrationData()
+        return registrationManager.getRegistrationData()
                 .flatMapCompletable(registrationData -> update(user, registrationData.getPerson()));
     }
 
@@ -449,47 +434,6 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
     }
 
     /*
-        Accessed data
-     */
-
-    private CompletableSource updateAccessNotifications() {
-        return dataAccessManager.getOrRestoreAccessedData()
-                .flattenAsObservable(AccessedData::getTraceData)
-                .filter(accessedTraceData -> accessedTraceData.getIsNew())
-                .flatMapSingle(accessedTraceData -> dataAccessManager.createAccessDataListItem(accessedTraceData))
-                .toList()
-                .map(accessedDataListItems -> {
-                    HashMap<Integer, AccessedDataListItem> notificationsPerLevel = new HashMap<>();
-                    for (AccessedDataListItem accessedDataListItem : accessedDataListItems) {
-                        notificationsPerLevel.put(accessedDataListItem.getWarningLevel(), accessedDataListItem);
-                    }
-                    return notificationsPerLevel;
-                })
-                .flatMapCompletable(notificationsPerLevel -> update(accessNotificationsPerLevel, notificationsPerLevel));
-    }
-
-    public void onShowAccessedDataRequested(int warningLevel) {
-        modelDisposable.add(dataAccessManager.getPreviouslyAccessedTraceData()
-                .filter(accessedTraceData -> accessedTraceData.getWarningLevel() == warningLevel)
-                .flatMapSingle(dataAccessManager::createAccessDataListItem)
-                .toList()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.io())
-                .subscribe(accessedDataListItems -> {
-                    if (isCurrentDestinationId(R.id.myLucaFragment)) {
-                        Bundle bundle = new Bundle();
-                        if (accessedDataListItems.size() == 1) {
-                            bundle.putSerializable(KEY_ACCESSED_DATA_LIST_ITEM, accessedDataListItems.get(0));
-                            navigationController.navigate(R.id.action_myLucaFragment_to_accessedDataDetailFragment, bundle);
-                        } else {
-                            bundle.putInt(HistoryFragment.KEY_WARNING_LEVEL_FILTER, warningLevel);
-                            navigationController.navigate(R.id.action_myLucaFragment_to_historyFragment, bundle);
-                        }
-                    }
-                }));
-    }
-
-    /*
         Genuity
      */
 
@@ -551,10 +495,6 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
 
     public LiveData<ViewEvent<Document>> getShowBirthDateHint() {
         return showBirthDateHint;
-    }
-
-    public MutableLiveData<HashMap<Integer, AccessedDataListItem>> getAccessNotificationsPerLevel() {
-        return accessNotificationsPerLevel;
     }
 
     public MutableLiveData<ViewEvent<MyLucaListItem>> getItemToDelete() {

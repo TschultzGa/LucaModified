@@ -8,8 +8,12 @@ import dgca.verifier.app.decoder.CertificateDecodingError
 import dgca.verifier.app.decoder.CertificateDecodingResult
 import dgca.verifier.app.decoder.model.GreenCertificate
 import dgca.verifier.app.decoder.model.Test
+import dgca.verifier.app.decoder.model.Vaccination
 import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
+import org.joda.time.Days
+import org.joda.time.Duration
+import java.lang.Integer.min
 import java.util.*
 
 /**
@@ -53,6 +57,7 @@ class EudccDocument(
             setupTestResultData(result)
             setupVaccinationData(result)
             setupRecoveredData(result)
+            document.isEudcc = true
         } else {
             val error = result as CertificateDecodingResult.Error
             if (error.error is CertificateDecodingError.GreenCertificateDecodingError) {
@@ -111,6 +116,7 @@ class EudccDocument(
                 type = TYPE_VACCINATION
                 outcome = OUTCOME_PARTIALLY_IMMUNE
                 val procedures = ArrayList<Procedure>()
+                val initialVaccinationType: Procedure.Type = VACCINATION_TYPES[vaccinations[0].medicinalProduct] ?: Procedure.Type.UNKNOWN
                 for (vaccination in vaccinations) {
                     verifyCovid19(vaccination.disease)
                     val type = VACCINATION_TYPES[vaccination.medicinalProduct] ?: Procedure.Type.UNKNOWN
@@ -120,10 +126,13 @@ class EudccDocument(
                         vaccination.doseNumber,
                         vaccination.totalSeriesOfDoses
                     )
-                    if (vaccination.doseNumber == VACCINATION_DOSES[type]) {
-                        validityStartTimestamp = vaccination.dateOfVaccination.parseDate() + TIME_UNTIL_VACCINATION_IS_VALID
-                    }
                     if (vaccination.doseNumber >= vaccination.totalSeriesOfDoses) {
+                        validityStartTimestamp = if (isBoosterVaccination(vaccination, initialVaccinationType)) {
+                            // Booster vaccinations are effective immediately
+                            vaccination.dateOfVaccination.parseDate()
+                        } else {
+                            vaccination.dateOfVaccination.parseDate(plusMillis = TIME_UNTIL_VACCINATION_IS_VALID)
+                        }
                         outcome = OUTCOME_FULLY_IMMUNE
                     }
                     procedures.add(procedure)
@@ -135,6 +144,15 @@ class EudccDocument(
                     resultTimestamp = testingTimestamp
                 }
             }
+        }
+    }
+
+    private fun isBoosterVaccination(vaccination: Vaccination, initialType: Procedure.Type): Boolean {
+        // TODO: 07.12.21 implement more edge case logic
+        return if (initialType != Procedure.Type.UNKNOWN) {
+            vaccination.doseNumber > min(vaccination.totalSeriesOfDoses, VACCINATION_DOSES[initialType]!!)
+        } else {
+            vaccination.doseNumber >= 3
         }
     }
 
@@ -175,6 +193,6 @@ class EudccDocument(
 
 }
 
-fun String.parseDate(): Long {
-    return DateTime(this, DateTimeZone.forID("UTC")).millis
+fun String.parseDate(plusDuration: Duration = Days.ZERO.toStandardDuration(), plusMillis: Long = 0L): Long {
+    return DateTime(this, DateTimeZone.UTC).plus(plusDuration).plusMillis(plusMillis.toInt()).millis
 }

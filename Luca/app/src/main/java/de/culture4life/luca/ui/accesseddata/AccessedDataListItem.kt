@@ -17,6 +17,7 @@ data class AccessedDataListItem(
     val detailedMessage: String?,
     val bannerText: String?,
     val checkInTimeRange: String,
+    val accessTimestamp: Long,
     val accessTime: String,
     val isNew: Boolean,
     val accessorName: String?,
@@ -39,6 +40,7 @@ data class AccessedDataListItem(
                         getReadableTime(item.checkInTimestamp),
                         getReadableTime(item.checkOutTimestamp)
                     ),
+                    item.accessTimestamp,
                     getReadableDate(item.accessTimestamp),
                     item.isNew,
                     item.healthDepartment.name,

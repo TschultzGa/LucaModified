@@ -77,14 +77,12 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
     }
 
     @Override
-    protected Completable initializeViews() {
-        return super.initializeViews()
-                .andThen(Completable.fromAction(() -> {
-                    initializeSharedViews();
-                    initializeNameViews();
-                    initializeContactViews();
-                    initializeAddressViews();
-                }));
+    protected void initializeViews() {
+        super.initializeViews();
+        initializeSharedViews();
+        initializeNameViews();
+        initializeContactViews();
+        initializeAddressViews();
     }
 
     @Override
@@ -143,17 +141,19 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
         binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(Completable.mergeArray(
                 viewModel.updatePhoneNumberVerificationStatus(),
-                viewModel.updateShouldReImportingTestData()
+                viewModel.updateShouldReImportingTestData(),
+                viewModel.updateLucaConnectUpdatesRequired()
         ).andThen(viewModel.getPhoneNumberVerificationStatus())
-                .delaySubscription(DELAY_DURATION, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                .delaySubscription(DELAY_DURATION, TimeUnit.MILLISECONDS, Schedulers.io())
                 .doOnSubscribe(disposable -> hideKeyboard())
-                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(numberVerified -> {
                     if (!numberVerified && !shouldSkipVerification()) {
                         showCurrentPhoneNumberVerificationStep();
                     } else if (areAllStepsCompleted()) {
-                        if (viewModel.getShouldReImportTestData()) {
+                        if (viewModel.isLucaConnectNoticeRequired()) {
+                            showLucaConnectNoticeDialog();
+                        } else if (viewModel.getShouldReImportTestData()) {
                             showWillDeleteDocumentsDialog();
                         } else {
                             viewModel.onUserDataUpdateRequested();
@@ -384,6 +384,11 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
+    }
+
+    private void showLucaConnectNoticeDialog() {
+        new LucaConnectNotice(viewModel, requireContext())
+                .show(() -> viewModel.onUserDataUpdateRequested());
     }
 
     private void verifyTanDialogInput(@NonNull AlertDialog alertDialog) {
