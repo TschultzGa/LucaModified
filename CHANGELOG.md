@@ -1,3 +1,10 @@
+# Release 2.4.0
+
+- Notifications Tab 
+- Bug fixes 
+
+In this update we present a new tab: The Notifications Tab! In the notifications tab you will see data request and notifications from health departments as well as news in the app. 
+
 # Release 2.3.0
 
 - Additional information of the luca location
