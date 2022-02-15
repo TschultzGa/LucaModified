@@ -14,6 +14,7 @@ import de.culture4life.luca.network.pojo.NotifyingHealthDepartment
 import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.registration.RegistrationManager
+import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import org.junit.Assert
@@ -22,7 +23,6 @@ import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.*
 import org.robolectric.annotation.Config
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
@@ -45,7 +45,8 @@ class DataAccessManagerTest : LucaUnitTest() {
             LocationManager(),
             historyManager,
             cryptoManager,
-            notificationManager
+            notificationManager,
+            genuinityManager
         )
     )
     private val dataAccessManager = spy(
@@ -102,7 +103,7 @@ class DataAccessManagerTest : LucaUnitTest() {
     fun durationSinceLastUpdate_neverUpdated_emitsHighDuration() {
         dataAccessManager.durationSinceLastUpdate
             .test()
-            .assertValue { it > System.currentTimeMillis() - 1000 }
+            .assertValue { it > TimeUtil.getCurrentMillis() - 1000 }
     }
 
     @Test
@@ -115,7 +116,7 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun nextRecommendedUpdateDelay_neverUpdated_emitsLowDelay() {
-        `when`(dataAccessManager.durationSinceLastUpdate).thenReturn(Single.just(System.currentTimeMillis()))
+        `when`(dataAccessManager.durationSinceLastUpdate).thenReturn(Single.just(TimeUtil.getCurrentMillis()))
         dataAccessManager.nextRecommendedUpdateDelay
             .test()
             .assertValue(0L)
@@ -128,10 +129,10 @@ class DataAccessManagerTest : LucaUnitTest() {
             hashedTraceId = "LLJMzA/HqlS77qkpUGNJrA=="
             healthDepartment = createDummyHealthDepartment()
         }
-        dataAccessManager.processNewRecentlyAccessedTraceData(listOf(newAccessedTraceData))
+        val process = dataAccessManager.processNewRecentlyAccessedTraceData(listOf(newAccessedTraceData))
             .test()
-            .await()
-            .assertComplete()
+        rxSchedulersRule.testScheduler.triggerActions()
+        process.assertComplete()
         verify(dataAccessManager, times(1))
             .addToAccessedData(ArgumentMatchers.any())
         verify(dataAccessManager, times(1)).addHistoryItems(ArgumentMatchers.any())
@@ -305,10 +306,10 @@ class DataAccessManagerTest : LucaUnitTest() {
 
     @Test
     fun accessedTraceDataNotYetInformedAbout_someDataAvailable_emitsData() {
-        previouslyAccessedTraceData.accessTimestamp = System.currentTimeMillis() - 1000
+        previouslyAccessedTraceData.accessTimestamp = TimeUtil.getCurrentMillis() - 1000
         val newAccessedTraceData = AccessedTraceData().apply {
             traceId = "LLJMzA/HqlS77qkpUGNJrA=="
-            accessTimestamp = System.currentTimeMillis() + 1000
+            accessTimestamp = TimeUtil.getCurrentMillis() + 1000
         }
         dataAccessManager.addToAccessedData(listOf(previouslyAccessedTraceData))
             .andThen(dataAccessManager.markAllAccessedTraceDataAsInformedAbout())
@@ -397,66 +398,6 @@ class DataAccessManagerTest : LucaUnitTest() {
     }
 
     @Test
-    fun restoreAccessedData_noDataPreviouslyPersisted_emitsEmptyData() {
-        dataAccessManager.restoreAccessedData()
-            .map { it.traceData.size }
-            .test()
-            .assertValue(0)
-    }
-
-    @Test
-    fun restoreAccessedData_someDataPreviouslyPersisted_emitsPersistedData() {
-        val newAccessedTraceData = AccessedTraceData().apply {
-            traceId = "9bZZ5Ak465V60PXv92aMFA=="
-        }
-        val newAccessedData = AccessedData().apply {
-            traceData.add(newAccessedTraceData)
-        }
-        dataAccessManager.persistAccessedData(newAccessedData)
-            .test()
-            .assertComplete()
-        dataAccessManager.restoreAccessedData()
-            .map { it.traceData[0].traceId }
-            .test()
-            .assertValue(newAccessedTraceData.traceId)
-    }
-
-    @Test
-    fun persistAccessedData_validData_persistsData() {
-        val newAccessedTraceData = AccessedTraceData().apply {
-            traceId = "traceId"
-        }
-        val newAccessedData = AccessedData().apply {
-            traceData.add(newAccessedTraceData)
-        }
-        dataAccessManager.persistAccessedData(newAccessedData)
-            .test()
-            .assertComplete()
-        dataAccessManager.orRestoreAccessedData
-            .test()
-            .assertValue(newAccessedData)
-        dataAccessManager.restoreAccessedData()
-            .map { it.traceData[0].traceId }
-            .test()
-            .assertValue(newAccessedTraceData.traceId)
-    }
-
-    @Test
-    fun addToAccessedData_validData_updatesAccessedData() {
-        val newAccessedTraceData = AccessedTraceData()
-        dataAccessManager.addToAccessedData(listOf(newAccessedTraceData))
-            .test()
-            .assertComplete()
-        dataAccessManager.orRestoreAccessedData
-            .test()
-            .assertValue { it.traceData.contains(newAccessedTraceData) }
-        dataAccessManager.restoreAccessedData()
-            .map { it.traceData.size }
-            .test()
-            .assertValue(1)
-    }
-
-    @Test
     fun updateIfNecessary_withCheckIns_callsUpdate() {
         `when`(dataAccessManager.fetchNotificationConfig()).thenReturn(Single.error(RuntimeException()))
         `when`(dataAccessManager.fetchRecentlyAccessedTraceData()).thenReturn(Observable.empty())
@@ -486,7 +427,7 @@ class DataAccessManagerTest : LucaUnitTest() {
             1,
             0,
             16,
-            System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1),
+            TimeUtil.getCurrentMillis() - TimeUnit.HOURS.toMillis(1),
             "3cYZ5Ak465V80PXv93aMFB==",
             ArrayList()
         )

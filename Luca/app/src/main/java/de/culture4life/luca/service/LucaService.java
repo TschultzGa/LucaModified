@@ -1,8 +1,11 @@
 package de.culture4life.luca.service;
 
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+
 import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.widget.Toast;
 
@@ -24,8 +27,6 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import timber.log.Timber;
-
-import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 public class LucaService extends Service {
 
@@ -64,14 +65,10 @@ public class LucaService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        LucaNotificationManager.getBundleFromIntent(intent)
-                .flatMap(LucaNotificationManager::getActionFromBundle)
-                .flatMapCompletable(this::processNotificationAction)
-                .subscribe(
-                        () -> Timber.d("Processed notification action"),
-                        throwable -> Timber.w(throwable, "Unable to process notification action")
-                );
-
+        Bundle notificationBundle = LucaNotificationManager.getBundleFromIntentIfAvailable(intent);
+        if (notificationBundle != null) {
+            processNotificationBundle(notificationBundle);
+        }
         return START_STICKY;
     }
 
@@ -102,7 +99,7 @@ public class LucaService extends Service {
     }
 
     private Notification createCheckedInNotification() {
-        return notificationManager.createCheckedInNotificationBuilder(MainActivity.class)
+        return notificationManager.createCheckedInNotificationBuilder()
                 .setContentTitle(checkInManager.getCheckInDataIfAvailable()
                         .toSingle()
                         .map(CheckInData::getLocationDisplayName)
@@ -113,54 +110,56 @@ public class LucaService extends Service {
     }
 
     private Notification createMeetingHostNotification() {
-        return notificationManager.createMeetingHostNotificationBuilder(MainActivity.class)
-                .build();
+        return notificationManager.createMeetingHostNotificationBuilder().build();
     }
 
-    private Completable processNotificationAction(int action) {
-        return Completable.fromAction(() -> {
-            switch (action) {
-                case LucaNotificationManager.ACTION_STOP:
-                    stopSelf();
-                    application.stop();
-                    break;
-                case LucaNotificationManager.ACTION_CHECKOUT:
-                    serviceDisposable.add(checkInManager.checkOut()
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .doOnSubscribe(disposable -> showStatus(R.string.status_check_out_in_progress))
-                            .doOnComplete(() -> showStatus(R.string.status_check_out_succeeded))
-                            .doOnError(throwable -> showStatus(R.string.status_check_out_failed))
-                            .subscribe(
-                                    () -> {
-                                        Timber.i("Checkout succeeded");
-                                        application.stopIfNotCurrentlyActive();
-                                    },
-                                    throwable -> {
-                                        Timber.w("Checkout failed: %s", throwable.toString());
-                                        openApp();
-                                    }
-                            ));
-                    break;
-                case LucaNotificationManager.ACTION_END_MEETING:
-                    serviceDisposable.add(meetingManager.closePrivateLocation()
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe(
-                                    () -> {
-                                        Timber.i("Meeting end succeeded");
-                                        application.stopIfNotCurrentlyActive();
-                                    },
-                                    throwable -> {
-                                        Timber.w("Meeting end failed: %s", throwable.toString());
-                                        openApp();
-                                    }
-                            ));
-                    break;
-                default:
-                    Timber.w("Unknown notification action: %d", action);
-            }
-        });
+    private void processNotificationBundle(Bundle notificationBundle) {
+        Integer action = LucaNotificationManager.getActionFromBundleIfAvailable(notificationBundle);
+        if (action == null) {
+            Timber.w("No notification action set");
+            return;
+        }
+        switch (action) {
+            case LucaNotificationManager.ACTION_STOP:
+                stopSelf();
+                application.stop();
+                break;
+            case LucaNotificationManager.ACTION_CHECKOUT:
+                serviceDisposable.add(checkInManager.checkOut()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .doOnSubscribe(disposable -> showStatus(R.string.status_check_out_in_progress))
+                        .doOnComplete(() -> showStatus(R.string.status_check_out_succeeded))
+                        .doOnError(throwable -> showStatus(R.string.status_check_out_failed))
+                        .subscribe(
+                                () -> {
+                                    Timber.i("Checkout succeeded");
+                                    application.stopIfNotCurrentlyActive();
+                                },
+                                throwable -> {
+                                    Timber.w("Checkout failed: %s", throwable.toString());
+                                    openApp();
+                                }
+                        ));
+                break;
+            case LucaNotificationManager.ACTION_END_MEETING:
+                serviceDisposable.add(meetingManager.closePrivateLocation()
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                () -> {
+                                    Timber.i("Meeting end succeeded");
+                                    application.stopIfNotCurrentlyActive();
+                                },
+                                throwable -> {
+                                    Timber.w("Meeting end failed: %s", throwable.toString());
+                                    openApp();
+                                }
+                        ));
+                break;
+            default:
+                Timber.w("Unknown notification action: %d", action);
+        }
     }
 
     private void openApp() {

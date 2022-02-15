@@ -3,20 +3,22 @@ package de.culture4life.luca.crypto
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import android.util.Base64
 import com.nexenio.rxkeystore.RxKeyStore
-import com.nexenio.rxkeystore.util.RxBase64
+import com.nexenio.rxkeystore.provider.mac.RxMacException
+import com.nexenio.rxkeystore.provider.signature.RxSignatureException
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
 import de.culture4life.luca.genuinity.GenuinityManager
 import de.culture4life.luca.network.NetworkManager
+import de.culture4life.luca.network.pojo.KeyIssuerResponseData
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.util.*
 import de.culture4life.luca.util.SingleUtil.retryWhen
-import io.reactivex.rxjava3.core.*
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
-import org.bouncycastle.asn1.*
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.crypto.digests.SHA256Digest
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator
@@ -45,29 +47,29 @@ open class CryptoManager constructor(
     private val genuinityManager: GenuinityManager
 ) : Manager() {
 
-    val androidKeyStore: RxKeyStore
-    val bouncyCastleKeyStore: RxKeyStore
+    private val androidKeyStore: RxKeyStore
+    private val bouncyCastleKeyStore: RxKeyStore
 
-    val wrappingCipherProvider: WrappingCipherProvider
+    private val secureRandom: SecureRandom
+    private val signatureProvider: SignatureProvider
+    private val macProvider: MacProvider
+    private val hashProvider: HashProvider
+    private val wrappingCipherProvider: WrappingCipherProvider
     val symmetricCipherProvider: SymmetricCipherProvider
     val asymmetricCipherProvider: AsymmetricCipherProvider
-    val signatureProvider: SignatureProvider
-    val macProvider: MacProvider
-    val hashProvider: HashProvider
-    val secureRandom: SecureRandom
 
     private var dailyPublicKeyData: DailyPublicKeyData? = null
 
     init {
         androidKeyStore = RxKeyStore(RxKeyStore.TYPE_ANDROID, getAndroidKeyStoreProviderName())
         bouncyCastleKeyStore = RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE)
-        wrappingCipherProvider = WrappingCipherProvider(androidKeyStore)
-        symmetricCipherProvider = SymmetricCipherProvider(bouncyCastleKeyStore)
-        asymmetricCipherProvider = AsymmetricCipherProvider(bouncyCastleKeyStore)
+        secureRandom = SecureRandom()
         signatureProvider = SignatureProvider(bouncyCastleKeyStore)
         macProvider = MacProvider(bouncyCastleKeyStore)
         hashProvider = HashProvider(bouncyCastleKeyStore)
-        secureRandom = SecureRandom()
+        wrappingCipherProvider = WrappingCipherProvider(androidKeyStore)
+        symmetricCipherProvider = SymmetricCipherProvider(bouncyCastleKeyStore)
+        asymmetricCipherProvider = AsymmetricCipherProvider(bouncyCastleKeyStore)
     }
 
     /**
@@ -80,10 +82,7 @@ open class CryptoManager constructor(
             genuinityManager.initialize(context)
         ).andThen(Completable.fromAction { this.context = context })
             .andThen(setupSecurityProviders())
-            .andThen(
-                loadKeyStoreFromFile()
-                    .onErrorComplete()
-            )
+            .andThen(loadKeyStoreFromFile().onErrorComplete())
             .andThen(deleteOldPreferencesIfRequired())
     }
 
@@ -223,6 +222,10 @@ open class CryptoManager constructor(
         Hashing
      */
 
+    fun hash(data: ByteArray?): Single<ByteArray> {
+        return hashProvider.hash(data ?: ByteArray(0))
+    }
+
     fun concatenateHashes(vararg data: ByteArray?): Single<ByteArray> {
         return Single.fromCallable { data.map { it ?: ByteArray(0) } }
             .map { Observable.fromIterable(it) }
@@ -233,7 +236,7 @@ open class CryptoManager constructor(
      * Hash each value using the [.hashProvider] and concatenate the results.
      */
     fun concatenateHashes(data: Observable<ByteArray>): Single<ByteArray> {
-        return data.flatMapSingle { hashProvider.hash(it) }
+        return data.flatMapSingle { hash(it) }
             .toList()
             .map { hashes ->
                 var concatenatedHashes = ByteArray(0)
@@ -245,44 +248,42 @@ open class CryptoManager constructor(
     }
 
     /*
-        Discrete Logarithm Integrated Encryption Scheme
+        Hash message authentication code
      */
 
-    fun dlies(data: ByteArray, receiverPublicKey: PublicKey): Single<DliesResult> {
-        return asymmetricCipherProvider.generateKeyPair("dlies_ephemeral", context)
-            .flatMap { dlies(data, it, receiverPublicKey) }
+    fun hmac(data: ByteArray, secret: ByteArray): Single<ByteArray> {
+        return Single.fromCallable { secret.toSecretKey() }
+            .flatMap { hmac(data, it) }
     }
 
-    fun dlies(data: ByteArray, ephemeralKeyPair: KeyPair, receiverPublicKey: PublicKey): Single<DliesResult> {
-        return asymmetricCipherProvider.generateSecret(ephemeralKeyPair.private, receiverPublicKey)
-            .flatMap { derivedSecretKey ->
-                Single.zip(
-                    generateDataEncryptionSecret(derivedSecretKey).map { it.toSecretKey() },
-                    generateDataAuthenticationSecret(derivedSecretKey).map { it.toSecretKey() },
-                    { encryptionKey, authenticationKey -> Pair(encryptionKey, authenticationKey) }
-                )
-            }
-            .flatMap { (encryptionKey, authenticationKey) ->
-                symmetricCipherProvider.encrypt(data, encryptionKey)
-                    .map { Pair(it.first, it.second) }
-                    .flatMap { (encryptedData, iv) ->
-                        macProvider.sign(encryptedData, authenticationKey)
-                            .map { mac ->
-                                DliesResult(
-                                    encryptedData = encryptedData,
-                                    iv = iv,
-                                    mac = mac,
-                                    ephemeralPublicKey = ephemeralKeyPair.public
-                                )
-                            }
-                    }
-            }
+    /**
+     * Emits a hash-based message authentication code.
+     * Can be used instead of signatures if a shared secret is available.
+     */
+    fun hmac(data: ByteArray, secretKey: SecretKey): Single<ByteArray> {
+        return macProvider.sign(data, secretKey)
+    }
+
+    fun verifyHmac(data: ByteArray, mac: ByteArray, secret: ByteArray): Completable {
+        return Single.fromCallable { secret.toSecretKey() }
+            .flatMapCompletable { verifyHmac(data, mac, it) }
+    }
+
+    /**
+     * Verifies a hash-based message authentication code. See [hmac] fore reference.
+     */
+    fun verifyHmac(data: ByteArray, mac: ByteArray, secretKey: SecretKey): Completable {
+        return macProvider.verify(data, mac, secretKey)
     }
 
     /*
         HMAC key derivation
      */
 
+    /**
+     * Derives a secret using HMAC-SHA256. Can be used to convert shared secrets (see [ecdh])
+     * to key material usable for encryption or authentication.
+     */
     fun hkdf(ikm: ByteArray, salt: ByteArray?, label: ByteArray, length: Int): Single<ByteArray> {
         return Single.fromCallable {
             val digest = SHA256Digest()
@@ -296,9 +297,115 @@ open class CryptoManager constructor(
     }
 
     /*
+        Elliptic Curve Integrated Encryption Scheme
+     */
+
+    /**
+     * Convenience method for [eciesEncrypt] that uses the currently available daily key ([getDailyPublicKey]) as receiver.
+     */
+    fun eciesEncrypt(data: ByteArray): Single<EciesResult> {
+        return getDailyPublicKey()
+            .flatMap { eciesEncrypt(data, it.publicKey) }
+    }
+
+    /**
+     * Convenience method for [eciesEncrypt] that uses a new generated ephemeral key pair.
+     */
+    fun eciesEncrypt(data: ByteArray, receiverPublicKey: PublicKey): Single<EciesResult> {
+        return asymmetricCipherProvider.generateKeyPair("ecies_ephemeral", context)
+            .flatMap { eciesEncrypt(data, it, receiverPublicKey) }
+    }
+
+    /**
+     * Encrypt the data and calculate a MAC.
+     *
+     * The encrypted data is generated using an encryption secret ([generateDataEncryptionSecret])
+     * derived from the Diffie–Hellman secret ([ecdh]) of the provided keys.
+     *
+     * The MAC is generated using an authentication secret ([generateDataAuthenticationSecret])
+     * derived from the Diffie–Hellman secret ([ecdh]) of the provided keys.
+     *
+     * The IV is random.
+     */
+    fun eciesEncrypt(data: ByteArray, ephemeralKeyPair: KeyPair, receiverPublicKey: PublicKey): Single<EciesResult> {
+        return ecdh(ephemeralKeyPair.private, receiverPublicKey)
+            .flatMap(::generateEncryptionAndAuthenticationKeys)
+            .flatMap { (encryptionKey, authenticationKey) ->
+                symmetricCipherProvider.encrypt(data, encryptionKey)
+                    .map { Pair(it.first, it.second) }
+                    .flatMap { (encryptedData, iv) ->
+                        hmac(encryptedData, authenticationKey)
+                            .map { mac ->
+                                EciesResult(
+                                    encryptedData = encryptedData,
+                                    iv = iv,
+                                    mac = mac,
+                                    ephemeralPublicKey = ephemeralKeyPair.public as ECPublicKey
+                                )
+                            }
+                    }
+            }
+    }
+
+    /**
+     * Decrypt data of the [EciesResult] and verify the MAC. Emits the decrypted data
+     * if the MAC is valid or an [RxMacException] if not. See [eciesEncrypt] for reference.
+     */
+    fun eciesDecrypt(eciesResult: EciesResult, receiverPrivateKey: PrivateKey): Single<ByteArray> {
+        return ecdh(receiverPrivateKey, eciesResult.ephemeralPublicKey)
+            .flatMap(::generateEncryptionAndAuthenticationKeys)
+            .flatMap { (encryptionKey, authenticationKey) ->
+                symmetricCipherProvider.decrypt(eciesResult.encryptedData, eciesResult.iv, encryptionKey)
+                    .flatMap { decryptedData ->
+                        verifyHmac(eciesResult.encryptedData, eciesResult.mac, authenticationKey)
+                            .andThen(Single.just(decryptedData))
+                    }
+            }
+    }
+
+    private fun generateEncryptionAndAuthenticationKeys(baseSecret: ByteArray): Single<Pair<SecretKey, SecretKey>> {
+        return Single.zip(
+            generateDataEncryptionSecret(baseSecret).map { it.toSecretKey() },
+            generateDataAuthenticationSecret(baseSecret).map { it.toSecretKey() },
+            { encryptionKey, authenticationKey -> Pair(encryptionKey, authenticationKey) }
+        )
+    }
+
+    /**
+     * Generate data encryption secret by appending [.DATA_ENCRYPTION_SECRET_SUFFIX] to given
+     * baseSecret, hashing it and trimming it to a length of 16.
+     */
+    fun generateDataEncryptionSecret(baseSecret: ByteArray): Single<ByteArray> {
+        return concatenate(baseSecret, DATA_ENCRYPTION_SECRET_SUFFIX)
+            .flatMap(::hash)
+            .map { it.trim(HashProvider.TRIMMED_HASH_LENGTH) }
+    }
+
+    /**
+     * Generate data authentication secret by appending [.DATA_AUTHENTICATION_SECRET_SUFFIX]
+     * to given baseSecret and hash it.
+     */
+    fun generateDataAuthenticationSecret(baseSecret: ByteArray): Single<ByteArray> {
+        return concatenate(baseSecret, DATA_AUTHENTICATION_SECRET_SUFFIX)
+            .flatMap(::hash)
+    }
+
+    /*
         Elliptic-curve Diffie–Hellman
      */
 
+    /**
+     * Convenience method for [ecdh] that uses the currently available daily key ([getDailyPublicKey]) as public key.
+     */
+    fun ecdh(privateKey: PrivateKey): Single<ByteArray> {
+        return getDailyPublicKey()
+            .flatMap { ecdh(privateKey, it.publicKey) }
+    }
+
+    /**
+     * Emits a shared secret that can be used for deriving other keys.
+     * Note that the private and public keys should belong to different key pairs.
+     */
     fun ecdh(privateKey: PrivateKey, publicKey: PublicKey): Single<ByteArray> {
         return asymmetricCipherProvider.generateSecret(privateKey, publicKey)
     }
@@ -307,8 +414,29 @@ open class CryptoManager constructor(
         Elliptic-curve Digital Signature Algorithm
      */
 
+    fun ecdsa(data: ByteArray, keyAlias: String): Single<ByteArray> {
+        return getKeyPairPrivateKey(keyAlias)
+            .flatMap { ecdsa(data, it) }
+    }
+
+    /**
+     * Signs data with the given private key.
+     *
+     * @return The signature in IEEE P.1363 format (binary concatenation of r and s)
+     */
     fun ecdsa(data: ByteArray, privateKey: PrivateKey): Single<ByteArray> {
         return signatureProvider.sign(data, privateKey)
+    }
+
+    /**
+     * Verifies the given signature. Emits [RxSignatureException] if the signature is invalid.
+     *
+     * @param [data] The signed data
+     * @param [signature] The signature in IEEE P.1363 format
+     * @param [publicKey] The public key
+     */
+    fun verifyEcdsa(data: ByteArray, signature: ByteArray, publicKey: PublicKey): Completable {
+        return signatureProvider.verify(data, signature, publicKey)
     }
 
     /*
@@ -321,8 +449,7 @@ open class CryptoManager constructor(
      */
     fun getKeyPair(alias: String = "ephemeral"): Single<KeyPair> {
         return restoreKeyPair(alias)
-            .switchIfEmpty(generateKeyPair(alias)
-                .flatMap { persistKeyPair(alias, it).andThen(Single.just(it)) })
+            .switchIfEmpty(generateKeyPair(alias))
     }
 
     /**
@@ -424,29 +551,42 @@ open class CryptoManager constructor(
             }
     }
 
-    private fun verifyDailyPublicKeyData(dailyPublicKeyData: DailyPublicKeyData): Completable {
+    fun getAndVerifyIssuerCertificate(issuerId: String): Single<KeyIssuerResponseData> {
+        return networkManager
+            .lucaEndpointsV4
+            .flatMap { it.getKeyIssuer(issuerId) }
+            .flatMap { keyIssuerResponseData ->
+                Single.fromCallable {
+                    // verify issuer certificate using luca intermediate and root CA
+                    val issuerCertificate = keyIssuerResponseData.certificate
+                    verifyKeyIssuerCertificate(issuerCertificate).blockingAwait()
+
+                    // verify issuer signing key JWT signature using issuer certificate
+                    val signingKeyData = keyIssuerResponseData.signingKeyData
+                    signingKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
+
+                    // verify issuer encryption key JWT signature using issuer certificate
+                    val encryptionKeyData = keyIssuerResponseData.encryptionKeyData
+                    encryptionKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
+
+                    // verify signing key JWT subject matches issuer ID
+                    require(signingKeyData.id == issuerId)
+
+                    // verify encryption key JWT subject matches issuer ID
+                    require(encryptionKeyData.id == issuerId)
+
+                    keyIssuerResponseData
+                }
+            }
+    }
+
+    fun verifyDailyPublicKeyData(dailyPublicKeyData: DailyPublicKeyData): Completable {
         return assertKeyNotExpired(dailyPublicKeyData)
-            .andThen(networkManager.lucaEndpointsV4
-                .flatMap { it.getKeyIssuer(dailyPublicKeyData.issuerId) }
-                .flatMapCompletable { keyIssuerResponseData ->
-                    Completable.defer {
-                        // verify issuer certificate using luca intermediate and root CA
-                        val issuerCertificate = keyIssuerResponseData.certificate
-                        verifyKeyIssuerCertificate(issuerCertificate).blockingAwait()
-
-                        // verify issuer signing key JWT signature using issuer certificate
-                        val signingKeyData = keyIssuerResponseData.signingKeyData
-                        signingKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
-
-                        // verify signing key JWT subject matches daily key issuer ID
-                        require(signingKeyData.id == dailyPublicKeyData.issuerId)
-
-                        // verify daily key JWT signature using issuer signing key
-                        dailyPublicKeyData.signedJwt!!.verifyJwt(signingKeyData.publicKey)
-
-                        persistDailyPublicKeyIssuerData(signingKeyData)
-                    }
-                })
+            .andThen(getAndVerifyIssuerCertificate(dailyPublicKeyData.issuerId))
+            .flatMapCompletable { keyIssuerResponseData ->
+                dailyPublicKeyData.signedJwt!!.verifyJwt(keyIssuerResponseData.signingKeyData.publicKey)
+                persistDailyPublicKeyIssuerData(keyIssuerResponseData.signingKeyData)
+            }
             .doOnError { Timber.w("Daily public key verification failed: %s", it.toString()) }
     }
 
@@ -473,7 +613,7 @@ open class CryptoManager constructor(
     fun assertKeyNotExpired(dailyPublicKeyData: DailyPublicKeyData): Completable {
         return genuinityManager.assertIsGenuineTime()
             .andThen(Completable.fromAction {
-                val keyAge = System.currentTimeMillis() - dailyPublicKeyData.creationTimestamp
+                val keyAge = TimeUtil.getCurrentMillis() - dailyPublicKeyData.creationTimestamp
                 if (keyAge > TimeUnit.DAYS.toMillis(7)) {
                     throw DailyKeyExpiredException("Daily public key is older than 7 days")
                 }
@@ -484,7 +624,7 @@ open class CryptoManager constructor(
         Daily public key issuer
      */
 
-    private fun verifyKeyIssuerCertificate(certificate: X509Certificate): Completable {
+    fun verifyKeyIssuerCertificate(certificate: X509Certificate): Completable {
         return Completable.fromAction {
             if (!LucaApplication.IS_USING_STAGING_ENVIRONMENT) {
                 // staging example:    C=DE,ST=Berlin,L=Berlin,O=luca Dev,CN=Dev Cluster Health Department,SERIALNUMBER=CSM026070939
@@ -529,62 +669,6 @@ open class CryptoManager constructor(
     }
 
     /*
-        Guest ephemeral key pair
-     */
-
-    /**
-     * Get or generate guest ephemeral keypair used to encrypt user ID and secret during generation
-     * of QR-codes.
-     *
-     * @see CheckInViewModel.generateQrCodeData
-     */
-    fun getGuestEphemeralKeyPair(traceId: ByteArray): Single<KeyPair> {
-        return restoreGuestEphemeralKeyPair(traceId)
-            .switchIfEmpty(generateGuestEphemeralKeyPair(traceId)
-                .observeOn(Schedulers.io())
-                .flatMap { persistGuestEphemeralKeyPair(traceId, it).andThen(Single.just(it)) })
-    }
-
-    /**
-     * Generate keypair of given traceId.
-     */
-    private fun generateGuestEphemeralKeyPair(traceId: ByteArray): Single<KeyPair> {
-        return getGuestEphemeralKeyPairAlias(traceId)
-            .flatMap { asymmetricCipherProvider.generateKeyPair(it, context) }
-            .doOnSuccess {
-                Timber.d(
-                    "Generated new user ephemeral key pair for trace ID %s: %s",
-                    SerializationUtil.serializeToBase64(traceId).blockingGet(),
-                    it.public
-                )
-            }
-    }
-
-    private fun restoreGuestEphemeralKeyPair(traceId: ByteArray): Maybe<KeyPair> {
-        return getGuestEphemeralKeyPairAlias(traceId)
-            .flatMapMaybe { asymmetricCipherProvider.getKeyPairIfAvailable(it) }
-    }
-
-    /**
-     * Persist given keypair to BC keystore.
-     */
-    private fun persistGuestEphemeralKeyPair(traceId: ByteArray, keyPair: KeyPair): Completable {
-        return getGuestEphemeralKeyPairAlias(traceId)
-            .flatMapCompletable { asymmetricCipherProvider.setKeyPair(it, keyPair) }
-            .andThen(persistKeyStoreToFile())
-    }
-
-    fun deleteGuestEphemeralKeyPair(traceId: ByteArray): Completable {
-        return getGuestEphemeralKeyPairAlias(traceId)
-            .flatMapCompletable { bouncyCastleKeyStore.deleteEntry(it) }
-    }
-
-    private fun getGuestEphemeralKeyPairAlias(traceId: ByteArray): Single<String> {
-        return SerializationUtil.serializeToBase64(traceId)
-            .map { "$ALIAS_GUEST_EPHEMERAL_KEY_PAIR-$it" }
-    }
-
-    /*
         Guest data secret
      */
 
@@ -618,55 +702,6 @@ open class CryptoManager constructor(
         return persistWrappedSecret(DATA_SECRET_KEY, secret)
     }
 
-    /*
-        Shared Diffie-Hellman secret
-     */
-
-    /**
-     * Compute shared DH secret of [DailyKeyPairPublicKeyWrapper] and the guest private key.
-     */
-    fun generateSharedDiffieHellmanSecret(): Single<ByteArray> {
-        return getKeyPairPrivateKey(ALIAS_GUEST_KEY_PAIR)
-            .flatMap(this::generateSharedDiffieHellmanSecret)
-    }
-
-    /**
-     * Compute shared DH secret of [DailyKeyPairPublicKeyWrapper] and a given private key.
-     */
-    fun generateSharedDiffieHellmanSecret(privateKey: PrivateKey): Single<ByteArray> {
-        return getDailyPublicKey()
-            .map { it.publicKey }
-            .flatMap { asymmetricCipherProvider.generateSecret(privateKey, it) }
-            .doOnSuccess { Timber.d("Generated shared Diffie Hellman secret") }
-    }
-
-    /*
-        Encryption secret
-     */
-
-    /**
-     * Generate data encryption secret by appending [.DATA_ENCRYPTION_SECRET_SUFFIX] to given
-     * baseSecret, hashing it and trimming it to a length of 16.
-     */
-    fun generateDataEncryptionSecret(baseSecret: ByteArray): Single<ByteArray> {
-        return concatenate(baseSecret, DATA_ENCRYPTION_SECRET_SUFFIX)
-            .flatMap(hashProvider::hash)
-            .map { it.trim(HashProvider.TRIMMED_HASH_LENGTH) }
-    }
-
-    /*
-        Authentication secret
-     */
-
-    /**
-     * Generate data authentication secret by appending [.DATA_AUTHENTICATION_SECRET_SUFFIX]
-     * to given baseSecret and hash it.
-     */
-    fun generateDataAuthenticationSecret(baseSecret: ByteArray): Single<ByteArray> {
-        return concatenate(baseSecret, DATA_AUTHENTICATION_SECRET_SUFFIX)
-            .flatMap(hashProvider::hash)
-    }
-
     fun generateSecureRandomData(length: Int): Single<ByteArray> {
         return Single.fromCallable {
             val randomBytes = ByteArray(length)
@@ -685,7 +720,23 @@ open class CryptoManager constructor(
 
     companion object {
 
-        const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"
+        private const val KEYSTORE_FILE_NAME = "keys.ks"
+        private const val DAILY_PUBLIC_KEY_DATA_KEY = "daily_public_key_data"
+        private const val DAILY_PUBLIC_KEY_ISSUER_DATA_KEY = "daily_public_key_issuer_data"
+        private const val DATA_SECRET_KEY = "user_data_secret_2"
+        private const val ALIAS_KEYSTORE_PASSWORD = "keystore_secret"
+        private const val ALIAS_SECRET_WRAPPING_KEY_PAIR = "secret_wrapping_key_pair"
+        private val DATA_ENCRYPTION_SECRET_SUFFIX = byteArrayOf(0x01)
+        private val DATA_AUTHENTICATION_SECRET_SUFFIX = byteArrayOf(0x02)
+
+        @Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
+        private const val DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY = "daily_key_pair_public_key_id"
+
+        @Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
+        private const val DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY = "daily_key_pair_public_key"
+
+        @Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
+        private const val DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY = "daily_key_pair_creation_timestamp"
 
         /**
          * Substitute outdated Android-provided Bouncy Castle with bundled one.
@@ -718,18 +769,6 @@ open class CryptoManager constructor(
             return Single.fromCallable { uuid.toByteArray() }
         }
 
-        @Deprecated("Use extension function", ReplaceWith("ByteArray.encodeToBase64()"))
-        @JvmStatic
-        fun encodeToString(data: ByteArray): Single<String> {
-            return Single.fromCallable { data.encodeToBase64() }
-        }
-
-        @Deprecated("Use extension function", ReplaceWith("String.decodeFromBase64()"))
-        @JvmStatic
-        fun decodeFromString(data: String): Single<ByteArray> {
-            return Single.fromCallable { data.decodeFromBase64() }
-        }
-
         @Deprecated("Use extension function", ReplaceWith("ByteArray.trim(length: Int)"))
         @JvmStatic
         fun trim(data: ByteArray, length: Int): Single<ByteArray> {
@@ -751,48 +790,12 @@ open class CryptoManager constructor(
 
 }
 
-private const val KEYSTORE_FILE_NAME = "keys.ks"
-private const val DAILY_PUBLIC_KEY_DATA_KEY = "daily_public_key_data"
-private const val DAILY_PUBLIC_KEY_ISSUER_DATA_KEY = "daily_public_key_issuer_data"
-private const val DATA_SECRET_KEY = "user_data_secret_2"
-private const val ALIAS_GUEST_EPHEMERAL_KEY_PAIR = "user_ephemeral_key_pair"
-private const val ALIAS_KEYSTORE_PASSWORD = "keystore_secret"
-private const val ALIAS_SECRET_WRAPPING_KEY_PAIR = "secret_wrapping_key_pair"
-private val DATA_ENCRYPTION_SECRET_SUFFIX = byteArrayOf(0x01)
-private val DATA_AUTHENTICATION_SECRET_SUFFIX = byteArrayOf(0x02)
-
-@Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
-private const val DAILY_KEY_PAIR_PUBLIC_KEY_ID_KEY = "daily_key_pair_public_key_id"
-
-@Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
-private const val DAILY_KEY_PAIR_PUBLIC_KEY_POINT_KEY = "daily_key_pair_public_key"
-
-@Deprecated("Replaced by DAILY_PUBLIC_KEY_DATA_KEY")
-private const val DAILY_KEY_PAIR_CREATION_TIMESTAMP_KEY = "daily_key_pair_creation_timestamp"
-
 fun UUID.toByteArray(): ByteArray {
     val byteBuffer = ByteBuffer.wrap(ByteArray(16))
     byteBuffer.putLong(this.mostSignificantBits)
     byteBuffer.putLong(this.leastSignificantBits)
     return byteBuffer.array()
 }
-
-fun String.decodeFromBase64(flags: Int = Base64.NO_WRAP): ByteArray {
-    return RxBase64.decode(this, flags).blockingGet()
-}
-
-fun ByteArray.encodeToBase64(flags: Int = Base64.NO_WRAP): String {
-    return RxBase64.encode(this, flags).blockingGet()
-}
-
-fun String.decodeFromHex(): ByteArray {
-    check(length % 2 == 0) { "Must have an even length" }
-    return chunked(2)
-        .map { it.toInt(16).toByte() }
-        .toByteArray()
-}
-
-fun ByteArray.encodeToHex() = joinToString("") { "%02x".format(it) }
 
 fun ByteArray.trim(length: Int): ByteArray {
     val trimmedLength = kotlin.math.min(length, this.size)

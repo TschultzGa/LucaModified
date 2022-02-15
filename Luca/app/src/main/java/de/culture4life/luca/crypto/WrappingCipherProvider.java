@@ -1,9 +1,9 @@
 package de.culture4life.luca.crypto;
 
+import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.asymmetric.rsa.RsaCipherProvider;
-
-import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
 
 /**
  * Cipher provider for encrypting {@link WrappedSecret}s. Uses the Android key store.

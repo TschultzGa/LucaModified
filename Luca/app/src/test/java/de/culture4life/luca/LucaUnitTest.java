@@ -2,14 +2,26 @@ package de.culture4life.luca;
 
 import androidx.test.core.app.ApplicationProvider;
 
-import net.lachlanmckee.timberjunit.TimberTestRule;
-
 import org.junit.Rule;
+import org.junit.rules.RuleChain;
+
+import java.util.concurrent.TimeUnit;
+
+import de.culture4life.luca.testtools.rules.FixNestedSpiesMemoryLeakRule;
+import de.culture4life.luca.testtools.rules.LoggingRule;
+import de.culture4life.luca.testtools.rules.MemoryUsageRule;
+import de.culture4life.luca.testtools.rules.ReplaceRxJavaSchedulersRule;
 
 public class LucaUnitTest {
 
+    public ReplaceRxJavaSchedulersRule.TestSchedulersRule rxSchedulersRule = ReplaceRxJavaSchedulersRule.Companion.manualExecution();
+
     @Rule
-    public TimberTestRule timberTestRule = TimberTestRule.logAllAlways();
+    public RuleChain rules = RuleChain.emptyRuleChain()
+            .around(new MemoryUsageRule())
+            .around(new FixNestedSpiesMemoryLeakRule())
+            .around(new LoggingRule())
+            .around(rxSchedulersRule);
 
     protected LucaApplication application;
 
@@ -30,6 +42,14 @@ public class LucaUnitTest {
         for (ManagerType manager : managers) {
             initializeManager(manager);
         }
+    }
+
+    protected void advanceScheduler(long delayTime, TimeUnit unit) {
+        rxSchedulersRule.getTestScheduler().advanceTimeBy(delayTime, unit);
+    }
+
+    protected void triggerScheduler() {
+        rxSchedulersRule.getTestScheduler().triggerActions();
     }
 
 }

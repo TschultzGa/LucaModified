@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
+import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.databinding.FragmentMyLucaBinding
 import de.culture4life.luca.databinding.LayoutTopSheetBinding
 import de.culture4life.luca.document.Document
@@ -22,7 +23,6 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
-import java.util.*
 
 class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickListener {
 
@@ -60,13 +60,13 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         binding.myLucaRecyclerView.adapter = myLucaListAdapter
         binding.myLucaRecyclerView.layoutManager = LinearLayoutManager(context)
         binding.childrenActionBarMenuImageView.setOnClickListener { viewModel.onChildrenManagementRequested() }
-        binding.childCounterTextView.setOnClickListener { viewModel.onChildrenManagementRequested() }
+        binding.childrenCounterTextView.setOnClickListener { viewModel.onChildrenManagementRequested() }
         observe(viewModel.children) {
             if (it.isEmpty()) {
-                binding.childCounterTextView.visibility = View.GONE
+                binding.childrenCounterTextView.visibility = View.GONE
             } else {
-                binding.childCounterTextView.visibility = View.VISIBLE
-                binding.childCounterTextView.text = it.size.toString()
+                binding.childrenCounterTextView.visibility = View.VISIBLE
+                binding.childrenCounterTextView.text = it.size.toString()
             }
         }
         observe(viewModel.myLucaItems) {
@@ -139,7 +139,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
     }
 
     override fun onStop() {
-        viewModel.setBundle(null)
+        clearBundle()
         super.onStop()
     }
 
@@ -149,7 +149,7 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         }
         bundle.getString(BaseQrCodeViewModel.BARCODE_DATA_KEY)?.let { barcode ->
             viewModel.process(barcode)
-                .doOnComplete { viewModel.setBundle(null) }
+                .doOnComplete { clearBundle() }
                 .onErrorComplete()
                 .subscribe()
                 .addTo(viewDisposable)
@@ -209,20 +209,21 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
 
     private fun showDocumentImportConsentDialog(document: Document) {
         hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.document_import_action)
-            .setMessage(R.string.document_import_consent)
-            .setPositiveButton(R.string.action_ok) { _, _ ->
-                viewModel.addDocumentIfBirthDatesMatch(document)
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                        { Timber.i("Document added: %s", document) },
-                        { throwable: Throwable -> Timber.w("Unable to add document: %s", throwable.toString()) }
-                    )
-                    .addTo(viewDisposable)
+        val consentManager = application.consentManager
+        consentManager.initialize(application)
+            .andThen(consentManager.requestConsentAndGetResult(ConsentManager.ID_IMPORT_DOCUMENT))
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { consent, _ ->
+                if (consent.approved) {
+                    viewModel.addDocumentIfBirthDatesMatch(document)
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                            { Timber.i("Document added: %s", document) },
+                            { Timber.w("Unable to add document: %s", it.toString()) }
+                        )
+                        .addTo(viewDisposable)
+                }
             }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
-            .show()
     }
 
     private fun showDocumentImportBirthdayMismatchDialog(document: Document) {
@@ -270,8 +271,28 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
             .show()
     }
 
+    private fun showDocumentNotVerifiedDialog() {
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.document_not_verified_dialog_title)
+                .setMessage(R.string.document_not_verified_dialog_description)
+                .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.dismiss() }
+        ).show()
+    }
+
     override fun onDelete(myLucaListItem: MyLucaListItem) {
         showDeleteDocumentDialog(myLucaListItem)
+    }
+
+    override fun onIcon(myLucaListItem: MyLucaListItem) {
+        if (!myLucaListItem.document.isVerified) {
+            showDocumentNotVerifiedDialog()
+        }
+    }
+
+    private fun clearBundle() {
+        arguments?.clear()
+        viewModel.setBundle(null)
     }
 
     private fun getPersons(): ArrayList<Person> {

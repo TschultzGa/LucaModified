@@ -23,12 +23,12 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/consentHeaderView"
+        android:id="@+id/consentHeaderTextView"
         style="@style/MaterialAlertDialog.Luca.Title.Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_default"
-        android:text="@string/check_in_consent_entry_policy_sharing_title"
+        android:text="@string/consent_title"
         android:textColor="?attr/colorOnSurface"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -40,16 +40,16 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/spacing_default"
-        android:text="@string/check_in_consent_entry_policy_sharing_description"
+        android:text="@string/consent_include_entry_policy_description"
         android:textColor="?attr/colorOnSurface"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/consentHeaderView" />
+        app:layout_constraintTop_toBottomOf="@id/consentHeaderTextView" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/actionButton"
         style="@style/Widget.Luca.Button.PrimaryActionButton"
-        android:text="@string/check_in_consent_entry_policy_sharing_button"
+        android:text="@string/consent_accept_action"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

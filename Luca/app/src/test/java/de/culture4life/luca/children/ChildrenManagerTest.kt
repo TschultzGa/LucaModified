@@ -7,8 +7,6 @@ import de.culture4life.luca.genuinity.GenuinityManager
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.registration.RegistrationManager
-import de.culture4life.luca.ui.children.LegacyChildListItem
-import de.culture4life.luca.ui.children.LegacyChildListItemContainer
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -105,16 +103,6 @@ class ChildrenManagerTest : LucaUnitTest() {
             .andThen(childrenManager.persistChildren(Children()))
             .andThen(childrenManager.isCheckedIn(child))
             .test().assertValue(false)
-    }
-
-    @Test
-    fun migrate_withLegacyChild_migratesToNewFormat() {
-        val children = LegacyChildListItemContainer().apply { add(LegacyChildListItem("Legacy Child")) }
-        preferencesManager.persist(ChildrenManager.LEGACY_KEY_CHILDREN, children)
-            .andThen(childrenManager.migrate())
-            .andThen(childrenManager.getChildren())
-            .map { it[0].firstName }
-            .test().assertValue("Legacy Child")
     }
 
     @Test

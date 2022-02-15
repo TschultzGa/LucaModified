@@ -174,11 +174,13 @@ public abstract class BaseViewModel extends AndroidViewModel {
         LucaNotificationManager notificationManager = application.getNotificationManager();
         NotificationCompat.Builder notificationBuilder;
         if (error.isExpected()) {
-            notificationBuilder = notificationManager
-                    .createErrorNotificationBuilder(MainActivity.class, error.getTitle(), error.getDescription());
+            notificationBuilder = notificationManager.createErrorNotificationBuilder(
+                    error.getTitle(), error.getDescription()
+            );
         } else {
-            notificationBuilder = notificationManager
-                    .createErrorNotificationBuilder(MainActivity.class, error.getTitle(), application.getString(R.string.error_specific_description, error.getDescription()));
+            notificationBuilder = notificationManager.createErrorNotificationBuilder(
+                    error.getTitle(), application.getString(R.string.error_specific_description, error.getDescription())
+            );
         }
 
         notificationManager.showNotification(NOTIFICATION_ID_EVENT, notificationBuilder.build())
@@ -282,7 +284,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
                 .doOnSubscribe(disposable -> updateAsSideEffect(isLoading, true))
                 .doOnError(throwable -> {
                     if (!(throwable instanceof UserCancelledException)) {
-                        Timber.w(throwable, "Unable to export data request: %s", throwable.toString());
+                        Timber.w(throwable, "Unable to export data report: %s", throwable.toString());
                         addError(createErrorBuilder(throwable).removeWhenShown().build());
                     }
                 })

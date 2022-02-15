@@ -1,3 +1,8 @@
 # Stuff
+uiTests/node_modules
+uiTests/allure-report
+uiTests/allure-results
+uiTests/apps
+.idea
 .DS_Store
 deploymentTargetDropDown.xml

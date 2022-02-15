@@ -19,6 +19,7 @@ import de.culture4life.luca.meeting.MeetingGuestData;
 import de.culture4life.luca.meeting.MeetingManager;
 import de.culture4life.luca.preference.PreferencesManager;
 import de.culture4life.luca.registration.RegistrationData;
+import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -50,8 +51,10 @@ public class HistoryManager extends Manager {
 
     @Override
     protected Completable doInitialize(@NonNull Context context) {
-        return preferencesManager.initialize(context)
-                .andThen(deleteOldItems());
+        return Completable.mergeArray(
+                preferencesManager.initialize(context),
+                childrenManager.initialize(context)
+        ).andThen(invokeDeleteOldItems());
     }
 
     public Completable addCheckInItem(@NonNull CheckInData checkInData) {
@@ -72,7 +75,7 @@ public class HistoryManager extends Manager {
                 .map(data -> {
                     CheckOutItem item = new CheckOutItem();
                     item.setRelatedId(checkInData.getTraceId());
-                    item.setTimestamp(Math.min(checkInData.getTimestamp() + MAXIMUM_CHECK_IN_DURATION, System.currentTimeMillis()));
+                    item.setTimestamp(Math.min(checkInData.getTimestamp() + MAXIMUM_CHECK_IN_DURATION, TimeUtil.getCurrentMillis()));
                     item.setDisplayName(checkInData.getLocationDisplayName());
                     return item;
                 })
@@ -172,8 +175,12 @@ public class HistoryManager extends Manager {
                 .andThen(addHistoryDeletedItem());
     }
 
+    private Completable invokeDeleteOldItems() {
+        return invokeDelayed(deleteOldItems(), TimeUnit.SECONDS.toMillis(3));
+    }
+
     protected Completable deleteOldItems() {
-        return Single.fromCallable(() -> System.currentTimeMillis() - KEEP_DATA_DURATION)
+        return Single.fromCallable(() -> TimeUtil.getCurrentMillis() - KEEP_DATA_DURATION)
                 .flatMapCompletable(this::deleteItemsCreatedBefore);
     }
 

@@ -42,7 +42,7 @@ pipeline {
             steps {
                 sh '''
                     cd Luca
-                    docker run --rm -u $(id -u):$(id -g) -v `pwd`:/Luca ${CONTAINER} bash -c "cd /Luca/app; ./../gradlew :app:testDebug :app:testProduction"
+                    docker run --rm -u $(id -u):$(id -g) -v `pwd`:/Luca ${CONTAINER} bash -c "cd /Luca/app; ./../gradlew :app:testDebug"
                 '''
             }
         }

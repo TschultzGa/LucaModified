@@ -8,7 +8,6 @@ import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
@@ -18,12 +17,7 @@ open class GenuinityManager(
     val networkManager: NetworkManager
 ) : Manager() {
 
-    companion object {
-        const val KEY_SERVER_TIME_OFFSET = "server_time_offset"
-        val MAXIMUM_SERVER_TIME_OFFSET = TimeUnit.MINUTES.toMillis(5)
-    }
-
-    var timestampOffset: Long? = null
+    private var timestampOffset: Long? = null
 
     override fun doInitialize(context: Context): Completable {
         return Completable.mergeArray(
@@ -32,7 +26,7 @@ open class GenuinityManager(
         ).andThen(invokeServerTimeOffsetUpdateIfRequired())
     }
 
-    fun invokeServerTimeOffsetUpdateIfRequired(): Completable {
+    private fun invokeServerTimeOffsetUpdateIfRequired(): Completable {
         return Completable.fromAction {
             if (timestampOffset == null) {
                 invokeServerTimeOffsetUpdate()
@@ -41,15 +35,7 @@ open class GenuinityManager(
     }
 
     fun invokeServerTimeOffsetUpdate(): Completable {
-        return Completable.fromAction {
-            managerDisposable.add(
-                fetchServerTimeOffset()
-                    .delaySubscription(3, TimeUnit.SECONDS)
-                    .subscribeOn(Schedulers.io())
-                    .onErrorComplete()
-                    .subscribe()
-            )
-        }
+        return invokeDelayed(fetchServerTimeOffset().ignoreElement(), TimeUnit.SECONDS.toMillis(3))
     }
 
     fun assertIsGenuineTime(): Completable {
@@ -65,7 +51,7 @@ open class GenuinityManager(
 
     open fun isGenuineTime(): Single<Boolean> {
         return getOrFetchOrRestoreServerTimeOffset()
-            .map { it < MAXIMUM_SERVER_TIME_OFFSET }
+            .map { abs(it) < MAXIMUM_SERVER_TIME_OFFSET }
             .onErrorReturnItem(false)
     }
 
@@ -75,7 +61,7 @@ open class GenuinityManager(
             .distinctUntilChanged()
     }
 
-    private fun getOrFetchOrRestoreServerTimeOffset(): Single<Long> {
+    open fun getOrFetchOrRestoreServerTimeOffset(): Single<Long> {
         return Single.defer {
             if (timestampOffset != null) {
                 Single.just(timestampOffset!!)
@@ -101,7 +87,7 @@ open class GenuinityManager(
 
     private fun fetchServerTimeOffset(): Single<Long> {
         return fetchServerTime()
-            .map { abs(System.currentTimeMillis() - it) }
+            .map { TimeUtil.getCurrentMillis() - it }
             .doOnSuccess {
                 timestampOffset = it
                 Timber.d("Server timestamp offset updated: %d", timestampOffset)
@@ -110,6 +96,11 @@ open class GenuinityManager(
             .flatMap {
                 preferencesManager.persist(KEY_SERVER_TIME_OFFSET, it).andThen(Single.just(it))
             }
+    }
+
+    companion object {
+        const val KEY_SERVER_TIME_OFFSET = "server_time_offset"
+        val MAXIMUM_SERVER_TIME_OFFSET = TimeUnit.MINUTES.toMillis(5)
     }
 
 }

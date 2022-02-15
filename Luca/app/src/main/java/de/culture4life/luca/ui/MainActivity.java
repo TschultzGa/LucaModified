@@ -6,7 +6,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
-import androidx.annotation.Nullable;
+import androidx.core.view.MenuItemCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -20,9 +20,11 @@ import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.R;
-import de.culture4life.luca.notification.LucaNotificationManager;
+import de.culture4life.luca.ui.consent.ConsentBottomSheetFragment;
 import de.culture4life.luca.ui.registration.RegistrationActivity;
+import de.culture4life.luca.util.AccessibilityServiceUtil;
 import five.star.me.FiveStarMe;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -38,13 +40,20 @@ public class MainActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
-        viewModel.initialize().subscribe();
 
         initializeNavigation();
         hideActionBar();
         setupKeyboardListener();
-        processIntent(getIntent());
+
+        viewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        viewModel.initialize()
+                .doOnComplete(() -> {
+                    viewModel.setNavigationController(navigationController);
+                    viewModel.onNewIntent(getIntent());
+                })
+                .subscribe();
+
+        initializeConsentRequests();
 
         Completable.fromAction(() -> FiveStarMe.with(this)
                 .setInstallDays(2)
@@ -64,10 +73,13 @@ public class MainActivity extends BaseActivity {
         navigationController.setGraph(R.navigation.mobile_navigation);
         NavigationUI.setupActionBarWithNavController(this, navigationController, appBarConfiguration);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
-        bottomNavigationView.setItemIconTintList(/* Don't tint icons, we will control states changes by self. */ null);
+        bottomNavigationView.setItemIconTintList(null); // don't tint icons, we'll control states changes by ourselves
         NavigationUI.setupWithNavController(bottomNavigationView, navigationController);
-
-        bottomNavigationView.setOnNavigationItemSelectedListener(item -> {
+        if (AccessibilityServiceUtil.getFontScale(getApplicationContext()) > 1.3) {
+            bottomNavigationView.setItemTextAppearanceActive(R.style.ThemeOverlay_Luca_BottomNavigationView_StaticFontSize);
+            bottomNavigationView.setItemTextAppearanceInactive(R.style.ThemeOverlay_Luca_BottomNavigationView_StaticFontSize);
+        }
+        bottomNavigationView.setOnItemSelectedListener(item -> {
             int currentDestinationId = navigationController.getCurrentDestination().getId();
             if (currentDestinationId != item.getItemId()) {
                 if (item.getItemId() == R.id.checkInFragment) {
@@ -82,6 +94,9 @@ public class MainActivity extends BaseActivity {
             return true;
         });
 
+        MenuItem accountMenuItem = bottomNavigationView.getMenu().findItem(R.id.accountFragment);
+        MenuItemCompat.setContentDescription(accountMenuItem, getString(R.string.account_tab_title_content_description));
+
         if (application.isInDarkMode()) {
             // workaround for removing the elevation color overlay
             // https://github.com/material-components/material-components-android/issues/1148
@@ -95,38 +110,26 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    private void initializeConsentRequests() {
+        activityDisposable.add(application.getConsentManager()
+                .getConsentRequests()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::showConsentRequest));
+    }
+
+    private void showConsentRequest(String id) {
+        ConsentBottomSheetFragment fragment = ConsentBottomSheetFragment.Companion.newInstance(id);
+        String tag = "consent_" + id;
+        fragment.show(getSupportFragmentManager(), tag);
+    }
+
     @Override
     protected void onNewIntent(Intent intent) {
+        Timber.d("onNewIntent() called with: intent = [%s]", intent);
         super.onNewIntent(intent);
-        processIntent(intent);
-    }
-
-    private void processIntent(@Nullable Intent intent) {
-        Timber.d("processIntent() called with: intent = [%s]", intent);
-        LucaNotificationManager.getBundleFromIntent(intent)
-                .flatMap(LucaNotificationManager::getActionFromBundle)
-                .flatMapCompletable(this::processNotificationAction)
-                .subscribe(
-                        () -> Timber.d("Processed intent: %s", intent),
-                        throwable -> Timber.w(throwable, "Unable to process intent")
-                );
-    }
-
-    private Completable processNotificationAction(int action) {
-        return Completable.fromAction(() -> {
-            switch (action) {
-                case LucaNotificationManager.ACTION_SHOW_CHECKIN_TAB:
-                    Timber.d("Showing checkin tab");
-                    navigationController.navigate(R.id.checkInFragment);
-                    break;
-                case LucaNotificationManager.ACTION_SHOW_MESSAGES:
-                    Timber.d("Showing messages");
-                    navigationController.navigate(R.id.messagesFragment);
-                    break;
-                default:
-                    Timber.w("Unknown notification action: %d", action);
-            }
-        });
+        if (viewModel.isInitialized.getValue()) {
+            viewModel.onNewIntent(intent);
+        }
     }
 
     @Override

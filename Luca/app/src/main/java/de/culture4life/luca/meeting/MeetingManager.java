@@ -1,7 +1,5 @@
 package de.culture4life.luca.meeting;
 
-import static de.culture4life.luca.history.HistoryManager.KEEP_DATA_DURATION;
-
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -14,17 +12,15 @@ import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
-import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import javax.crypto.SecretKey;
-
 import de.culture4life.luca.Manager;
+import de.culture4life.luca.archive.Archiver;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
+import de.culture4life.luca.crypto.EciesResult;
 import de.culture4life.luca.history.HistoryManager;
 import de.culture4life.luca.location.LocationManager;
 import de.culture4life.luca.network.NetworkManager;
@@ -47,8 +43,9 @@ public class MeetingManager extends Manager {
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
     private final LocationManager locationManager;
-    private final CryptoManager cryptoManager;
+    private final CryptoManager cryptoManager; // initialization deferred to first use
     private final HistoryManager historyManager;
+    private final Archiver<MeetingData> archiver;
 
     @Nullable
     private MeetingData currentMeetingData;
@@ -59,6 +56,7 @@ public class MeetingManager extends Manager {
         this.locationManager = locationManager;
         this.historyManager = historyManager;
         this.cryptoManager = cryptoManager;
+        archiver = new Archiver<>(preferencesManager, KEY_ARCHIVED_MEETING_DATA, ArchivedMeetingData.class, MeetingData::getCreationTimestamp);
     }
 
     @Override
@@ -67,12 +65,14 @@ public class MeetingManager extends Manager {
                 preferencesManager.initialize(context),
                 networkManager.initialize(context),
                 locationManager.initialize(context),
-                historyManager.initialize(context),
-                cryptoManager.initialize(context)
-        ).andThen(Completable.mergeArray(
-                restoreCurrentMeetingDataIfAvailable().ignoreElement(),
-                deleteOldArchivedMeetingData()
-        ));
+                historyManager.initialize(context)
+        ).andThen(invokeDeleteOldArchivedMeetingData());
+    }
+
+    @Override
+    public void dispose() {
+        archiver.clearCachedData();
+        super.dispose();
     }
 
     public Observable<Boolean> getMeetingHostStateChanges() {
@@ -106,7 +106,8 @@ public class MeetingManager extends Manager {
      */
 
     public Completable createPrivateMeeting() {
-        return generateMeetingEphemeralKeyPair()
+        return cryptoManager.initialize(context)
+                .andThen(generateMeetingEphemeralKeyPair())
                 .flatMapCompletable(keyPair -> createPrivateLocation((ECPublicKey) keyPair.getPublic())
                         .doOnSuccess(meetingData -> {
                             Timber.i("Created meeting data: %s", meetingData);
@@ -120,7 +121,7 @@ public class MeetingManager extends Manager {
 
     private Single<MeetingData> createPrivateLocation(@NonNull ECPublicKey publicKey) {
         return AsymmetricCipherProvider.encode(publicKey)
-                .flatMap(SerializationUtil::serializeToBase64)
+                .flatMap(SerializationUtil::toBase64)
                 .map(serializedPubKey -> {
                     JsonObject jsonObject = new JsonObject();
                     jsonObject.addProperty("publicKey", serializedPubKey);
@@ -136,7 +137,8 @@ public class MeetingManager extends Manager {
      */
 
     public Completable closePrivateLocation() {
-        return restoreCurrentMeetingDataIfAvailable()
+        return cryptoManager.initialize(context)
+                .andThen(restoreCurrentMeetingDataIfAvailable())
                 .flatMapCompletable(meetingData -> networkManager.getLucaEndpointsV3()
                         .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.closePrivateLocation(meetingData.getAccessId().toString()))
                         .onErrorResumeNext(throwable -> {
@@ -160,7 +162,8 @@ public class MeetingManager extends Manager {
      */
 
     public Completable updateMeetingGuestData() {
-        return fetchGuestData()
+        return cryptoManager.initialize(context)
+                .andThen(fetchGuestData())
                 .flatMapSingle(this::getMeetingGuestData)
                 .toList()
                 .flatMapCompletable(meetingGuestData -> getCurrentMeetingDataIfAvailable()
@@ -180,7 +183,6 @@ public class MeetingManager extends Manager {
     private Single<MeetingGuestData> getMeetingGuestData(@NonNull TracesResponseData tracesResponseData) {
         return Single.fromCallable(() -> {
             MeetingGuestData meetingGuestData = new MeetingGuestData();
-
             meetingGuestData.setTraceId(tracesResponseData.getTraceId());
 
             try {
@@ -189,30 +191,25 @@ public class MeetingManager extends Manager {
                     throw new IllegalStateException("No additional data available for " + tracesResponseData.getTraceId());
                 }
 
-                UUID meetingId = getCurrentMeetingDataIfAvailable()
+                PrivateKey meetingPrivateKey = getCurrentMeetingDataIfAvailable()
                         .toSingle()
                         .map(MeetingData::getLocationId)
+                        .flatMap(this::getMeetingEphemeralKeyPair)
+                        .map(KeyPair::getPrivate)
                         .blockingGet();
 
-                PrivateKey meetingPrivateKey = getMeetingEphemeralKeyPair(meetingId).map(KeyPair::getPrivate).blockingGet();
-                PublicKey guestPublicKey = SerializationUtil.deserializeFromBase64(additionalData.getPublicKey())
+                ECPublicKey guestPublicKey = SerializationUtil.fromBase64(additionalData.getPublicKey())
                         .flatMap(AsymmetricCipherProvider::decodePublicKey)
                         .blockingGet();
 
-                byte[] diffieHellmanSecret = cryptoManager.getAsymmetricCipherProvider()
-                        .generateSecret(meetingPrivateKey, guestPublicKey)
-                        .blockingGet();
+                EciesResult eciesResult = new EciesResult(
+                        SerializationUtil.fromBase64(additionalData.getData()).blockingGet(),
+                        SerializationUtil.fromBase64(additionalData.getIv()).blockingGet(),
+                        SerializationUtil.fromBase64(additionalData.getMac()).blockingGet(),
+                        guestPublicKey
+                );
 
-                byte[] encryptedData = SerializationUtil.deserializeFromBase64(additionalData.getData()).blockingGet();
-                byte[] iv = SerializationUtil.deserializeFromBase64(additionalData.getIv()).blockingGet();
-                byte[] encryptionSecret = cryptoManager.generateDataEncryptionSecret(diffieHellmanSecret).blockingGet();
-                SecretKey decryptionKey = CryptoManager.createKeyFromSecret(encryptionSecret).blockingGet();
-                byte[] decryptedData = cryptoManager.getSymmetricCipherProvider().decrypt(encryptedData, iv, decryptionKey).blockingGet();
-
-                byte[] dataAuthenticationSecret = cryptoManager.generateDataAuthenticationSecret(diffieHellmanSecret).blockingGet();
-                SecretKey dataAuthenticationKey = CryptoManager.createKeyFromSecret(dataAuthenticationSecret).blockingGet();
-                byte[] mac = SerializationUtil.deserializeFromBase64(additionalData.getMac()).blockingGet();
-                cryptoManager.getMacProvider().verify(encryptedData, mac, dataAuthenticationKey).blockingAwait();
+                byte[] decryptedData = cryptoManager.eciesDecrypt(eciesResult, meetingPrivateKey).blockingGet();
 
                 MeetingAdditionalData meetingAdditionalData = Single.fromCallable(() -> new String(decryptedData, StandardCharsets.UTF_8))
                         .doOnSuccess(json -> Timber.d("Additional data JSON: %s", json))
@@ -247,27 +244,15 @@ public class MeetingManager extends Manager {
     }
 
     public Completable addMeetingDataToArchive(@NonNull MeetingData meetingData) {
-        return getArchivedMeetingData()
-                .mergeWith(Observable.just(meetingData))
-                .toList()
-                .map(ArchivedMeetingData::new)
-                .flatMapCompletable(meetingsDataArchive -> preferencesManager.persist(KEY_ARCHIVED_MEETING_DATA, meetingsDataArchive))
-                .doOnComplete(() -> Timber.i("Added meeting data to archive: %s", meetingData));
+        return archiver.addData(meetingData);
     }
 
-    public Observable<MeetingData> getArchivedMeetingData() {
-        return preferencesManager.restoreIfAvailable(KEY_ARCHIVED_MEETING_DATA, ArchivedMeetingData.class)
-                .map(ArchivedMeetingData::getMeetings)
-                .defaultIfEmpty(new ArrayList<>())
-                .flatMapObservable(Observable::fromIterable);
+    private Completable invokeDeleteOldArchivedMeetingData() {
+        return invokeDelayed(deleteOldArchivedMeetingData(), TimeUnit.SECONDS.toMillis(3));
     }
 
     public Completable deleteOldArchivedMeetingData() {
-        return getArchivedMeetingData()
-                .filter(meetingData -> meetingData.getCreationTimestamp() > System.currentTimeMillis() - KEEP_DATA_DURATION)
-                .toList()
-                .map(ArchivedMeetingData::new)
-                .flatMapCompletable(meetingsDataArchive -> preferencesManager.persist(KEY_ARCHIVED_MEETING_DATA, meetingsDataArchive))
+        return archiver.deleteDataOlderThan()
                 .doOnComplete(() -> Timber.d("Deleted old archived meeting data"));
     }
 
@@ -276,32 +261,23 @@ public class MeetingManager extends Manager {
      */
 
     protected Single<KeyPair> getMeetingEphemeralKeyPair(@NonNull UUID meetingId) {
-        return restoreMeetingEphemeralKeyPair(meetingId)
-                .switchIfEmpty(generateMeetingEphemeralKeyPair()
-                        .flatMap(keyPair -> persistMeetingEphemeralKeyPair(meetingId, keyPair)
-                                .andThen(Single.just(keyPair))));
+        return getMeetingEphemeralKeyPairAlias(meetingId)
+                .flatMap(cryptoManager::getKeyPair);
     }
 
     protected Single<KeyPair> generateMeetingEphemeralKeyPair() {
-        return cryptoManager.getAsymmetricCipherProvider().generateKeyPair(ALIAS_MEETING_EPHEMERAL_KEY_PAIR, context)
+        return cryptoManager.generateKeyPair(ALIAS_MEETING_EPHEMERAL_KEY_PAIR)
                 .doOnSuccess(keyPair -> Timber.d("Generated new meeting ephemeral key pair: %s", keyPair.getPublic()));
     }
 
-    protected Maybe<KeyPair> restoreMeetingEphemeralKeyPair(@NonNull UUID meetingId) {
+    protected Completable persistMeetingEphemeralKeyPair(@NonNull UUID meetingId, @NonNull KeyPair keyPair) {
         return getMeetingEphemeralKeyPairAlias(meetingId)
-                .flatMapMaybe(cryptoManager.getAsymmetricCipherProvider()::getKeyPairIfAvailable);
-    }
-
-    protected Completable persistMeetingEphemeralKeyPair(@NonNull UUID meetingId, @NonNull KeyPair
-            keyPair) {
-        return getMeetingEphemeralKeyPairAlias(meetingId)
-                .flatMapCompletable(alias -> cryptoManager.getAsymmetricCipherProvider().setKeyPair(alias, keyPair))
-                .andThen(cryptoManager.persistKeyStoreToFile());
+                .flatMapCompletable(alias -> cryptoManager.persistKeyPair(alias, keyPair));
     }
 
     protected Completable deleteMeetingEphemeralKeyPair(@NonNull UUID meetingId) {
         return getMeetingEphemeralKeyPairAlias(meetingId)
-                .flatMapCompletable(cryptoManager.getBouncyCastleKeyStore()::deleteEntry);
+                .flatMapCompletable(cryptoManager::deleteKeyPair);
     }
 
     protected static Single<String> getMeetingEphemeralKeyPairAlias(@NonNull UUID meetingId) {

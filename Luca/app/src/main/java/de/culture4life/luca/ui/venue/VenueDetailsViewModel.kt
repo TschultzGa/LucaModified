@@ -1,6 +1,6 @@
 package de.culture4life.luca.ui.venue
 
-import android.Manifest
+import android.Manifest.permission.*
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
@@ -28,6 +28,7 @@ import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.ui.BaseViewModel
 import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.children.ChildrenFragment
+import de.culture4life.luca.util.TimeUtil
 import de.culture4life.luca.util.TimeUtil.getReadableTime
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.core.Completable
@@ -71,6 +72,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
 
     private var isLocationPermissionGranted = false
     private var isBackgroundLocationPermissionGranted = false
+    private var askedForFineLocationPermissionAlready = false
     private var updatedProvidedUrlsError: ViewError? = null
     private var checkOutError: ViewError? = null
 
@@ -212,7 +214,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
 
     private fun updateReadableCheckInDuration(timestamp: Long): Completable {
         return Observable.interval(0, 1, TimeUnit.SECONDS)
-            .map { System.currentTimeMillis() - timestamp }
+            .map { TimeUtil.getCurrentMillis() - timestamp }
             .map(::getReadableDuration)
             .flatMapCompletable { update(checkInDuration, it) }
     }
@@ -287,12 +289,13 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
      * otherwise.
      */
     private fun enableAutomaticCheckoutActivation(): Boolean {
-        if (ActivityCompat.checkSelfPermission(application, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        // Coarse location access is not enough for geofencing
+        if (ActivityCompat.checkSelfPermission(application, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestLocationPermission()
             return false
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-            && ActivityCompat.checkSelfPermission(application, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+            && ActivityCompat.checkSelfPermission(application, ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
             requestBackgroundLocationPermission()
             return false
@@ -386,13 +389,13 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     @SuppressLint("InlinedApi")
     private fun onPermissionGranted(permission: Permission) {
         when (permission.name) {
-            Manifest.permission.ACCESS_FINE_LOCATION -> {
+            ACCESS_FINE_LOCATION -> {
                 if (!isLocationPermissionGranted) {
                     onLocationPermissionGranted()
                     isLocationPermissionGranted = true
                 }
             }
-            Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
+            ACCESS_BACKGROUND_LOCATION -> {
                 if (!isBackgroundLocationPermissionGranted) {
                     onBackgroundLocationPermissionGranted()
                     isBackgroundLocationPermissionGranted = true
@@ -421,10 +424,17 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     @JvmOverloads
     fun onPermissionDenied(permission: Permission, shouldShowRationale: Boolean = permission.shouldShowRequestPermissionRationale) {
         when (permission.name) {
-            Manifest.permission.ACCESS_FINE_LOCATION -> {
-                onLocationPermissionDenied(shouldShowRationale)
+            ACCESS_FINE_LOCATION -> {
+                // If we only have coarse location access we need to ask again to gain fine access to make geofencing work
+                // But we should only do this once, otherwise we can end up in an infinite loop
+                if (askedForFineLocationPermissionAlready) {
+                    onLocationPermissionDenied(shouldShowRationale)
+                } else {
+                    askedForFineLocationPermissionAlready = true
+                    requestLocationPermission()
+                }
             }
-            Manifest.permission.ACCESS_BACKGROUND_LOCATION -> {
+            ACCESS_BACKGROUND_LOCATION -> {
                 onBackgroundLocationPermissionDenied(shouldShowRationale)
             }
         }
@@ -474,7 +484,8 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     }
 
     private fun requestLocationPermission() {
-        addPermissionToRequiredPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+        // Since Android 12 we need to ask for both fine AND coarse at the same time
+        addPermissionToRequiredPermissions(ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION)
     }
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
@@ -484,7 +495,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
 
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private fun requestBackgroundLocationPermission() {
-        addPermissionToRequiredPermissions(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        addPermissionToRequiredPermissions(ACCESS_BACKGROUND_LOCATION)
     }
 
     private fun getAdditionalDataTitle(property: String): String {
@@ -532,7 +543,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     }
 
     private fun updateProvidedUrls(): Completable {
-        return checkInManager.getCheckInDataIfAvailable()
+        return checkInManager.checkInDataIfAvailable
             .map { it.locationId.toString() }
             .flatMapObservable(this::fetchProvidedUrls)
             .toList()

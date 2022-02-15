@@ -48,7 +48,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="48dp"
                     android:labelFor="@id/automaticCheckoutToggle"
-                    android:text="@string/account_tab_item_luca_connect_switch_title"
+                    android:text="@string/luca_connect_settings_switch_title"
                     app:layout_constrainedWidth="true"
                     app:layout_constraintBottom_toBottomOf="@id/lucaConnectToggle"
                     app:layout_constraintEnd_toStartOf="@id/lucaConnectToggle"
@@ -62,9 +62,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:accessibilityTraversalAfter="@id/lucaConnectToggleTextView"
-                    app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:switchPadding="@dimen/spacing_large" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -74,7 +74,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_default"
-                android:text="@string/account_tab_item_luca_connect_description" />
+                android:text="@string/luca_connect_settings_description" />
 
         </LinearLayout>
 

@@ -63,7 +63,7 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
     }
 
     private fun registerNewUser(): Completable {
-        return cryptoManager.deleteKeyPair(CryptoManager.ALIAS_GUEST_KEY_PAIR)
+        return cryptoManager.deleteKeyPair(RegistrationManager.ALIAS_GUEST_KEY_PAIR)
             .andThen(Single.fromCallable {
                 RegistrationData().apply {
                     firstName = "Erika"
@@ -95,7 +95,7 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
 
     private fun deleteUser(): Completable {
         return registrationManager.deleteRegistrationOnBackend()
-            .andThen(cryptoManager.deleteKeyPair(CryptoManager.ALIAS_GUEST_KEY_PAIR))
+            .andThen(cryptoManager.deleteKeyPair(RegistrationManager.ALIAS_GUEST_KEY_PAIR))
             .doOnSubscribe { Timber.i("Deleting user") }
     }
 

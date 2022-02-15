@@ -1,13 +1,19 @@
 package de.culture4life.luca.health
 
 import android.content.Context
+import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
+import de.culture4life.luca.consent.ConsentManager
+import de.culture4life.luca.consent.ConsentManager.Companion.ID_POSTAL_CODE_MATCHING
+import de.culture4life.luca.crypto.CryptoManager
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.network.pojo.HealthDepartment
-import de.culture4life.luca.network.pojo.ResponsibleHealthDepartmentRequestData
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.registration.RegistrationManager
-import de.culture4life.luca.util.addTo
+import de.culture4life.luca.util.ThrowableUtil
+import de.culture4life.luca.util.TimeUtil
+import de.culture4life.luca.util.retryWhenWithDelay
+import de.culture4life.luca.util.verifyJwt
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -20,7 +26,9 @@ import java.util.concurrent.TimeUnit
 class HealthDepartmentManager(
     private val preferencesManager: PreferencesManager,
     private val networkManager: NetworkManager,
-    private val registrationManager: RegistrationManager
+    private val consentManager: ConsentManager,
+    private val registrationManager: RegistrationManager,
+    private val cryptoManager: CryptoManager
 ) : Manager() {
 
     private var cachedResponsibleHealthDepartment: Maybe<ResponsibleHealthDepartment>? = null
@@ -35,29 +43,47 @@ class HealthDepartmentManager(
         return Completable.mergeArray(
             preferencesManager.initialize(context),
             networkManager.initialize(context),
+            consentManager.initialize(context),
             registrationManager.initialize(context)
-        ).andThen(invokeResponsibleHealthDepartmentUpdateIfRequired())
+        ).andThen(Completable.defer {
+            if (LucaApplication.isRunningUnitTests()) {
+                Completable.complete()
+            } else {
+                Completable.mergeArray(
+                    invokeResponsibleHealthDepartmentUpdateIfRequired(),
+                    invoke(startObservingPostalCodeUsagePermission())
+                )
+            }
+        })
+    }
+
+    private fun startObservingPostalCodeUsagePermission(): Completable {
+        return consentManager.getConsentAndChanges(ID_POSTAL_CODE_MATCHING)
+            .skip(1) // we only care about changes
+            .flatMapCompletable {
+                Completable.defer {
+                    if (it.approved) updateResponsibleHealthDepartmentIfRequired() else deleteResponsibleHealthDepartment()
+                }.onErrorComplete()
+            }
     }
 
     fun invokeResponsibleHealthDepartmentUpdateIfRequired(): Completable {
-        return Completable.fromAction {
-            updateResponsibleHealthDepartmentIfRequired()
-                .doOnError { Timber.w("Unable to update responsible health department: $it") }
-                .retryWhen { it.delay(10, TimeUnit.SECONDS) }
-                .subscribeOn(Schedulers.io())
-                .subscribe()
-                .addTo(managerDisposable)
-        }
+        return invokeDelayed(updateResponsibleHealthDepartmentIfRequired()
+            .doOnError { Timber.w("Unable to update responsible health department: $it") }
+            .retryWhenWithDelay(10, 30, Schedulers.io()) {
+                ThrowableUtil.isNetworkError(it)
+            }, TimeUnit.SECONDS.toMillis(1)
+        )
     }
 
     fun updateResponsibleHealthDepartmentIfRequired(): Completable {
-        return postalCodeUsagePermissionGranted()
+        return registrationManager.hasCompletedRegistration()
             .filter { it }
-            .flatMapSingle { registrationManager.hasCompletedRegistration() }
-            .filter { it }
+            .flatMapSingle { consentManager.getConsent(ID_POSTAL_CODE_MATCHING) }
+            .filter { it.approved }
             .flatMapSingle {
                 getResponsibleHealthDepartmentIfAvailable()
-                    .map { !it.connectEnrollmentSupported && System.currentTimeMillis() - it.updateTimestamp > MINIMUM_UPDATE_DELAY }
+                    .map { TimeUtil.getCurrentMillis() - it.updateTimestamp > MINIMUM_UPDATE_DELAY }
                     .defaultIfEmpty(true)
             }
             .filter { it }
@@ -67,8 +93,8 @@ class HealthDepartmentManager(
     fun updateResponsibleHealthDepartment(): Completable {
         return getPostalCodeCode()
             .flatMapMaybe { postalCode ->
-                fetchResponsibleHealthDepartment(postalCode)
-                    .map { ResponsibleHealthDepartment(it, postalCode) }
+                fetchHealthDepartment(postalCode)
+                    .flatMapSingle { createResponsibleHealthDepartment(it, postalCode) }
             }
             .filter { isNewResponsibleHealthDepartment(it).blockingGet() }
             .doOnSuccess { Timber.i("New responsible health department: $it") }
@@ -88,13 +114,6 @@ class HealthDepartmentManager(
 
     fun getResponsibleHealthDepartmentUpdates(): Observable<Boolean> {
         return responsibleHealthDepartmentUpdateSubject
-    }
-
-    fun getResponsibleHealthDepartmentAndChanges(): Observable<ResponsibleHealthDepartment> {
-        return getResponsibleHealthDepartmentIfAvailable()
-            .toObservable()
-            .mergeWith(getResponsibleHealthDepartmentUpdates()
-                .flatMapMaybe { getResponsibleHealthDepartmentIfAvailable() })
     }
 
     fun getResponsibleHealthDepartmentIfAvailable(): Maybe<ResponsibleHealthDepartment> {
@@ -127,25 +146,38 @@ class HealthDepartmentManager(
             }
     }
 
-    private fun fetchResponsibleHealthDepartment(zipCode: String): Maybe<HealthDepartment> {
+    fun fetchHealthDepartment(zipCode: String): Maybe<HealthDepartment> {
         return networkManager.lucaEndpointsV4
-            .flatMap { it.getResponsibleHealthDepartment(ResponsibleHealthDepartmentRequestData(zipCode)) }
+            .flatMap { it.responsibleHealthDepartment }
+            .flatMapObservable { Observable.fromIterable(it) }
+            .filter { zipCode in it.zipCodes }
+            .toList()
             .flatMapMaybe { departments ->
-                Maybe.fromCallable { departments.firstOrNull { it.connectEnrollmentSupported } ?: departments.firstOrNull() }
+                Maybe.fromCallable { departments.firstOrNull() }
             }
     }
 
-    private fun getPostalCodeCode(): Single<String> {
-        return registrationManager.getRegistrationData()
-            .map { it.postalCode!! }
+    fun createResponsibleHealthDepartment(healthDepartment: HealthDepartment, postalCode: String): Single<ResponsibleHealthDepartment> {
+        return cryptoManager
+            .initialize(context)
+            .andThen(cryptoManager.getAndVerifyIssuerCertificate(healthDepartment.id))
+            .map { keyIssuerResponseData ->
+                require(healthDepartment.name == keyIssuerResponseData.signingKeyData.name)
+                healthDepartment.encryptionKeyJwt.verifyJwt(keyIssuerResponseData.certificate.publicKey)
+                healthDepartment.signingKeyJwt.verifyJwt(keyIssuerResponseData.certificate.publicKey)
+                ResponsibleHealthDepartment(healthDepartment, postalCode)
+            }
+            .doOnError { Timber.w("Health department jwt verification failed: %s", it.toString()) }
     }
 
-    private fun postalCodeUsagePermissionGranted(): Single<Boolean> {
-        // TODO: 24.01.22 connect with consent for luca Connect
-        return Single.just(false)
+    fun getPostalCodeCode(): Single<String> {
+        return consentManager.requestConsentIfRequiredAndAssertApproved(ID_POSTAL_CODE_MATCHING)
+            .andThen(registrationManager.getRegistrationData()
+                .map { it.postalCode!! })
     }
 
+    companion object {
+        private const val RESPONSIBLE_HEALTH_DEPARTMENT_KEY = "responsible_health_department"
+        private val MINIMUM_UPDATE_DELAY = TimeUnit.DAYS.toMillis(1)
+    }
 }
-
-private const val RESPONSIBLE_HEALTH_DEPARTMENT_KEY = "responsible_health_department"
-private val MINIMUM_UPDATE_DELAY = TimeUnit.DAYS.toMillis(1)

@@ -3,11 +3,12 @@ package de.culture4life.luca.registration
 import androidx.test.runner.AndroidJUnit4
 import com.google.gson.JsonObject
 import de.culture4life.luca.LucaUnitTest
-import de.culture4life.luca.crypto.encodeToBase64
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.network.endpoints.LucaEndpointsV3
 import de.culture4life.luca.network.pojo.UserRegistrationRequestData
 import de.culture4life.luca.preference.PreferencesManager
+import de.culture4life.luca.util.TimeUtil
+import de.culture4life.luca.util.encodeToBase64
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -45,7 +46,7 @@ class RegistrationManagerUnitTest : LucaUnitTest() {
     private val registrationManager = spy(buildRegistrationManager()) {
         whenever(it.createUserRegistrationRequestData()).then { Single.just(sampleUserDataForRegister) }
     }
-    private val testStartTimestamp = System.currentTimeMillis()
+    private val testStartTimestamp = TimeUtil.getCurrentMillis()
 
     @Before
     fun setup() {
@@ -53,19 +54,11 @@ class RegistrationManagerUnitTest : LucaUnitTest() {
     }
 
     @Test
-    fun reportActiveUser_withUserData_doesUpdate() {
+    fun reportActiveUser_withUserData_doesRegister() {
         preferencesManager.persist(RegistrationManager.USER_ID_KEY, sampleUserUUID).blockingAwait()
         whenOnReportActiveUser()
-        verify(mockLucaEndpoints).updateUser(eq(sampleUserUUID.toString()), refEq(sampleUserDataForUpdate))
+        verify(mockLucaEndpoints).registerUser(refEq(sampleUserDataForRegister))
         assertActivityTimestampUpdated()
-    }
-
-    @Test
-    fun reportActiveUser_withoutUserData_doesNothing() {
-        preferencesManager.delete(RegistrationManager.USER_ID_KEY).blockingAwait()
-        whenOnReportActiveUser()
-        verifyNoInteractions(mockLucaEndpoints)
-        assertActivityReportTimestampNotStoredYet()
     }
 
     @Test
@@ -78,52 +71,25 @@ class RegistrationManagerUnitTest : LucaUnitTest() {
     }
 
     @Test
-    fun reportActiveUser_longAgoDone_doesUpdate() {
+    fun reportActiveUser_longAgoDone_doesRegister() {
         val shouldTriggerNextActivityReport = testStartTimestamp - RegistrationManager.USER_ACTIVITY_REPORT_INTERVAL
         preferencesManager.persist(RegistrationManager.USER_ID_KEY, sampleUserUUID).blockingAwait()
         preferencesManager.persist(RegistrationManager.LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, shouldTriggerNextActivityReport).blockingAwait()
+        // TODO Make sleep obsolete and stabilize test execution.
+        //  Sometimes it is too fast and there is no delay between [testStartTimestamp] and update timestamp
+        Thread.sleep(1)
         whenOnReportActiveUser()
-        verify(mockLucaEndpoints).updateUser(eq(sampleUserUUID.toString()), refEq(sampleUserDataForUpdate))
-        verifyNoMoreInteractions(mockLucaEndpoints)
-        assertActivityTimestampUpdated()
-    }
-
-    @Test
-    fun reportActiveUser_updateUser403Response_registerUser() {
-        preferencesManager.persist(RegistrationManager.USER_ID_KEY, sampleUserUUID).blockingAwait()
-        updateUserWillRespondWithError(403)
-        whenOnReportActiveUser()
-        verify(mockLucaEndpoints).updateUser(eq(sampleUserUUID.toString()), refEq(sampleUserDataForUpdate))
         verify(mockLucaEndpoints).registerUser(refEq(sampleUserDataForRegister))
         verifyNoMoreInteractions(mockLucaEndpoints)
         assertActivityTimestampUpdated()
-    }
-
-
-    @Test
-    fun reportActiveUser_updateUser404Response_registerUser() {
-        preferencesManager.persist(RegistrationManager.USER_ID_KEY, sampleUserUUID).blockingAwait()
-        updateUserWillRespondWithError(404)
-        whenOnReportActiveUser()
-        verify(mockLucaEndpoints).updateUser(eq(sampleUserUUID.toString()), refEq(sampleUserDataForUpdate))
-        verify(mockLucaEndpoints).registerUser(refEq(sampleUserDataForRegister))
-        verifyNoMoreInteractions(mockLucaEndpoints)
-        assertActivityTimestampUpdated()
-    }
-
-    @Test
-    fun reportActiveUser_updateUserUnhandledHttpErrorResponse_justThrowFurther() {
-        preferencesManager.persist(RegistrationManager.USER_ID_KEY, sampleUserUUID).blockingAwait()
-        updateUserWillRespondWithError(499)
-        assertThrows(HttpException::class.java) { whenOnReportActiveUser() }
-        verify(mockLucaEndpoints).updateUser(eq(sampleUserUUID.toString()), refEq(sampleUserDataForUpdate))
-        verifyNoMoreInteractions(mockLucaEndpoints)
-        assertActivityReportTimestampNotStoredYet()
     }
 
     @Test
     fun registerUser_onSuccess_storesActivityReportTimestamp() {
         assertActivityReportTimestampNotStoredYet()
+        // TODO Make sleep obsolete and stabilize test execution.
+        //  Sometimes it is too fast and there is no delay between [testStartTimestamp] and update timestamp
+        Thread.sleep(1)
         registrationManager.registerUser().blockingAwait()
         assertActivityTimestampUpdated()
     }
@@ -150,7 +116,7 @@ class RegistrationManagerUnitTest : LucaUnitTest() {
         return RegistrationManager(
             preferencesManager,
             buildMockNetworkManager(),
-            mock()
+            application.cryptoManager
         )
     }
 

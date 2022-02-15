@@ -3,19 +3,18 @@ package de.culture4life.luca.document;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static de.culture4life.luca.document.Document.MAXIMUM_VACCINATION_VAILIDITY;
 import static de.culture4life.luca.document.Document.TIME_UNTIL_VACCINATION_IS_DELETED;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
-import org.joda.time.Months;
-import org.joda.time.Years;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
+
+import de.culture4life.luca.util.TimeUtil;
 
 public class DocumentTest {
 
@@ -48,10 +47,10 @@ public class DocumentTest {
 
     @Test
     public void getExpirationTimestamp_differentTestingTimestamps_differentExpirationTimestamps() {
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(2));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(2));
         long firstExpirationTimestamp = document.getExpirationTimestamp();
 
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(1));
         long secondExpirationTimestamp = document.getExpirationTimestamp();
 
         assertTrue(firstExpirationTimestamp < secondExpirationTimestamp);
@@ -99,14 +98,14 @@ public class DocumentTest {
     public void isValidRecovery_forPositivePcrTest_isTrue() {
         document.setType(Document.TYPE_PCR);
         document.setOutcome(Document.OUTCOME_POSITIVE);
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(16));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(16));
         assertTrue(document.isValidRecovery());
     }
 
     @Test
     public void isValidRecovery_forRecoveryCertificate_isTrue() {
         document.setType(Document.TYPE_RECOVERY);
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30 * 3));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(30 * 3));
         assertTrue(document.isValidRecovery());
     }
 
@@ -114,7 +113,7 @@ public class DocumentTest {
     public void isValidRecovery_forNegativePcrTest_isFalse() {
         document.setType(Document.TYPE_PCR);
         document.setOutcome(Document.OUTCOME_NEGATIVE);
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(16));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(16));
         assertFalse(document.isValidRecovery());
     }
 
@@ -122,7 +121,7 @@ public class DocumentTest {
     public void isValidRecovery_forPositiveRapidTest_isFalse() {
         document.setType(Document.TYPE_FAST);
         document.setOutcome(Document.OUTCOME_POSITIVE);
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(16));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(16));
         assertFalse(document.isValidRecovery());
     }
 
@@ -130,7 +129,7 @@ public class DocumentTest {
     public void isValidRecovery_forTooNewPositivePcrTest_isFalse() {
         document.setType(Document.TYPE_PCR);
         document.setOutcome(Document.OUTCOME_POSITIVE);
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(5));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(5));
         assertFalse(document.isValidRecovery());
     }
 
@@ -138,7 +137,7 @@ public class DocumentTest {
     public void isValidRecovery_forTooOldPositivePcrTest_isFalse() {
         document.setType(Document.TYPE_PCR);
         document.setOutcome(Document.OUTCOME_POSITIVE);
-        document.setTestingTimestamp(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30 * 7));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(30 * 7));
         assertFalse(document.isValidRecovery());
     }
 
@@ -146,7 +145,7 @@ public class DocumentTest {
     public void isValidRecovery_forFuturePositivePcrTest_isFalse() {
         document.setType(Document.TYPE_PCR);
         document.setOutcome(Document.OUTCOME_POSITIVE);
-        document.setTestingTimestamp(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
+        document.setTestingTimestamp(TimeUtil.getCurrentMillis() + TimeUnit.DAYS.toMillis(1));
         assertFalse(document.isValidRecovery());
     }
 

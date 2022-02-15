@@ -10,4 +10,8 @@
             <certificates src="user" />
         </trust-anchors>
     </debug-overrides>
+    <!-- Allow cleartext to talk with mock server for automated tests until it supports https. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
 </network-security-config>

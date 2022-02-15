@@ -3,6 +3,7 @@ package de.culture4life.luca.document.provider
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.document.DocumentVerificationException
 import de.culture4life.luca.registration.Person
+import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import org.joda.time.DateTime
@@ -159,7 +160,7 @@ class DocumentProviderTest {
 
     @Test
     fun validateTime_inThePast_succeeds() {
-        validateTime(System.currentTimeMillis() - 1000)
+        validateTime(TimeUtil.getCurrentMillis() - 1000)
             .test().assertComplete()
     }
 
@@ -206,7 +207,7 @@ class DocumentProviderTest {
 
     @Test
     fun validateTime_inTheFuture_fails() {
-        validateTime(System.currentTimeMillis() + 1000)
+        validateTime(TimeUtil.getCurrentMillis() + 1000)
             .test().assertError(DocumentVerificationException::class.java)
     }
 }

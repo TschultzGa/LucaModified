@@ -2,6 +2,8 @@ package de.culture4life.luca.network.pojo;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
+
 public class HealthDepartment {
 
     @SerializedName("departmentId")
@@ -16,8 +18,8 @@ public class HealthDepartment {
     @SerializedName("signedPublicHDSKP")
     private String signingKeyJwt;
 
-    @SerializedName("connectEnabled")
-    private boolean connectEnrollmentSupported;
+    @SerializedName("zipCodes")
+    private List<String> zipCodes;
 
     public String getId() {
         return id;
@@ -51,12 +53,12 @@ public class HealthDepartment {
         this.signingKeyJwt = signingKeyJwt;
     }
 
-    public boolean getConnectEnrollmentSupported() {
-        return connectEnrollmentSupported;
+    public List<String> getZipCodes() {
+        return zipCodes;
     }
 
-    public void setConnectEnrollmentSupported(boolean connectEnrollmentSupported) {
-        this.connectEnrollmentSupported = connectEnrollmentSupported;
+    public void setZipCodes(List<String> zipCodes) {
+        this.zipCodes = zipCodes;
     }
 
     @Override
@@ -66,7 +68,7 @@ public class HealthDepartment {
                 ", name='" + name + '\'' +
                 ", encryptionKeyJwt='" + encryptionKeyJwt + '\'' +
                 ", signingKeyJwt='" + signingKeyJwt + '\'' +
-                ", connectEnrollmentSupported='" + connectEnrollmentSupported + '\'' +
+                ", zipCodes='" + zipCodes + '\'' +
                 '}';
     }
 }

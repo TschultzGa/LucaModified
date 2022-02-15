@@ -1,5 +1,7 @@
 package de.culture4life.luca.document.provider.ubirch;
 
+import static de.culture4life.luca.document.DocumentVerificationException.Reason.UNKNOWN;
+
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
@@ -22,8 +24,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-
-import static de.culture4life.luca.document.DocumentVerificationException.Reason.UNKNOWN;
 
 public class UbirchDocumentProvider extends DocumentProvider<UbirchDocument> {
 

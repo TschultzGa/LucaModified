@@ -35,12 +35,16 @@ class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.
     fun setListeners(
         expandClickListener: View.OnClickListener? = null,
         deleteClickListener: View.OnClickListener? = null,
+        iconClickListener: View.OnClickListener? = null
     ) {
         deleteClickListener?.let {
             binding.deleteItemButton.setOnClickListener(it)
         }
         expandClickListener?.let {
             binding.root.setOnClickListener(it)
+        }
+        iconClickListener?.let {
+            binding.itemTitleImageView.setOnClickListener(it)
         }
     }
 

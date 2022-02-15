@@ -31,7 +31,8 @@ public class QrCodeData {
     @IntDef({
             ENTRY_POLICY_NOT_SHARED,
             ENTRY_POLICY_QUICK_TESTED, ENTRY_POLICY_PCR_TESTED,
-            ENTRY_POLICY_RECOVERED, ENTRY_POLICY_VACCINATED
+            ENTRY_POLICY_RECOVERED, ENTRY_POLICY_VACCINATED,
+            ENTRY_POLICY_BOOSTERED
     })
     @Retention(SOURCE)
     public @interface EntryPolicy {
@@ -43,6 +44,7 @@ public class QrCodeData {
     public static final int ENTRY_POLICY_PCR_TESTED = 0x04;
     public static final int ENTRY_POLICY_RECOVERED = 0x08;
     public static final int ENTRY_POLICY_VACCINATED = 0x10;
+    public static final int ENTRY_POLICY_BOOSTERED = 0x20;
 
     private byte version = VERSION_CURRENT;
 
@@ -149,11 +151,11 @@ public class QrCodeData {
                 ", deviceType=" + deviceType +
                 ", entryPolicy=" + entryPolicy +
                 ", keyId=" + keyId +
-                ", timestamp=" + SerializationUtil.serializeToBase64(timestamp).blockingGet() +
-                ", traceId=" + SerializationUtil.serializeToBase64(traceId).blockingGet() +
-                ", encryptedData=" + SerializationUtil.serializeToBase64(encryptedData).blockingGet() +
-                ", userEphemeralPublicKey=" + SerializationUtil.serializeToBase64(userEphemeralPublicKey).blockingGet() +
-                ", verificationTag=" + SerializationUtil.serializeToBase64(verificationTag).blockingGet() +
+                ", timestamp=" + SerializationUtil.toBase64(timestamp).blockingGet() +
+                ", traceId=" + SerializationUtil.toBase64(traceId).blockingGet() +
+                ", encryptedData=" + SerializationUtil.toBase64(encryptedData).blockingGet() +
+                ", userEphemeralPublicKey=" + SerializationUtil.toBase64(userEphemeralPublicKey).blockingGet() +
+                ", verificationTag=" + SerializationUtil.toBase64(verificationTag).blockingGet() +
                 '}';
     }
 

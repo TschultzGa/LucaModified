@@ -13,6 +13,7 @@ import timber.log.Timber
 
 class MessageDetailViewModel(application: Application) : BaseViewModel(application) {
 
+    private val whatIsNewManager = this.application.whatIsNewManager
     private val dataAccessManager = this.application.dataAccessManager
     private val connectManager = this.application.connectManager
 
@@ -20,17 +21,20 @@ class MessageDetailViewModel(application: Application) : BaseViewModel(applicati
 
     override fun initialize(): Completable {
         return super.initialize()
-            .andThen(dataAccessManager.initialize(application))
+            .andThen(
+                Completable.mergeArray(
+                    whatIsNewManager.initialize(application),
+                    dataAccessManager.initialize(application),
+                    connectManager.initialize(application)
+                )
+            )
     }
 
     fun onItemSeen(item: MessageListItem) {
-        when(item) {
-            is MessageListItem.AccessedDataListItem -> {
-                dataAccessManager.markAsNotNew(item.id, item.warningLevel)
-            }
-            is MessageListItem.LucaConnectListItem -> {
-                connectManager.markMessageAsRead(item.id)
-            }
+        when (item) {
+            is MessageListItem.NewsListItem -> whatIsNewManager.markMessageAsSeen(item.id)
+            is MessageListItem.AccessedDataListItem -> dataAccessManager.markAsNotNew(item.id, item.warningLevel)
+            is MessageListItem.LucaConnectListItem -> connectManager.markMessageAsRead(item.id)
         }
             .subscribeOn(Schedulers.io())
             .subscribe(

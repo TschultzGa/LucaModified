@@ -17,4 +17,6 @@
     <dimen name="qr_card_size">160dp</dimen>
     <dimen name="camera_box_size">320dp</dimen>
     <dimen name="my_luca_list_item_column_percentage">0.4</dimen>
+    <dimen name="static_font_size_for_bottom_navigation_items">14dp</dimen>
+    <dimen name="action_bar_title_horizontal_margin">32dp</dimen>
 </resources>

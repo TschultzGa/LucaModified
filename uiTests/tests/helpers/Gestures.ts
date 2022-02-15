@@ -145,7 +145,7 @@ class Gestures {
   }
 
   /**
-     * Swipe from coordinates (from) to the new coordinates (to). The given coordinates are in pixels.
+     * Swipe left based on the element
      */
   static swipeElementLeft(elem: WebdriverIO.Element) {
     const {
@@ -183,7 +183,7 @@ class Gestures {
   }
 
   /**
-     * Swipe from coordinates (from) to the new coordinates (to). The given coordinates are in pixels.
+     * Swipe right based on the element
     */
   static swipeElementRight(elem: WebdriverIO.Element) {
     const {
@@ -220,7 +220,44 @@ class Gestures {
     // Add a pause, just to make sure the swipe is done
     driver.pause(1000);
   }
-
+  /**
+     * Swipe up based on the element
+  */
+   static swipeElementUp(elem: WebdriverIO.Element) {
+    const {
+      x, y, width, height,
+    } = driver.getElementRect(elem.elementId);
+    const centerX =  + width / 2;
+    const startY = y + height / 2;
+    const endY = y + 10;
+    driver.performActions([
+      // Press the 'finger' on the first location
+      {
+        type: 'pointer',
+        id: 'finder1',
+        parameters: { pointerType: 'touch' },
+        actions: [
+          {
+            type: 'pointerMove', duration: 0, x: centerX, y: startY,
+          },
+          {
+            type: 'pointerDown', button: 0,
+          },
+          {
+            type: 'pause', duration: 100,
+          },
+          {
+            type: 'pointerMove', duration: 2500, x: centerX, y: endY,
+          },
+          {
+            type: 'pointerUp', button: 0,
+          },
+        ],
+      },
+    ]);
+    // Add a pause, just to make sure the swipe is done
+    driver.pause(1000);
+  }
   /**
      * Get the screen coordinates based on a device his screen size
      */

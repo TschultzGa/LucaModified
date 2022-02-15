@@ -8,6 +8,7 @@
     <TextView
         android:id="@+id/actionBarTitleTextView"
         style="@style/ActionBarTitleTextView"
+        android:contentDescription="@string/account_tab_title_content_description"
         android:text="@string/navigation_account"
         tools:ignore="MissingConstraints" />
 
@@ -48,9 +49,16 @@
                         android:id="@+id/editContactDataItem"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:showSeparator="false"
                         app:startIconSrc="@drawable/ic_person_outline"
                         app:text="@string/account_tab_item_edit_contact_data" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/postalCodeItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:showSeparator="false"
+                        app:startIconSrc="@drawable/ic_pin"
+                        app:text="@string/account_tab_item_postal_code" />
 
                     <de.culture4life.luca.ui.compound.AccountItemView
                         android:id="@+id/lucaConnectItem"
@@ -90,6 +98,7 @@
                         android:id="@+id/faqItem"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:endIconSrc="@drawable/ic_external_hyperlink"
                         app:showStartIcon="false"
                         app:text="@string/account_tab_item_faq" />
 
@@ -120,6 +129,14 @@
                     android:orientation="vertical">
 
                     <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/dataProtectionItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:endIconSrc="@drawable/ic_external_hyperlink"
+                        app:showStartIcon="false"
+                        app:text="@string/account_tab_item_data_protection" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
                         android:id="@+id/dataRequestItem"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -127,25 +144,12 @@
                         app:text="@string/account_tab_item_data_request" />
 
                     <de.culture4life.luca.ui.compound.AccountItemView
-                        android:id="@+id/dataProtectionItem"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:showStartIcon="false"
-                        app:text="@string/account_tab_item_data_protection" />
-
-                    <de.culture4life.luca.ui.compound.AccountItemView
                         android:id="@+id/termsItem"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        app:endIconSrc="@drawable/ic_external_hyperlink"
                         app:showStartIcon="false"
                         app:text="@string/account_tab_item_terms" />
-
-                    <de.culture4life.luca.ui.compound.AccountItemView
-                        android:id="@+id/imprintItem"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        app:showStartIcon="false"
-                        app:text="@string/account_tab_item_imprint" />
 
                     <de.culture4life.luca.ui.compound.AccountItemView
                         android:id="@+id/dailyKeyItem"
@@ -153,6 +157,21 @@
                         android:layout_height="wrap_content"
                         app:showStartIcon="false"
                         app:text="@string/account_tab_item_daily_key" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/imprintItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:endIconSrc="@drawable/ic_external_hyperlink"
+                        app:showStartIcon="false"
+                        app:text="@string/account_tab_item_imprint" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/licensesItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:showStartIcon="false"
+                        app:text="@string/account_tab_item_licenses" />
 
                     <de.culture4life.luca.ui.compound.AccountItemView
                         android:id="@+id/versionItem"

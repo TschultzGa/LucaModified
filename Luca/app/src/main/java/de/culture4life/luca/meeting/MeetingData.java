@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import de.culture4life.luca.util.TimeUtil;
+
 public class MeetingData {
 
     @Expose
@@ -37,7 +39,7 @@ public class MeetingData {
         this.locationId = meetingCreationResponse.getLocationUuid();
         this.accessId = meetingCreationResponse.getAccessUuid();
         this.scannerId = meetingCreationResponse.getScannerUuid();
-        this.creationTimestamp = System.currentTimeMillis();
+        this.creationTimestamp = TimeUtil.getCurrentMillis();
     }
 
     public UUID getLocationId() {

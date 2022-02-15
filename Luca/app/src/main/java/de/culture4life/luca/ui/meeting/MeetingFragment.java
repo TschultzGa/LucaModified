@@ -3,6 +3,7 @@ package de.culture4life.luca.ui.meeting;
 import static de.culture4life.luca.ui.BaseQrCodeViewModel.BARCODE_DATA_KEY;
 
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Toast;
 
@@ -36,11 +37,34 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
     @Override
     protected void initializeViews() {
         super.initializeViews();
+        initializeObservers();
+        binding.subHeadingTextView.setMovementMethod(new ScrollingMovementMethod());
+        binding.meetingGuestsInfoImageView.setOnClickListener(v -> showMeetingMembersInfo());
+        binding.slideToActView.setOnSlideCompleteListener(view -> viewModel.onMeetingEndRequested());
+        binding.slideToActView.setOnSlideUserFailedListener((view, isOutside) -> {
+            if (AccessibilityServiceUtil.isScreenReaderActive(getContext())) {
+                viewModel.onMeetingEndRequested();
+            } else {
+                Toast.makeText(getContext(), R.string.venue_slider_clicked, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        if (AccessibilityServiceUtil.isKeyboardConnected(requireContext())) {
+            binding.slideToActView.setOnKeyListener((v, keyCode, event) -> {
+                if (AccessibilityServiceUtil.isKeyConfirmButton(event)) {
+                    viewModel.onMeetingEndRequested();
+                }
+                return false;
+            });
+        }
+    }
+
+    private void initializeObservers() {
         observe(viewModel.getIsHostingMeeting(), isHostingMeeting -> {
             if (!isHostingMeeting) {
+                AccessibilityServiceUtil.speak(getContext(), getString(R.string.meeting_was_ended_hint));
                 safeNavigateFromNavController(R.id.action_meetingFragment_to_checkInFragment, viewModel.getBundle().getValue());
             }
-            AccessibilityServiceUtil.speak(getContext(), getString(R.string.meeting_was_ended_hint));
         });
         observe(viewModel.getQrCode(), value -> binding.qrCodeImageView.setImageBitmap(value));
         observe(viewModel.getIsLoading(), loading -> binding.loadingLayout.setVisibility(loading ? View.VISIBLE : View.GONE));
@@ -49,16 +73,6 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
             long checkedInGuestsCount = value.stream().filter(Guest::isCheckedIn).count();
             binding.guestsCountTextView.setText(String.valueOf(checkedInGuestsCount));
         });
-        binding.meetingGuestsInfoImageView.setOnClickListener(v -> showMeetingMembersInfo());
-        binding.slideToActView.setOnSlideCompleteListener(view -> viewModel.onMeetingEndRequested());
-        binding.slideToActView.setOnSlideUserFailedListener((view, isOutside) -> {
-            if (AccessibilityServiceUtil.isGoogleTalkbackActive(getContext())) {
-                viewModel.onMeetingEndRequested();
-            } else {
-                Toast.makeText(getContext(), R.string.venue_slider_clicked, Toast.LENGTH_SHORT).show();
-            }
-        });
-
         observe(viewModel.getIsLoading(), loading -> {
             if (!loading) {
                 binding.slideToActView.resetSlider();
@@ -78,7 +92,7 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
 
     @Override
     public void onStop() {
-        viewModel.setBundle(null);
+        clearBundle();
         super.onStop();
     }
 
@@ -104,8 +118,14 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
                 .setMessage(R.string.meeting_change_location_description)
                 .setPositiveButton(R.string.action_change, (dialog, which) -> viewModel.changeLocation())
                 .setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.cancel())
-                .setOnCancelListener(dialogInterface -> viewModel.setBundle(null));
+                .setOnCancelListener(dialogInterface -> clearBundle());
         new BaseDialogFragment(builder).show();
+    }
+
+    private void clearBundle() {
+        Bundle arguments = getArguments();
+        if (arguments != null) getArguments().clear();
+        viewModel.setBundle(null);
     }
 
 }

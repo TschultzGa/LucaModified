@@ -2,8 +2,8 @@ package de.culture4life.luca.dataaccess
 
 import android.util.Base64
 import com.nexenio.rxkeystore.util.RxBase64
+import de.culture4life.luca.util.TimeUtil
 import java.nio.ByteBuffer
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 data class NotificationDataChunk(
@@ -31,8 +31,8 @@ data class NotificationDataChunk(
 
             val creationTimestamp = byteBuffer.long
             val isValidTimestamp =
-                creationTimestamp > System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30) &&
-                        creationTimestamp < System.currentTimeMillis()
+                creationTimestamp > TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(30) &&
+                        creationTimestamp < TimeUtil.getCurrentMillis()
             require(isValidTimestamp) { "Invalid creation timestamp: $creationTimestamp" }
 
             byteBuffer.position(16)

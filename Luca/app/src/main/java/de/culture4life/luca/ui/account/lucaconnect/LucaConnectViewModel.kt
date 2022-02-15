@@ -7,12 +7,15 @@ import de.culture4life.luca.ui.BaseViewModel
 import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.util.addTo
+import de.culture4life.luca.whatisnew.WhatIsNewManager
 import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 
 class LucaConnectViewModel(application: Application) : BaseViewModel(application) {
 
     private val connectManager = this.application.connectManager
+    private val whatIsNewManager = this.application.whatIsNewManager
     private var unEnrollmentError: ViewError? = null
 
     val enrollmentStatus = MutableLiveData<Boolean>()
@@ -20,7 +23,18 @@ class LucaConnectViewModel(application: Application) : BaseViewModel(application
 
     override fun initialize(): Completable {
         return super.initialize()
-            .andThen(connectManager.initialize(application))
+            .andThen(
+                Completable.mergeArray(
+                    connectManager.initialize(application),
+                    whatIsNewManager.initialize(application)
+                )
+            )
+            .andThen(Completable.fromAction {
+                whatIsNewManager.markMessageAsSeen(WhatIsNewManager.ID_LUCA_CONNECT_MESSAGE)
+                    .onErrorComplete()
+                    .subscribeOn(Schedulers.io())
+                    .subscribe()
+            })
     }
 
     override fun keepDataUpdated(): Completable {

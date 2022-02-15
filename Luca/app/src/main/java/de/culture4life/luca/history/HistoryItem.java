@@ -16,6 +16,8 @@ import com.google.gson.annotations.SerializedName;
 
 import java.lang.annotation.Retention;
 
+import de.culture4life.luca.util.TimeUtil;
+
 public class HistoryItem {
 
     @IntDef({TYPE_CHECK_IN, TYPE_CHECK_OUT, TYPE_CONTACT_DATA_UPDATE, TYPE_CONTACT_DATA_REQUEST,
@@ -59,7 +61,7 @@ public class HistoryItem {
 
     public HistoryItem(@Type int type) {
         this.type = type;
-        this.timestamp = System.currentTimeMillis();
+        this.timestamp = TimeUtil.getCurrentMillis();
     }
 
     @Type

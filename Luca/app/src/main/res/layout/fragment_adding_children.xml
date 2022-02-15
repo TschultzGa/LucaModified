@@ -26,11 +26,13 @@
         android:id="@+id/childAddingDescriptionTextView"
         style="@style/TextAppearance.Luca.Body2"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_default"
         android:text="@string/venue_children_empty_list_description"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintHeight_max="wrap"
+        app:layout_constraintHeight_percent="0.6"
         app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
 
     <ImageView
@@ -53,10 +55,12 @@
         android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_default"
         android:cacheColorHint="@android:color/transparent"
+        android:paddingTop="@dimen/spacing_large"
         android:divider="@null"
         android:fadingEdgeLength="@dimen/spacing_large"
         android:listSelector="@android:color/transparent"
         android:requiresFadingEdge="vertical"
+        android:descendantFocusability="blocksDescendants"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintTop_toBottomOf="@id/childAddingDescriptionTextView"
         tools:listitem="@layout/item_child" />

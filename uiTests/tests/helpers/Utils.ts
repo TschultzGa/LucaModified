@@ -4,10 +4,17 @@ import NameScreen from '../screenObjects/registration/Name.Registration.Screen';
 import ContactScreen from '../screenObjects/registration/Contact.Registration.Screen';
 import AddressScreen from '../screenObjects/registration/Address.Registration.Screen';
 import ConfirmScreen from '../screenObjects/registration/Confirmation.Registration.Screen';
+import AccountMenuScreen from '../screenObjects/account/AccountMenu.Screen';
+import MenuComponent from '../screenObjects/Menu.Component';
+
+
 import {
   VALID_PHONE, VALID_EMAIL, VALID_NAME, VALID_SURNAME, VALID_STREET, VALID_NUMBER,
-  VALID_POSTAL_CODE, VALID_POSTAL_CITY, QS_QR_DEEPLINK, RELEASE_QR_DEEPLINK,
+  VALID_POSTAL_CODE, VALID_POSTAL_CITY, QS_QR_DEEPLINK, RELEASE_QR_DEEPLINK, CURRENT_DATE,
 } from './Constants';
+import AndroidSettings from '../screenObjects/AndroidSettings';
+import AccountScreen from '../screenObjects/account/Account.Screen';
+import FilesScreen from '../screenObjects/Files.Screen';
 
 const { readFileSync } = require('fs');
 const { join } = require('path');
@@ -57,4 +64,33 @@ export function getCheckinQrDeepLinkByEnv():String {
     deepLink = RELEASE_QR_DEEPLINK;
   }
   return deepLink;
+}
+
+export function addTimestampToName(nameOfTheFile: string) {
+  if (FilesScreen.documentTitles.length >= 1) {
+    FilesScreen.documentTitles.forEach(element => {
+                  if (element.getText().match(nameOfTheFile)) {
+                          element.setValue(createNameWithTimestamp(nameOfTheFile));
+                  }
+          });
+  } else {
+          console.log('File manager is not opened')
+  }
+}
+
+export function createNameWithTimestamp(nameOfTheFile: string) {
+  var tempName = nameOfTheFile.slice(0, nameOfTheFile.length - 4);
+  tempName = tempName.concat(CURRENT_DATE.toString());
+  tempName = tempName.concat('.txt');
+  return tempName;
+}
+
+export function createFilepathWithTimestamp(folderPath: string, nameOfTheFile: string) { return folderPath.concat(createNameWithTimestamp(nameOfTheFile)); }
+/**
+ * Delete user to ensure reusability of test data
+*/
+export function deleteUser(){
+  MenuComponent.account.click();
+  AccountMenuScreen.deleteUser();
+  driver.pause(1000);
 }

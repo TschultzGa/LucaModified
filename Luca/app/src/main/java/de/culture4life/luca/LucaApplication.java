@@ -12,7 +12,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Build;
-import android.os.StrictMode;
 import android.provider.Settings;
 
 import androidx.annotation.CallSuper;
@@ -37,6 +36,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.children.ChildrenManager;
 import de.culture4life.luca.connect.ConnectManager;
+import de.culture4life.luca.consent.ConsentManager;
 import de.culture4life.luca.crypto.CryptoManager;
 import de.culture4life.luca.dataaccess.DataAccessManager;
 import de.culture4life.luca.document.DocumentManager;
@@ -53,9 +53,10 @@ import de.culture4life.luca.pow.PowManager;
 import de.culture4life.luca.preference.PreferencesManager;
 import de.culture4life.luca.registration.RegistrationManager;
 import de.culture4life.luca.service.LucaService;
-import de.culture4life.luca.ui.MainActivity;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.dialog.BaseDialogFragment;
+import de.culture4life.luca.util.StrictModeUtil;
+import de.culture4life.luca.util.TimeUtil;
 import de.culture4life.luca.whatisnew.WhatIsNewManager;
 import hu.akarnokd.rxjava3.debug.RxJavaAssemblyTracking;
 import io.reactivex.rxjava3.core.Completable;
@@ -73,24 +74,25 @@ public class LucaApplication extends MultiDexApplication {
     public static final boolean IS_USING_STAGING_ENVIRONMENT = !BuildConfig.BUILD_TYPE.equals("production");
     public static final String INTENT_TYPE_MAIL = "message/rfc822";
 
-    private final PreferencesManager preferencesManager;
-    private final LucaNotificationManager notificationManager;
-    private final LocationManager locationManager;
-    private final NetworkManager networkManager;
-    private final GeofenceManager geofenceManager;
-    private final PowManager powManager;
-    private final WhatIsNewManager whatIsNewManager;
-    private final GenuinityManager genuinityManager;
-    private final CryptoManager cryptoManager;
-    private final RegistrationManager registrationManager;
-    private final ChildrenManager childrenManager;
-    private final HistoryManager historyManager;
-    private final HealthDepartmentManager healthDepartmentManager;
-    private final MeetingManager meetingManager;
-    private final CheckInManager checkInManager;
-    private final DataAccessManager dataAccessManager;
-    private final DocumentManager documentManager;
-    private final ConnectManager connectManager;
+    private PreferencesManager preferencesManager;
+    private LucaNotificationManager notificationManager;
+    private LocationManager locationManager;
+    private NetworkManager networkManager;
+    private GeofenceManager geofenceManager;
+    private PowManager powManager;
+    private ConsentManager consentManager;
+    private WhatIsNewManager whatIsNewManager;
+    private GenuinityManager genuinityManager;
+    private CryptoManager cryptoManager;
+    private RegistrationManager registrationManager;
+    private ChildrenManager childrenManager;
+    private HistoryManager historyManager;
+    private HealthDepartmentManager healthDepartmentManager;
+    private MeetingManager meetingManager;
+    private CheckInManager checkInManager;
+    private DataAccessManager dataAccessManager;
+    private DocumentManager documentManager;
+    private ConnectManager connectManager;
 
     private final CompositeDisposable applicationDisposable;
 
@@ -102,14 +104,10 @@ public class LucaApplication extends MultiDexApplication {
     public LucaApplication() {
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());
-            RxJavaAssemblyTracking.enable();
-
-            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
-                    .detectDiskReads()
-                    .detectDiskWrites()
-                    .detectNetwork()
-                    .penaltyLog()
-                    .build());
+            if (!(isRunningUnitTests() || isRunningInstrumentationTests())) {
+                RxJavaAssemblyTracking.enable();
+                StrictModeUtil.INSTANCE.enableStrictMode();
+            }
         }
 
         preferencesManager = new PreferencesManager();
@@ -118,18 +116,19 @@ public class LucaApplication extends MultiDexApplication {
         networkManager = new NetworkManager();
         geofenceManager = new GeofenceManager();
         powManager = new PowManager(networkManager);
-        whatIsNewManager = new WhatIsNewManager(preferencesManager);
+        consentManager = new ConsentManager(preferencesManager);
+        whatIsNewManager = new WhatIsNewManager(preferencesManager, notificationManager);
         genuinityManager = new GenuinityManager(preferencesManager, networkManager);
         cryptoManager = new CryptoManager(preferencesManager, networkManager, genuinityManager);
         registrationManager = new RegistrationManager(preferencesManager, networkManager, cryptoManager);
         childrenManager = new ChildrenManager(preferencesManager, registrationManager);
         historyManager = new HistoryManager(preferencesManager, childrenManager);
-        healthDepartmentManager = new HealthDepartmentManager(preferencesManager, networkManager, registrationManager);
+        healthDepartmentManager = new HealthDepartmentManager(preferencesManager, networkManager, consentManager, registrationManager, cryptoManager);
         meetingManager = new MeetingManager(preferencesManager, networkManager, locationManager, historyManager, cryptoManager);
-        checkInManager = new CheckInManager(preferencesManager, networkManager, geofenceManager, locationManager, historyManager, cryptoManager, notificationManager);
+        checkInManager = new CheckInManager(preferencesManager, networkManager, geofenceManager, locationManager, historyManager, cryptoManager, notificationManager, genuinityManager);
         dataAccessManager = new DataAccessManager(preferencesManager, networkManager, notificationManager, checkInManager, historyManager, cryptoManager);
         documentManager = new DocumentManager(preferencesManager, networkManager, historyManager, cryptoManager, registrationManager, childrenManager);
-        connectManager = new ConnectManager(preferencesManager, notificationManager, networkManager, powManager, cryptoManager, registrationManager, documentManager, healthDepartmentManager);
+        connectManager = new ConnectManager(preferencesManager, notificationManager, networkManager, powManager, cryptoManager, registrationManager, documentManager, healthDepartmentManager, whatIsNewManager);
 
         applicationDisposable = new CompositeDisposable();
 
@@ -159,16 +158,16 @@ public class LucaApplication extends MultiDexApplication {
     public void onCreate() {
         super.onCreate();
         Timber.d("Creating application");
-        if (!isRunningUnitTests()) {
-            long initializationStartTimestamp = System.currentTimeMillis();
+        if (!(isRunningUnitTests() || isRunningInstrumentationTests())) {
+            long initializationStartTimestamp = TimeUtil.getCurrentMillis();
             initializeBlocking()
                     .subscribeOn(Schedulers.io())
-                    .doOnComplete(() -> Timber.d("Blocking initialization completed after %d ms", (System.currentTimeMillis() - initializationStartTimestamp)))
+                    .doOnComplete(() -> Timber.d("Blocking initialization completed after %d ms", (TimeUtil.getCurrentMillis() - initializationStartTimestamp)))
                     .blockingAwait(10, TimeUnit.SECONDS);
 
             initializeAsync()
                     .subscribeOn(Schedulers.io())
-                    .doOnComplete(() -> Timber.d("Async initialization completed after %d ms", (System.currentTimeMillis() - initializationStartTimestamp)))
+                    .doOnComplete(() -> Timber.d("Async initialization completed after %d ms", (TimeUtil.getCurrentMillis() - initializationStartTimestamp)))
                     .subscribe();
 
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
@@ -194,6 +193,7 @@ public class LucaApplication extends MultiDexApplication {
                 notificationManager.initialize(this).subscribeOn(Schedulers.io()),
                 networkManager.initialize(this).subscribeOn(Schedulers.io()),
                 powManager.initialize(this).subscribeOn(Schedulers.io()),
+                consentManager.initialize(this).subscribeOn(Schedulers.io()),
                 whatIsNewManager.initialize(this).subscribeOn(Schedulers.io()),
                 cryptoManager.initialize(this).subscribeOn(Schedulers.io()),
                 genuinityManager.initialize(this).subscribeOn(Schedulers.io()),
@@ -224,7 +224,7 @@ public class LucaApplication extends MultiDexApplication {
                                 .build());
                     }
                 })
-                .subscribeOn(Schedulers.io())
+                .delaySubscription(1, TimeUnit.SECONDS, Schedulers.io())
                 .subscribe(
                         () -> Timber.d("Updated rotating backend public key"),
                         throwable -> Timber.w("Unable to update rotating backend public key: %s", throwable.toString())
@@ -233,7 +233,7 @@ public class LucaApplication extends MultiDexApplication {
 
     private Completable invokeAccessedDataUpdate() {
         return Completable.fromAction(() -> applicationDisposable.add(dataAccessManager.updateIfNecessary()
-                .subscribeOn(Schedulers.io())
+                .delaySubscription(3, TimeUnit.SECONDS, Schedulers.io())
                 .subscribe(
                         () -> Timber.d("Updated accessed data"),
                         throwable -> Timber.w("Unable to update accessed data: %s", throwable.toString())
@@ -303,26 +303,36 @@ public class LucaApplication extends MultiDexApplication {
      */
     @CallSuper
     public void stop() {
-        applicationDisposable.dispose();
-        dataAccessManager.dispose();
-        checkInManager.dispose();
-        meetingManager.dispose();
-        registrationManager.dispose();
-        cryptoManager.dispose();
-        historyManager.dispose();
-        networkManager.dispose();
-        locationManager.dispose();
-        notificationManager.dispose();
+        invalidateAppState();
+        Timber.i("Stopping application");
+        System.exit(0);
+    }
+
+    public void invalidateAppState() {
         preferencesManager.dispose();
+        notificationManager.dispose();
+        locationManager.dispose();
+        networkManager.dispose();
         geofenceManager.dispose();
+        powManager.dispose();
+        consentManager.dispose();
+        whatIsNewManager.dispose();
+        genuinityManager.dispose();
+        cryptoManager.dispose();
+        registrationManager.dispose();
+        childrenManager.dispose();
+        historyManager.dispose();
+        healthDepartmentManager.dispose();
+        meetingManager.dispose();
+        checkInManager.dispose();
         dataAccessManager.dispose();
         documentManager.dispose();
         connectManager.dispose();
-        healthDepartmentManager.dispose();
+
+        applicationDisposable.dispose();
+        startedActivities.clear();
 
         stopService();
-        Timber.i("Stopping application");
-        System.exit(0);
     }
 
     public void restart() {
@@ -457,7 +467,6 @@ public class LucaApplication extends MultiDexApplication {
 
     protected void showErrorAsNotification(@NonNull ViewError error) {
         NotificationCompat.Builder notificationBuilder = notificationManager.createErrorNotificationBuilder(
-                MainActivity.class,
                 error.getTitle(),
                 error.getDescription()
         );
@@ -491,12 +500,35 @@ public class LucaApplication extends MultiDexApplication {
         }
     }
 
+    public static boolean isRunningInstrumentationTests() {
+        try {
+            Class.forName("de.culture4life.luca.LucaInstrumentationTest");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    public <ManagerType extends Manager> Single<ManagerType> getInitializedManager(ManagerType manager) {
+        return Completable.defer(() -> {
+            if (manager.isInitialized()) {
+                return Completable.complete();
+            } else {
+                return manager.initialize(this);
+            }
+        }).andThen(Single.just(manager));
+    }
+
     public PreferencesManager getPreferencesManager() {
         return preferencesManager;
     }
 
     public PowManager getPowManager() {
         return powManager;
+    }
+
+    public ConsentManager getConsentManager() {
+        return consentManager;
     }
 
     public CryptoManager getCryptoManager() {
@@ -571,4 +603,42 @@ public class LucaApplication extends MultiDexApplication {
         deepLink = null;
     }
 
+    /**
+     * Method to cleanup stuff in emulated environments (see parent method docs!).
+     * <p>
+     * Usually this one is automatically called when executing tests with robolectric only.
+     * <p>
+     * For robolectric the onTerminate() is called after each test method to clean up the state because robolectric
+     * will create new Application instance. Instrumentation tests reuse the same Application instance for every test
+     * method and will never call onTerminate().
+     */
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+
+        // Release all stuff which would otherwise remain in memory and leak between tests methods.
+        invalidateAppState();
+
+        // App context is still leaked sometimes and we want to avoid strange side effect through having multiple
+        // manager instances in memory.
+        preferencesManager = null;
+        notificationManager = null;
+        locationManager = null;
+        networkManager = null;
+        geofenceManager = null;
+        powManager = null;
+        consentManager = null;
+        whatIsNewManager = null;
+        genuinityManager = null;
+        cryptoManager = null;
+        registrationManager = null;
+        childrenManager = null;
+        historyManager = null;
+        healthDepartmentManager = null;
+        meetingManager = null;
+        checkInManager = null;
+        dataAccessManager = null;
+        documentManager = null;
+        connectManager = null;
+    }
 }

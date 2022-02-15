@@ -1,5 +1,7 @@
 package de.culture4life.luca.ui.myluca;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.text.TextUtils;
@@ -23,8 +25,6 @@ import java.util.List;
 import de.culture4life.luca.R;
 import de.culture4life.luca.document.Document;
 import io.reactivex.rxjava3.core.Single;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 public abstract class MyLucaListItem implements Serializable {
 

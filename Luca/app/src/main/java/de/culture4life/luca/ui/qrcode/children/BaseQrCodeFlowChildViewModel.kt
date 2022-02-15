@@ -2,14 +2,15 @@ package de.culture4life.luca.ui.qrcode.children
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.media.Image
 import android.net.Uri
 import androidx.annotation.CallSuper
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.google.mlkit.vision.barcode.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildViewModel
@@ -113,20 +114,19 @@ abstract class BaseQrCodeFlowChildViewModel(app: Application) : BaseFlowChildVie
     }
 
     protected open fun processImageFromContentUri(uri: Uri): Completable {
-        return Single
-            .fromCallable { InputImage.fromFilePath(getApplication(), uri) }
+        return Single.fromCallable { InputImage.fromFilePath(getApplication(), uri) }
             .flatMapObservable { image -> detectBarcodes(image) }
             .firstOrError()
-            .flatMapMaybe { barcode -> Maybe.fromCallable { barcode.rawValue } }
+            .flatMapMaybe { barcode -> Maybe.fromCallable<String> { barcode.rawValue } }
             .flatMapCompletable { barcodeData -> processBarcode(barcodeData) }
     }
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun processCameraImage(imageProxy: ImageProxy): Completable {
-        return Maybe.fromCallable { imageProxy.image }
-            .map { image -> InputImage.fromMediaImage(image!!, imageProxy.imageInfo.rotationDegrees) }
+        return Maybe.fromCallable<Image> { imageProxy.image }
+            .map { image -> InputImage.fromMediaImage(image, imageProxy.imageInfo.rotationDegrees) }
             .flatMapObservable { image -> detectBarcodes(image) }
-            .flatMapMaybe { barcode -> Maybe.fromCallable { barcode.rawValue } }
+            .flatMapMaybe { barcode -> Maybe.fromCallable<String> { barcode.rawValue } }
             .flatMapCompletable { barcodeData -> processBarcode(barcodeData) }
     }
 

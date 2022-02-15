@@ -2,20 +2,34 @@ package de.culture4life.luca.util
 
 import android.content.Context
 import de.culture4life.luca.R
+import de.culture4life.luca.util.TimeUtil.GERMAN_TIMEZONE
 import io.reactivex.rxjava3.core.Single
-import org.joda.time.DateTimeZone
-import org.joda.time.Instant
-import org.joda.time.Period
+import org.joda.time.*
 import org.joda.time.format.DateTimeFormat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 
 object TimeUtil {
 
+    /**
+     * The clock used by [currentMillis]
+     */
+    @JvmStatic
+    var clock: Clock = Clock.systemUTC()
+
+    /**
+     * Returns the current millisecond timestamp depending on the set [clock]
+     *
+     * By changing the [clock] this can for example always return a fixed timestamp in tests.
+     */
+    @JvmStatic
+    fun getCurrentMillis(): Long = java.time.Instant.now(clock).toEpochMilli()
+
     @JvmStatic
     fun getCurrentUnixTimestamp(): Single<Long> {
-        return convertToUnixTimestamp(System.currentTimeMillis())
+        return convertToUnixTimestamp(getCurrentMillis())
     }
 
     @JvmStatic
@@ -84,7 +98,7 @@ object TimeUtil {
 
     @JvmStatic
     fun getStartOfCurrentDayTimestamp(): Single<Long> {
-        return Single.fromCallable { System.currentTimeMillis() }
+        return Single.fromCallable { TimeUtil.getCurrentMillis() }
             .flatMap { getStartOfDayTimestamp(it) }
     }
 
@@ -113,6 +127,16 @@ object TimeUtil {
             .millis - startTimestamp
     }
 
+    fun zonedDateTimeFromString(stringToParse: String) = DateTime.parse(stringToParse).withZone(DateTimeZone.getDefault())
+
+    fun zonedDateTimeFromTimestamp(timestamp: Long) = DateTime.now(DateTimeZone.getDefault()).withMillis(timestamp)
+
+    val GERMAN_TIMEZONE = DateTimeZone.forID("Europe/Berlin")
+}
+
+fun DateTime.isAfterNowMinusPeriod(period: ReadablePeriod): Boolean {
+    val now = DateTime.now(DateTimeZone.getDefault())
+    return isAfter(now.minus(period))
 }
 
 fun Long.toUnixTimestamp(): Long {
@@ -123,10 +147,10 @@ fun Long.fromUnixTimestamp(): Long {
     return TimeUtil.convertFromUnixTimestamp(this).blockingGet()
 }
 
-fun Context.getReadableTime(timestamp: Long): String {
-    return DateTimeFormat.forPattern(getString(R.string.time_format)).print(timestamp)
+fun Context.getReadableTime(timestamp: Long, timeZone: DateTimeZone = GERMAN_TIMEZONE): String {
+    return DateTimeFormat.forPattern(getString(R.string.time_format)).print(Instant.ofEpochMilli(timestamp).toDateTime(timeZone))
 }
 
-fun Context.getReadableDate(timestamp: Long): String {
-    return DateTimeFormat.forPattern(getString(R.string.date_format)).print(timestamp)
+fun Context.getReadableDate(timestamp: Long, timeZone: DateTimeZone = GERMAN_TIMEZONE): String {
+    return DateTimeFormat.forPattern(getString(R.string.date_format)).print(Instant.ofEpochMilli(timestamp).toDateTime(timeZone))
 }

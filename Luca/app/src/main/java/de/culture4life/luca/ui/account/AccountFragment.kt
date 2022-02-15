@@ -6,9 +6,16 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.descendants
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.mikepenz.aboutlibraries.LibsBuilder
+import com.mikepenz.aboutlibraries.LibsConfiguration
+import com.mikepenz.aboutlibraries.ui.item.HeaderItem
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentAccountBinding
@@ -49,28 +56,27 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         }
+        binding.postalCodeItem.setOnClickListener { viewModel.openPostalCodeView() }
         binding.lucaConnectItem.setOnClickListener { viewModel.openLucaConnectView() }
-
         binding.guidesItem.setOnClickListener { viewModel.openNewsView() }
         binding.faqItem.setOnClickListener { application.openUrl(getString(R.string.url_faq)) }
         binding.supportItem.setOnClickListener { viewModel.requestSupportMail() }
-
         binding.dataRequestItem.setOnClickListener { showDataRequestMenu() }
         binding.dataProtectionItem.setOnClickListener { application.openUrl(getString(R.string.url_privacy_policy)) }
         binding.termsItem.setOnClickListener { application.openUrl(getString(R.string.url_terms_and_conditions)) }
         binding.imprintItem.setOnClickListener { application.openUrl(getString(R.string.url_imprint)) }
+        binding.licensesItem.setOnClickListener { onLicenseMenuItemClick() }
         binding.dailyKeyItem.setOnClickListener { viewModel.openDailyKeyView() }
         binding.versionItem.setOnClickListener { showVersionDetailsDialog() }
         binding.appDataItem.setOnClickListener { application.openAppSettings() }
         binding.sourceCodeItem.setOnClickListener { showGitlabDialog() }
-
         binding.deleteAccountItem.setOnClickListener { showDeleteAccountDialog() }
     }
 
     private fun initializeObservers() {
         observe(viewModel.connectEnrollmentSupportedStatus) {
             binding.lucaConnectItem.visibility = if (it) View.VISIBLE else View.GONE
-            binding.editContactDataItem.showSeparator(it)
+            binding.postalCodeItem.showSeparator(it)
         }
     }
 
@@ -85,6 +91,27 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
             else -> return super.onMenuItemClick(item)
         }
         return true
+    }
+
+    private fun onLicenseMenuItemClick() {
+        LibsBuilder()
+            .withSearchEnabled(true)
+            .withActivityTitle(getString(R.string.account_tab_item_licenses))
+            .withLicenseShown(true)
+            .withLibsRecyclerViewListener(object : LibsConfiguration.LibsRecyclerViewListener {
+                val typeface = ResourcesCompat.getFont(requireContext(), R.font.montserrat_regular)
+
+                // Change fontFamily for all license list items
+                override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder) {
+                    (viewHolder.itemView as? ViewGroup ?: return)
+                        .descendants
+                        .filterIsInstance<TextView>()
+                        .forEach { it.typeface = typeface }
+                }
+
+                override fun onBindViewHolder(headerViewHolder: HeaderItem.ViewHolder) {}
+            })
+            .start(requireContext())
     }
 
     private fun showDeleteAccountDialog() {

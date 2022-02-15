@@ -73,7 +73,7 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
                     }
                 }
             }
-            .flatMapCompletable { childListItems -> update(children, childListItems) }
+            .flatMapCompletable { update(children, it) }
     }
 
     fun restoreChildren(): Completable {
@@ -89,8 +89,7 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
                     .toList()
             }
             .map { listSingle -> ChildListItemContainer(listSingle.blockingGet()) }
-            .doOnSuccess { value -> children.setValue(value) }
-            .ignoreElement()
+            .flatMapCompletable { update(children, it) }
     }
 
     fun toggleCheckIn(childItem: ChildListItem): Completable {

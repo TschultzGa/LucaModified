@@ -8,6 +8,7 @@
     <attr name="colorControlBackgroundActivated" format="reference" />
     <attr name="colorWarning" format="reference" />
     <attr name="colorHighlight" format="reference" />
+    <attr name="colorFocused" format="reference" />
 
     <declare-styleable name="AccountItemView">
         <attr name="text" format="string" />

@@ -10,6 +10,7 @@ import android.net.NetworkInfo;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.chuckerteam.chucker.api.ChuckerInterceptor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -47,7 +48,7 @@ public class NetworkManager extends Manager {
     private static final long DEFAULT_REQUEST_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
     private static final String USER_AGENT = createUserAgent();
 
-    private final RxJava3CallAdapterFactory rxAdapter;
+    private RxJava3CallAdapterFactory rxAdapter;
 
     private LucaEndpointsV3 lucaEndpointsV3;
     private LucaEndpointsV4 lucaEndpointsV4;
@@ -55,15 +56,14 @@ public class NetworkManager extends Manager {
 
     private final BehaviorSubject<Boolean> connectivityStateSubject = BehaviorSubject.create();
 
+    private String serverAddress = BuildConfig.API_BASE_URL;
+
     @Nullable
     private BroadcastReceiver connectivityReceiver;
 
-    public NetworkManager() {
-        rxAdapter = RxJava3CallAdapterFactory.createWithScheduler(Schedulers.io());
-    }
-
     @Override
     protected Completable doInitialize(@NonNull Context context) {
+        rxAdapter = RxJava3CallAdapterFactory.createWithScheduler(Schedulers.io());
         return initializeConnectivityReceiver();
     }
 
@@ -82,7 +82,7 @@ public class NetworkManager extends Manager {
         OkHttpClient okHttpClient = createOkHttpClient();
 
         return new Retrofit.Builder()
-                .baseUrl(BuildConfig.API_BASE_URL + "/api/v" + version + "/")
+                .baseUrl(serverAddress + "/api/v" + version + "/")
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .addCallAdapterFactory(rxAdapter)
                 .client(okHttpClient)
@@ -117,6 +117,9 @@ public class NetworkManager extends Manager {
                 .cache(new Cache(context.getCacheDir(), CACHE_SIZE));
 
         if (BuildConfig.DEBUG) {
+            // Interceptor that shows all network requests as a notification in debug builds
+            ChuckerInterceptor chuckerInterceptor = new ChuckerInterceptor.Builder(context).build();
+            builder.addNetworkInterceptor(chuckerInterceptor);
             HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
             builder.addInterceptor(loggingInterceptor);
@@ -249,6 +252,25 @@ public class NetworkManager extends Manager {
             context.unregisterReceiver(connectivityReceiver);
             connectivityReceiver = null;
             connectivityStateSubject.onComplete();
+        }
+    }
+
+    // TODO Find better way to change server for automated tests.
+    public void overrideServerAddress(HttpUrl serverAddress) {
+
+        // Ensure we are running automated tests to avoid exploits in release variants.
+        if (LucaApplication.isRunningUnitTests() || LucaApplication.isRunningInstrumentationTests()) {
+            String trailingSlash = "/$";
+            this.serverAddress = serverAddress.url().toString()
+                    .replaceFirst(trailingSlash, "");
+
+            if (LucaApplication.isRunningInstrumentationTests()) {
+                // Force recreation to ensure new server address is used for each instrumentationTest method execution.
+                // Alternative we could keep the mock server running until all methods are executed and only reset the
+                // state instead of restarting the server. Or ensure managers do reset between each method execution.
+                lucaEndpointsV3 = null;
+                lucaEndpointsV4 = null;
+            }
         }
     }
 

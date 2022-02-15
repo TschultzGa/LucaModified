@@ -4,7 +4,6 @@ import android.content.Context
 import de.culture4life.luca.Manager
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.registration.RegistrationManager
-import de.culture4life.luca.ui.children.LegacyChildListItemContainer
 import de.culture4life.luca.util.StringSanitizeUtil
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
@@ -15,9 +14,10 @@ class ChildrenManager(
 ) : Manager() {
 
     override fun doInitialize(context: Context): Completable {
-        return preferencesManager.initialize(context)
-            .andThen(registrationManager.initialize(context))
-            .andThen(migrate())
+        return Completable.mergeArray(
+            preferencesManager.initialize(context),
+            registrationManager.initialize(context)
+        )
     }
 
     /**
@@ -131,27 +131,6 @@ class ChildrenManager(
     fun persistChildren(children: Children): Completable {
         return preferencesManager.persist(KEY_CHILDREN, children)
             .andThen(cleanCheckins(children))
-    }
-
-    /**
-     * Migrate from legacy to the new storage key and data model
-     */
-    fun migrate(): Completable {
-        return preferencesManager.restoreIfAvailable(
-            LEGACY_KEY_CHILDREN,
-            LegacyChildListItemContainer::class.java
-        ).map {
-            val lastName = registrationManager.getRegistrationData()
-                .blockingGet().lastName ?: ""
-            it.map { childListItem -> Child.from(childListItem.name, lastName) }
-        }.flatMapCompletable {
-            if (it.isNotEmpty()) {
-                persistChildren(Children().apply { addAll(it) })
-                    .andThen(preferencesManager.delete(LEGACY_KEY_CHILDREN))
-            } else {
-                Completable.complete()
-            }
-        }
     }
 
     companion object {

@@ -61,7 +61,7 @@ public class TraceIdWrapper {
         public JsonElement serialize(TraceIdWrapper traceIdWrapper, Type type, JsonSerializationContext context) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.add("ts", context.serialize(traceIdWrapper.getTimestamp()));
-            jsonObject.add("id", context.serialize(SerializationUtil.serializeToBase64(traceIdWrapper.traceId).blockingGet()));
+            jsonObject.add("id", context.serialize(SerializationUtil.toBase64(traceIdWrapper.traceId).blockingGet()));
             return jsonObject;
         }
 
@@ -70,7 +70,7 @@ public class TraceIdWrapper {
             JsonObject jsonObject = jsonElement.getAsJsonObject();
             long timestamp = jsonObject.get("ts").getAsLong();
             String encodedTraceId = jsonObject.get("id").getAsString();
-            byte[] traceId = SerializationUtil.deserializeFromBase64(encodedTraceId).blockingGet();
+            byte[] traceId = SerializationUtil.fromBase64(encodedTraceId).blockingGet();
             return new TraceIdWrapper(timestamp, traceId);
         }
 

@@ -46,7 +46,7 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
                 openEnrollmentFlow()
             }
         }
-        observe(lucaConnectBottomSheetViewModel.onViewDismissed) {
+        observe(lucaConnectBottomSheetViewModel.bottomSheetDismissed) {
             // synchronize with life data again
             binding.lucaConnectToggle.isChecked = viewModel.enrollmentStatus.value == true
         }

@@ -24,6 +24,7 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import timber.log.Timber
 
+
 abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetViewModel> : BottomSheetDialogFragment() {
 
     val viewDisposable = CompositeDisposable()
@@ -31,6 +32,7 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
     protected val viewModel: ViewModelType by lazy { ViewModelProvider(requireActivity())[getViewModelClass()] }
 
     protected var initialized = false
+    protected open var fixedHeight = false
 
     abstract fun getViewBinding(): ViewBinding
     abstract fun getViewModelClass(): Class<ViewModelType>
@@ -70,11 +72,12 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
             }
 
             val bottomSheet = it.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            bottomSheet.layoutParams.height = (Resources.getSystem().displayMetrics.heightPixels.toDouble() * 0.9).toInt()
-
             with(BottomSheetBehavior.from(bottomSheet)) {
                 skipCollapsed = true
                 state = BottomSheetBehavior.STATE_EXPANDED
+            }
+            if (fixedHeight) {
+                bottomSheet.layoutParams.height = (Resources.getSystem().displayMetrics.heightPixels.toDouble() * 0.9).toInt()
             }
         }
     }
@@ -82,12 +85,13 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         viewDisposable.dispose()
-        viewModel.viewDismissed()
+        viewModel.onBottomSheetDismissed()
     }
 
     @CallSuper
     protected open fun initializeViewModel(): Completable {
         return viewModel.initialize()
+            .andThen(viewModel.processArguments(arguments))
     }
 
     @CallSuper
@@ -97,11 +101,11 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
     }
 
     protected open fun observeErrors() {
-        viewModel.errors.observe(viewLifecycleOwner, {
+        viewModel.errors.observe(viewLifecycleOwner) {
             if (it.isNotEmpty()) {
                 indicateErrors(it)
             }
-        })
+        }
     }
 
     protected open fun indicateErrors(errors: Set<ViewError?>) {
@@ -146,11 +150,13 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
     }
 
     private fun observeOnDismissBottomSheet() {
-        viewModel.onDismissBottomSheet.observe(viewLifecycleOwner, {
+        viewModel.dismissBottomSheetRequests.observe(viewLifecycleOwner) {
             if (!it.hasBeenHandled()) {
-                it.setHandled(true)
-                dismiss()
+                if (it.valueAndMarkAsHandled) {
+                    dismiss()
+                }
             }
-        })
+        }
     }
+
 }

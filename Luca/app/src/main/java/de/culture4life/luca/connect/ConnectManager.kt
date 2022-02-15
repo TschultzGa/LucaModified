@@ -9,6 +9,7 @@ import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
 import de.culture4life.luca.R
+import de.culture4life.luca.archive.Archiver
 import de.culture4life.luca.crypto.*
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.document.DocumentManager
@@ -20,18 +21,17 @@ import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.pow.PowChallenge
 import de.culture4life.luca.pow.PowManager
 import de.culture4life.luca.preference.PreferencesManager
+import de.culture4life.luca.registration.ConnectKritisData
 import de.culture4life.luca.registration.Person
 import de.culture4life.luca.registration.RegistrationData
 import de.culture4life.luca.registration.RegistrationManager
 import de.culture4life.luca.ui.ViewError
-import de.culture4life.luca.util.TimeUtil
+import de.culture4life.luca.util.*
 import de.culture4life.luca.util.TimeUtil.getReadableDurationWithPlural
-import de.culture4life.luca.util.addTo
-import de.culture4life.luca.util.fromUnixTimestamp
-import de.culture4life.luca.util.isHttpException
+import de.culture4life.luca.whatisnew.WhatIsNewManager
+import de.culture4life.luca.whatisnew.WhatIsNewManager.Companion.ID_LUCA_CONNECT_MESSAGE
 import io.reactivex.rxjava3.core.*
 import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.functions.Predicate
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import okhttp3.internal.and
@@ -43,27 +43,30 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.floor
 import kotlin.math.max
-import kotlin.text.toByteArray
+import kotlin.random.Random
 
 open class ConnectManager(
     private val preferencesManager: PreferencesManager,
     private val notificationManager: LucaNotificationManager,
     private val networkManager: NetworkManager,
     private val powManager: PowManager,
-    private val cryptoManager: CryptoManager,
+    private val cryptoManager: CryptoManager, // initialization deferred to first use
     private val registrationManager: RegistrationManager,
     private val documentManager: DocumentManager,
-    private val healthDepartmentManager: HealthDepartmentManager
+    private val healthDepartmentManager: HealthDepartmentManager,
+    private val whatIsNewManager: WhatIsNewManager
 ) : Manager() {
 
     private var workManager: WorkManager? = null
     private var notificationId: String? = null
     private var powChallenge: PowChallenge? = null
-    private var cachedMessages: Observable<ConnectMessage>? = null
     private val enrollmentStatusSubject = BehaviorSubject.create<Boolean>()
     private val enrollmentSupportedStatusSubject = BehaviorSubject.create<Boolean>()
-    private val enrollmentSupportRecognizedStatusSubject = BehaviorSubject.create<Boolean>()
     private val hasUnreadMessagesStatusSubject = BehaviorSubject.create<Boolean>()
+    private val contactArchiver = Archiver(preferencesManager, KEY_ARCHIVED_CONTACT_DATA, ConnectContactArchive::class.java) { it.timestamp }
+    private val messageArchiver = Archiver(preferencesManager, KEY_ARCHIVED_MESSAGE_DATA, ConnectMessageArchive::class.java) { it.timestamp }
+
+    private var cachedConnectKritisData: ConnectKritisData? = null
 
     override fun doInitialize(context: Context): Completable {
         return Completable.mergeArray(
@@ -71,10 +74,10 @@ open class ConnectManager(
             notificationManager.initialize(context),
             networkManager.initialize(context),
             powManager.initialize(context),
-            cryptoManager.initialize(context),
             registrationManager.initialize(context),
             documentManager.initialize(context),
-            healthDepartmentManager.initialize(context)
+            healthDepartmentManager.initialize(context),
+            whatIsNewManager.initialize(context)
         ).andThen(Completable.fromAction {
             if (!LucaApplication.isRunningUnitTests()) {
                 this.workManager = WorkManager.getInstance(context)
@@ -86,14 +89,17 @@ open class ConnectManager(
                 invokeUpdatesInRegularIntervals(),
                 invokeReEnrollmentIfRequired(TimeUnit.SECONDS.toMillis(4)),
                 invokeUpdateMessagesIfRequired(TimeUnit.SECONDS.toMillis(2)),
-                Completable.fromAction {
-                    keepStatusOnHealthDepartmentChangeUpdated()
-                        .subscribeOn(Schedulers.io())
-                        .subscribe()
-                        .addTo(managerDisposable)
-                }
+                invoke(keepStatusOnHealthDepartmentChangeUpdated()),
+                invoke(keepWhatIsNewMessageUpdated())
             )
         )
+    }
+
+    override fun dispose() {
+        contactArchiver.clearCachedData()
+        messageArchiver.clearCachedData()
+        cachedConnectKritisData = null
+        super.dispose()
     }
 
     /*
@@ -101,20 +107,12 @@ open class ConnectManager(
      */
 
     private fun invokeStatusInitialization(): Completable {
-        return Completable.fromAction {
-            statusInitialization()
-                .doOnError { Timber.e("Unable to initialize enrollment statuses: $it") }
-                .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .subscribe()
-                .addTo(managerDisposable)
-        }
+        return invoke(statusInitialization())
     }
 
     private fun statusInitialization() = Completable.mergeArrayDelayError(
         initializeEnrollmentStatus(),
         initializeEnrollmentSupportedStatus(),
-        initializeEnrollmentRecognized(),
         updateHasUnreadMessages()
     )
 
@@ -136,7 +134,7 @@ open class ConnectManager(
 
     private fun initializeEnrollmentSupportedStatus(): Completable {
         return getHealthDepartmentIfAvailable()
-            .map { it.connectEnrollmentSupported }
+            .map { true }
             .defaultIfEmpty(false)
             .doOnSuccess { Timber.v("Initialized enrollment supported status: $it") }
             .doOnSuccess(enrollmentSupportedStatusSubject::onNext)
@@ -163,11 +161,10 @@ open class ConnectManager(
         return Observable.combineLatest(
             getEnrollmentStatusAndChanges(),
             getEnrollmentSupportedStatusAndChanges(),
-            getEnrollmentSupportRecognizedStatusAndChanges(),
-            { isEnrolled, isEnrollmentSupported, alreadyRecognized ->
-                !isEnrolled && isEnrollmentSupported && !alreadyRecognized
-            }
-        )
+            getEnrollmentSupportRecognizedStatusAndChanges()
+        ) { isEnrolled, isEnrollmentSupported, alreadyRecognized ->
+            !isEnrolled && isEnrollmentSupported && !alreadyRecognized
+        }
     }
 
     private fun keepStatusOnHealthDepartmentChangeUpdated(): Completable {
@@ -175,33 +172,31 @@ open class ConnectManager(
             .doOnNext { Timber.d("Responsible health department updated. Available: $it") }
             .flatMapCompletable {
                 initializeEnrollmentSupportedStatus()
-                    .andThen(setEnrollmentSupportRecognized(false))
                     .andThen(cleanUpAfterUnEnroll())
-                    .andThen(preferencesManager.persist(SUPPORT_NOTIFIED_KEY, false))
+                    .andThen(whatIsNewManager.updateMessage(ID_LUCA_CONNECT_MESSAGE) {
+                        copy(
+                            seen = false,
+                            notified = false,
+                            timestamp = TimeUtil.getCurrentMillis()
+                        )
+                    })
             }
     }
 
-    private fun initializeEnrollmentRecognized(): Completable {
-        return restoreEnrollmentSupportRecognized()
-            .doOnSuccess(enrollmentSupportRecognizedStatusSubject::onNext)
-            .ignoreElement()
-    }
-
-    fun setEnrollmentSupportRecognized(recognized: Boolean): Completable {
-        return persistEnrollmentSupportRecognized(recognized)
-            .doOnComplete { enrollmentSupportRecognizedStatusSubject.onNext(recognized) }
+    private fun keepWhatIsNewMessageUpdated(): Completable {
+        return getEnrollmentSupportedStatusAndChanges()
+            .flatMapCompletable { whatIsNewManager.updateMessage(ID_LUCA_CONNECT_MESSAGE) { copy(enabled = it) } }
     }
 
     fun getEnrollmentSupportRecognizedStatusAndChanges(): Observable<Boolean> {
-        return enrollmentSupportRecognizedStatusSubject.distinctUntilChanged()
-    }
-
-    private fun persistEnrollmentSupportRecognized(recognized: Boolean): Completable {
-        return preferencesManager.persist(SUPPORT_RECOGNIZED_KEY, recognized)
-    }
-
-    private fun restoreEnrollmentSupportRecognized(): Single<Boolean> {
-        return preferencesManager.restoreOrDefault(SUPPORT_RECOGNIZED_KEY, false)
+        return Observable.defer {
+            whatIsNewManager.getMessage(ID_LUCA_CONNECT_MESSAGE)
+                .map { it.seen }
+                .toObservable()
+                .mergeWith(whatIsNewManager.getMessageUpdates(ID_LUCA_CONNECT_MESSAGE)
+                    .map { it.seen })
+                .distinctUntilChanged()
+        }
     }
 
     fun getHasUnreadMessagesStatusAndChanges(): Observable<Boolean> {
@@ -213,7 +208,8 @@ open class ConnectManager(
      */
 
     fun enroll(): Completable {
-        return generateEnrollmentRequestData()
+        return cryptoManager.initialize(context)
+            .andThen(generateEnrollmentRequestData())
             .flatMap { enrollmentRequestData ->
                 networkManager.lucaEndpointsV4
                     .flatMap { it.enrollToLucaConnect(enrollmentRequestData) }
@@ -222,7 +218,7 @@ open class ConnectManager(
             .doOnSuccess { Timber.i("Enrolled with contact ID: %s", it) }
             .flatMapCompletable {
                 persistContactId(it)
-                    .andThen(addToContactArchive(ConnectContactArchive.Entry(it, System.currentTimeMillis())))
+                    .andThen(addToContactArchive(ConnectContactArchive.Entry(it, TimeUtil.getCurrentMillis())))
                     .andThen(cryptoManager.deleteKeyPair(AUTHENTICATION_KEY_PAIR_ALIAS))
             }
             .andThen(clearPowChallenge())
@@ -246,6 +242,7 @@ open class ConnectManager(
             .andThen(Single.fromCallable {
                 val departmentPublicKey = getHealthDepartmentPublicKey().blockingGet()
                 val registrationData = getRegistrationData().blockingGet()
+                val connectKritisData = getConnectKritisData().blockingGet()
                 val simplifiedNameHash = generateSimplifiedNameHash(registrationData.person).blockingGet()
                 val phoneNumberHash = generatePhoneNumberHash(registrationData.phoneNumber!!).blockingGet()
                 ConnectEnrollmentRequestData(
@@ -254,7 +251,7 @@ open class ConnectManager(
                     namePrefix = generateHashPrefix(simplifiedNameHash).blockingGet().encodeToBase64(),
                     phonePrefix = generateHashPrefix(phoneNumberHash).blockingGet().encodeToBase64(),
                     referenceData = generateReferenceData(simplifiedNameHash, phoneNumberHash, departmentPublicKey).blockingGet(),
-                    fullData = generateFullData(registrationData, departmentPublicKey).blockingGet(),
+                    fullData = generateFullData(registrationData, connectKritisData, departmentPublicKey).blockingGet(),
                     pow = getPowChallenge().flatMap(powManager::getSolvedChallenge).map(::PowSolutionRequestData)
                         .onErrorResumeNext { clearPowChallenge().andThen(Single.error(it)) }.blockingGet()
                 ).apply {
@@ -263,14 +260,18 @@ open class ConnectManager(
             }.doOnSuccess { Timber.d("Generated enrollment request data: %s", it) })
     }
 
-    private fun generateReferenceData(nameHash: ByteArray, phoneNumberHash: ByteArray, healthDepartmentPublicKey: ECPublicKey): Single<DliesData> {
+    private fun generateReferenceData(nameHash: ByteArray, phoneNumberHash: ByteArray, healthDepartmentPublicKey: ECPublicKey): Single<EciesData> {
         return Single.fromCallable { byteArrayOf(1) + nameHash + phoneNumberHash + getNotificationId().map(String::decodeFromBase64).blockingGet() }
             .doOnSuccess { Timber.d("Encrypting reference data: %s", it.encodeToBase64()) }
-            .flatMap { cryptoManager.dlies(it, healthDepartmentPublicKey) }
-            .map(::DliesData)
+            .flatMap { cryptoManager.eciesEncrypt(it, healthDepartmentPublicKey) }
+            .map(::EciesData)
     }
 
-    private fun generateFullData(registrationData: RegistrationData, healthDepartmentPublicKey: ECPublicKey): Single<DliesData> {
+    private fun generateFullData(
+        registrationData: RegistrationData,
+        connectKritisData: ConnectKritisData,
+        healthDepartmentPublicKey: ECPublicKey
+    ): Single<EciesData> {
         return Single.zip(
             getLatestCovidCertificates().map { it.encodedData }.toList(),
             getNotificationId(),
@@ -285,13 +286,17 @@ open class ConnectManager(
                 covidCertificates = certificates,
                 notificationSeed = notificationSeed,
                 encryptionPublicKey = encryptionKey,
-                signingPublicKey = signingKey
+                signingPublicKey = signingKey,
+                criticalInfrastructure = connectKritisData.isCriticalInfrastructure,
+                vulnerableGroup = connectKritisData.isWorkingWithVulnerableGroup,
+                industry = connectKritisData.industry,
+                company = connectKritisData.company
             )
         }.doOnSuccess { Timber.d("Encrypting full data: %s", it) }
             .map(Gson()::toJson)
             .map(String::toByteArray)
-            .flatMap { cryptoManager.dlies(it, healthDepartmentPublicKey) }
-            .map(::DliesData)
+            .flatMap { cryptoManager.eciesEncrypt(it, healthDepartmentPublicKey) }
+            .map(::EciesData)
     }
 
     private fun generateEnrollmentRequestSignature(requestData: ConnectEnrollmentRequestData): Single<ByteArray> {
@@ -307,10 +312,7 @@ open class ConnectManager(
 
         return cryptoManager.concatenateHashes(properties)
             .doOnSuccess { Timber.d("Generating enrollment request signature: %s", it.encodeToHex()) }
-            .flatMap { data ->
-                cryptoManager.getKeyPairPrivateKey(AUTHENTICATION_KEY_PAIR_ALIAS)
-                    .flatMap { key -> cryptoManager.signatureProvider.sign(data, key) }
-            }
+            .flatMap { data -> cryptoManager.ecdsa(data, AUTHENTICATION_KEY_PAIR_ALIAS) }
     }
 
     /*
@@ -318,14 +320,7 @@ open class ConnectManager(
      */
 
     fun invokeReEnrollmentIfRequired(delay: Long = 0): Completable {
-        return Completable.fromAction {
-            reEnrollIfRequired()
-                .doOnError { Timber.e("Unable to re-enroll: $it") }
-                .onErrorComplete()
-                .delaySubscription(delay, TimeUnit.MILLISECONDS, Schedulers.io())
-                .subscribe()
-                .addTo(managerDisposable)
-        }
+        return invokeDelayed(reEnrollIfRequired(), delay)
     }
 
     fun reEnrollIfRequired(): Completable {
@@ -365,7 +360,8 @@ open class ConnectManager(
             }
             .subscribeOn(Schedulers.io())
 
-        return Completable.merge(unEnrollmentRequests)
+        return cryptoManager.initialize(context)
+            .andThen(Completable.merge(unEnrollmentRequests))
             .doOnComplete { Timber.d("Un-enrollment requests succeeded") }
             .andThen(cleanUpAfterUnEnroll())
             .doOnComplete { Timber.i("Un-enrolled") }
@@ -396,10 +392,7 @@ open class ConnectManager(
 
         return cryptoManager.concatenateHashes(properties)
             .doOnSuccess { Timber.d("Generating un-enrollment request signature: %s", it.encodeToHex()) }
-            .flatMap { data ->
-                cryptoManager.getKeyPairPrivateKey(getArchivedKeyPairAlias(requestData.contactId, AUTHENTICATION_KEY_PAIR_ALIAS))
-                    .flatMap { key -> cryptoManager.signatureProvider.sign(data, key) }
-            }
+            .flatMap { data -> cryptoManager.ecdsa(data, getArchivedKeyPairAlias(requestData.contactId, AUTHENTICATION_KEY_PAIR_ALIAS)) }
     }
 
     /*
@@ -428,7 +421,7 @@ open class ConnectManager(
             .switchIfEmpty(generateNewNotificationId())
     }
 
-    private fun restoreNotificationIdIfAvailable(): Maybe<String> {
+    fun restoreNotificationIdIfAvailable(): Maybe<String> {
         return preferencesManager.restoreIfAvailable(NOTIFICATION_ID_KEY, String::class.java)
             .doOnSuccess { this.notificationId = it }
     }
@@ -442,8 +435,9 @@ open class ConnectManager(
         return preferencesManager.delete(NOTIFICATION_ID_KEY)
     }
 
-    private fun generateNewNotificationId(): Single<String> {
-        return cryptoManager.generateSecureRandomData(16)
+    fun generateNewNotificationId(): Single<String> {
+        return cryptoManager.initialize(context)
+            .andThen(cryptoManager.generateSecureRandomData(16))
             .map(ByteArray::encodeToBase64)
             .flatMap { persistNotificationId(it).andThen(Single.just(it)) }
     }
@@ -452,7 +446,7 @@ open class ConnectManager(
         Health department
      */
 
-    open fun getHealthDepartmentIfAvailable(): Maybe<ResponsibleHealthDepartment> {
+    private fun getHealthDepartmentIfAvailable(): Maybe<ResponsibleHealthDepartment> {
         return healthDepartmentManager.getResponsibleHealthDepartmentIfAvailable()
     }
 
@@ -502,60 +496,38 @@ open class ConnectManager(
      */
 
     fun getContactArchiveEntries(): Observable<ConnectContactArchive.Entry> {
-        return preferencesManager.restoreIfAvailable(CONTACT_ARCHIVE_KEY, ConnectContactArchive::class.java)
-            .flattenAsObservable(ConnectContactArchive::entries)
+        return contactArchiver.getData()
     }
 
     private fun addToContactArchive(connectContactArchiveEntry: ConnectContactArchive.Entry): Completable {
         return addCurrentKeysToArchive(connectContactArchiveEntry.contactId)
-            .andThen(getContactArchiveEntries().mergeWith(Observable.just(connectContactArchiveEntry)))
-            .toList()
-            .map(::ConnectContactArchive)
-            .flatMapCompletable(this::persistContactArchive)
-    }
-
-    private fun persistContactArchive(contactArchive: ConnectContactArchive): Completable {
-        return preferencesManager.persist(CONTACT_ARCHIVE_KEY, contactArchive)
+            .andThen(contactArchiver.addData(connectContactArchiveEntry))
     }
 
     private fun invokeRemovalOfOldDataFromContactArchive(): Completable {
-        return Completable.fromAction {
-            removeOldDataFromContactArchive()
-                .doOnComplete { Timber.d("Removed old data from contact archive") }
-                .doOnError { Timber.w("Unable to remove old data from contact archive: %s", it.toString()) }
-                .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .subscribe()
-                .addTo(managerDisposable)
-        }
+        return invokeDelayed(removeOldDataFromContactArchive(), TimeUnit.SECONDS.toMillis(3))
     }
 
     private fun removeOldDataFromContactArchive(): Completable {
-        return removeDataFromContactArchive { it.timestamp < System.currentTimeMillis() - CONTACT_ARCHIVE_DURATION }
+        return removeDataFromContactArchive(CONTACT_ARCHIVE_DURATION)
     }
 
-    private fun removeDataFromContactArchive(filter: Predicate<ConnectContactArchive.Entry>): Completable {
-        val entries = getContactArchiveEntries().cache()
-        val entriesToRemove = entries.filter(filter)
-        val entriesToKeep = entries.filter { !filter.test(it) }
-
-        val deleteEntriesToRemove = entriesToRemove
-            .flatMapCompletable { deleteArchivedKeys(it.contactId) }
-
-        val persistEntriesToKeep = entriesToKeep.toList()
-            .map(::ConnectContactArchive)
-            .flatMapCompletable(this::persistContactArchive)
-
-        return deleteEntriesToRemove.andThen(persistEntriesToKeep)
+    private fun removeDataFromContactArchive(keepDuration: Long): Completable {
+        return Completable.mergeArray(
+            getContactArchiveEntries()
+                .filter { it.timestamp < TimeUtil.getCurrentMillis() - keepDuration }
+                .map { it.contactId }
+                .flatMapCompletable { deleteArchivedKeys(it) },
+            contactArchiver.deleteDataOlderThan(keepDuration)
+        )
     }
 
     fun clearContactArchive(): Completable {
-        return removeDataFromContactArchive { true }
+        return removeDataFromContactArchive(0)
     }
 
     private fun getLastContactArchiveEntryIfAvailable(): Maybe<ConnectContactArchive.Entry> {
         return getContactArchiveEntries()
-            .sorted { o1, o2 -> compareValues(o1.timestamp, o2.timestamp) }
             .lastElement()
     }
 
@@ -569,16 +541,9 @@ open class ConnectManager(
             }
     }
 
-    private fun deleteCurrentKeys(): Completable {
-        return Observable.just(
-            AUTHENTICATION_KEY_PAIR_ALIAS,
-            MESSAGE_ENCRYPTION_KEY_PAIR_ALIAS,
-            MESSAGE_SIGNING_KEY_PAIR_ALIAS
-        ).flatMapCompletable { cryptoManager.deleteKeyPair(it) }
-    }
-
     private fun deleteArchivedKeys(contactId: String): Completable {
-        return Observable.just(AUTHENTICATION_KEY_PAIR_ALIAS)
+        return cryptoManager.initialize(context)
+            .andThen(Observable.just(AUTHENTICATION_KEY_PAIR_ALIAS))
             .map { getArchivedKeyPairAlias(contactId, it) }
             .flatMapCompletable(cryptoManager::deleteKeyPair)
     }
@@ -588,14 +553,7 @@ open class ConnectManager(
      */
 
     fun invokeUpdateMessagesIfRequired(delay: Long = 0): Completable {
-        return Completable.fromAction {
-            updateMessagesIfRequired()
-                .doOnError { Timber.e("Unable to update messages: $it") }
-                .onErrorComplete()
-                .delaySubscription(delay, TimeUnit.MILLISECONDS, Schedulers.io())
-                .subscribe()
-                .addTo(managerDisposable)
-        }
+        return invokeDelayed(updateMessagesIfRequired(), delay)
     }
 
     fun updateMessagesIfRequired(): Completable {
@@ -613,49 +571,68 @@ open class ConnectManager(
                     showNewMessageNotification(it)
                 )
             }
-            .andThen(persistLastUpdateTimestamp(System.currentTimeMillis()))
+            .andThen(persistLastUpdateTimestamp(TimeUtil.getCurrentMillis()))
             .andThen(updateHasUnreadMessages())
             .doOnSubscribe { Timber.d("Updating messages") }
     }
 
     fun fetchNewMessages(): Observable<ConnectMessage> {
-        return Observable.defer {
-            val notificationId = getNotificationId().blockingGet()
-            val healthDepartmentId = getHealthDepartmentId().blockingGet()
+        return cryptoManager.initialize(context).andThen(
+            Observable.defer {
+                val notificationId = getNotificationId().blockingGet()
+                val healthDepartmentId = getHealthDepartmentId().blockingGet()
 
-            generateRoundedTimestampsSinceLastUpdate()
-                .flatMapSingle { generateMessageId(notificationId, healthDepartmentId, it) }
-                .toList() // TODO: LUCA-4861
-                .doOnSuccess { Timber.v("Generated ${it.size} message IDs") }
-                .map(::ConnectMessageRequestData)
-                .flatMapObservable { requestData ->
-                    networkManager.lucaEndpointsV4
-                        .flatMap { it.getMessages(requestData) }
-                        .doOnSuccess { Timber.v("${it.size} message IDs matched") }
-                        .flattenAsObservable { it }
-                }
-                .doOnNext { Timber.v("Fetched encrypted message: $it") }
-                .flatMapSingle { responseData ->
-                    this.decryptMessageResponseData(responseData)
-                        .map { Gson().fromJson(String(it), JsonObject::class.java) }
-                        .map { decryptedJson ->
-                            ConnectMessage(
-                                id = responseData.id,
-                                title = decryptedJson["sub"].asString.trim(),
-                                content = decryptedJson["msg"].asString.trim(),
-                                timestamp = responseData.timestamp.fromUnixTimestamp(),
-                                read = false
-                            )
-                        }
-                        .doOnSuccess { Timber.d("Decrypted message: $it") }
-                }
-        }
+                generateRoundedTimestampsSinceLastUpdate()
+                    .flatMapSingle { generateMessageId(notificationId, healthDepartmentId, it) }
+                    .toList()
+                    .flatMap { fillMessageIdsWithFakeMessageIds(notificationId, healthDepartmentId, it) }
+                    .doOnSuccess { Timber.v("Generated ${it.size} message IDs") }
+                    .map(::ConnectMessageRequestData)
+                    .flatMapObservable { requestData ->
+                        networkManager.lucaEndpointsV4
+                            .flatMap { it.getMessages(requestData) }
+                            .doOnSuccess { Timber.v("${it.size} message IDs matched") }
+                            .flattenAsObservable { it }
+                    }
+                    .doOnNext { Timber.v("Fetched encrypted message: $it") }
+                    .flatMapSingle { responseData ->
+                        this.decryptMessageResponseData(responseData)
+                            .map { Gson().fromJson(String(it), JsonObject::class.java) }
+                            .map { decryptedJson ->
+                                ConnectMessage(
+                                    id = responseData.id,
+                                    title = decryptedJson["sub"].asString.trim(),
+                                    content = decryptedJson["msg"].asString.trim(),
+                                    timestamp = responseData.timestamp.fromUnixTimestamp(),
+                                    read = false
+                                )
+                            }
+                            .doOnSuccess { Timber.d("Decrypted message: $it") }
+                    }
+            }
+        )
     }
 
-    fun decryptMessageResponseData(messageResponseData: ConnectMessageResponseData): Single<ByteArray> {
+    /**
+     *  @return A list that contains all of [realMessageIds] and filled up with fake message id's to a random length up to [MAX_MESSAGE_IDS]
+     */
+    fun fillMessageIdsWithFakeMessageIds(
+        notificationId: String,
+        healthDepartmentId: String,
+        realMessageIds: List<String>
+    ): Single<List<String>> {
+        val maxFakeMessageIds = Random.nextLong(0, MAX_MESSAGE_IDS - realMessageIds.size)
+        val messageIdSingles = (0 until maxFakeMessageIds).map { generateMessageId(notificationId, healthDepartmentId, Random.nextLong()) }
+        return Single
+            .merge(messageIdSingles)
+            .toList()
+            .map { it + realMessageIds }
+    }
+
+    private fun decryptMessageResponseData(messageResponseData: ConnectMessageResponseData): Single<ByteArray> {
         return Single.defer {
-            val department = getHealthDepartmentIfAvailable().toSingle().blockingGet()
             val messageEncryptionPrivateKey = cryptoManager.getKeyPairPrivateKey(MESSAGE_ENCRYPTION_KEY_PAIR_ALIAS).blockingGet()
+            val department = getHealthDepartmentIfAvailable().toSingle().blockingGet()
             decryptMessageResponseData(messageResponseData, department, messageEncryptionPrivateKey)
         }
     }
@@ -666,16 +643,28 @@ open class ConnectManager(
         messageEncryptionPrivateKey: PrivateKey
     ): Single<ByteArray> {
         return Single.defer {
-            // TODO: LUCA-4872
+            val mac = messageResponseData.mac.decodeFromBase64()
+            val encryptedData = messageResponseData.data.decodeFromBase64()
+            val iv = messageResponseData.iv.decodeFromBase64()
+            val id = messageResponseData.id.decodeFromBase64()
             val encryptionSecret = cryptoManager.ecdh(messageEncryptionPrivateKey, department.encryptionPublicKey).blockingGet()
+
+            // Verify mac
+            val authenticationKey = cryptoManager.hkdf(
+                ikm = encryptionSecret,
+                salt = id,
+                label = MESSAGE_AUTHENTICATION_HKDF_LABEL,
+                length = 16
+            ).map { it.toSecretKey() }.blockingGet()
+            cryptoManager.verifyHmac(id + encryptedData + iv, mac, authenticationKey).blockingAwait()
+
+            // Decrypt data
             val encryptionKey = cryptoManager.hkdf(
                 ikm = encryptionSecret,
-                salt = messageResponseData.id.decodeFromBase64(),
+                salt = id,
                 label = MESSAGE_ENCRYPTION_HKDF_LABEL,
                 length = 16
             ).map { it.toSecretKey() }.blockingGet()
-            val encryptedData = messageResponseData.data.decodeFromBase64()
-            val iv = messageResponseData.iv.decodeFromBase64()
             cryptoManager.symmetricCipherProvider.decrypt(encryptedData, iv, encryptionKey)
         }
     }
@@ -687,27 +676,28 @@ open class ConnectManager(
     }
 
     fun markMessageAsRead(message: ConnectMessage): Completable {
-        return Single.fromCallable {
-            val unixTimestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet()
-            val signatureData = cryptoManager.concatenateHashes(
-                Observable.just(
-                    "READ_MESSAGE".toByteArray(),
-                    message.id.decodeFromBase64(),
-                    TimeUtil.encodeUnixTimestamp(unixTimestamp).blockingGet()
+        return cryptoManager.initialize(context)
+            .andThen(Single.fromCallable {
+                val unixTimestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet()
+                val signatureData = cryptoManager.concatenateHashes(
+                    Observable.just(
+                        "READ_MESSAGE".toByteArray(),
+                        message.id.decodeFromBase64(),
+                        TimeUtil.encodeUnixTimestamp(unixTimestamp).blockingGet()
+                    )
+                ).blockingGet()
+                val signature = cryptoManager.ecdsa(signatureData, MESSAGE_SIGNING_KEY_PAIR_ALIAS).blockingGet()
+                ConnectMessageReadRequestData(
+                    id = message.id,
+                    timestamp = unixTimestamp,
+                    signature = signature.encodeToBase64()
                 )
-            ).blockingGet()
-            val signature = cryptoManager.getKeyPairPrivateKey(MESSAGE_SIGNING_KEY_PAIR_ALIAS)
-                .flatMap { cryptoManager.signatureProvider.sign(signatureData, it) }
-                .blockingGet()
-            ConnectMessageReadRequestData(
-                id = message.id,
-                timestamp = unixTimestamp,
-                signature = signature.encodeToBase64()
-            )
-        }.flatMapCompletable { requestData ->
-            networkManager.lucaEndpointsV4
-                .flatMapCompletable { it.markMessageAsRead(requestData) }
-        }.doOnComplete { message.read = true }
+            })
+            .flatMapCompletable { requestData ->
+                networkManager.lucaEndpointsV4
+                    .flatMapCompletable { it.markMessageAsRead(requestData) }
+            }
+            .doOnComplete { message.read = true }
             .andThen(addToMessageArchive(message))
             .andThen(updateHasUnreadMessages())
     }
@@ -730,8 +720,8 @@ open class ConnectManager(
     open fun generateRoundedTimestampsSinceLastUpdate(): Observable<Long> {
         return restoreLastUpdateTimestampIfAvailable()
             .defaultIfEmpty(0)
-            .map { max(it - ROUNDED_TIMESTAMP_ACCURACY, System.currentTimeMillis() - CONTACT_ARCHIVE_DURATION) }
-            .flatMapObservable { generateRoundedTimestamps(it, System.currentTimeMillis() - ROUNDED_TIMESTAMP_ACCURACY) }
+            .map { max(it - ROUNDED_TIMESTAMP_ACCURACY, TimeUtil.getCurrentMillis() - CONTACT_ARCHIVE_DURATION) }
+            .flatMapObservable { generateRoundedTimestamps(it, TimeUtil.getCurrentMillis() - ROUNDED_TIMESTAMP_ACCURACY) }
     }
 
     fun generateRoundedTimestamps(startTimestamp: Long, endTimestamp: Long): Observable<Long> {
@@ -754,7 +744,7 @@ open class ConnectManager(
         return preferencesManager.persist(LAST_MESSAGE_UPDATE_TIMESTAMP_KEY, timestamp)
     }
 
-    private fun updateHasUnreadMessages(): Completable {
+    fun updateHasUnreadMessages(): Completable {
         return getMessages()
             .filter { !it.read }
             .toList()
@@ -767,32 +757,12 @@ open class ConnectManager(
         Message Archive
      */
 
-    fun getMessages(): Observable<ConnectMessage> {
-        return Observable.defer {
-            if (cachedMessages == null) {
-                cachedMessages = restoreMessageArchiveEntries().cache()
-            }
-            cachedMessages!!
-        }
+    public fun getMessages(): Observable<ConnectMessage> {
+        return messageArchiver.getData()
     }
 
-    fun restoreMessageArchiveEntries(): Observable<ConnectMessage> {
-        return preferencesManager.restoreIfAvailable(MESSAGE_ARCHIVE_KEY, ConnectMessageArchive::class.java)
-            .flattenAsObservable(ConnectMessageArchive::entries)
-    }
-
-    private fun addToMessageArchive(message: ConnectMessage): Completable {
-        return restoreMessageArchiveEntries()
-            .filter { it.id != message.id } // overwrite existing message
-            .mergeWith(Observable.just(message))
-            .toList()
-            .map(::ConnectMessageArchive)
-            .flatMapCompletable(this::persistMessageArchive)
-    }
-
-    private fun persistMessageArchive(messageArchive: ConnectMessageArchive): Completable {
-        return preferencesManager.persist(MESSAGE_ARCHIVE_KEY, messageArchive)
-            .doOnComplete { cachedMessages = Observable.fromIterable(messageArchive.entries).cache() }
+    fun addToMessageArchive(message: ConnectMessage): Completable {
+        return messageArchiver.addData(message) { it.id == message.id }
     }
 
     /*
@@ -800,15 +770,7 @@ open class ConnectManager(
      */
 
     private fun invokeUpdatesInRegularIntervals(): Completable {
-        return Completable.fromAction {
-            managerDisposable.add(
-                startUpdatingInRegularIntervals()
-                    .delaySubscription(UPDATE_INITIAL_DELAY, TimeUnit.MILLISECONDS, Schedulers.io())
-                    .doOnError { Timber.e("Unable to start updating in regular intervals: $it") }
-                    .onErrorComplete()
-                    .subscribe()
-            )
-        }
+        return invokeDelayed(startUpdatingInRegularIntervals(), UPDATE_INITIAL_DELAY)
     }
 
     private fun startUpdatingInRegularIntervals(): Completable {
@@ -846,7 +808,7 @@ open class ConnectManager(
 
     open fun getDurationSinceLastUpdate(): Single<Long> {
         return preferencesManager.restoreOrDefault(LAST_MESSAGE_UPDATE_TIMESTAMP_KEY, 0L)
-            .map { System.currentTimeMillis() - it }
+            .map { TimeUtil.getCurrentMillis() - it }
     }
 
     open fun getNextRecommendedUpdateDelay(): Single<Long> {
@@ -872,24 +834,13 @@ open class ConnectManager(
     fun showEnrollmentSupportedNotificationIfRequired(): Completable {
         return enrollmentStatusSubject.firstElement().filter { !it }
             .flatMap { enrollmentSupportedStatusSubject.firstElement().filter { it } }
-            .flatMap { preferencesManager.restoreOrDefault(SUPPORT_NOTIFIED_KEY, false).filter { !it } }
-            .flatMapCompletable {
-                notificationManager.showNotification(
-                    LucaNotificationManager.NOTIFICATION_ID_CONNECT_ENROLLMENT_SUPPORTED,
-                    notificationManager.createConnectEnrollmentSupportedNotificationBuilder().build()
-                ).andThen(preferencesManager.persist(SUPPORT_NOTIFIED_KEY, true))
-            }
+            .flatMapSingle { whatIsNewManager.getMessage(ID_LUCA_CONNECT_MESSAGE) }
+            .filter { !it.notified && !it.seen && it.enabled }
+            .flatMapCompletable(whatIsNewManager::showNotificationForMessage)
     }
 
     fun showNewMessageNotification(connectMessage: ConnectMessage): Completable {
-        return Completable.defer {
-            val id = LucaNotificationManager.NOTIFICATION_ID_CONNECT_MESSAGE + (connectMessage.id.hashCode() % 1000)
-            val notification = notificationManager.createConnectMessageNotificationBuilder(
-                connectMessage.title,
-                connectMessage.content
-            ).build()
-            notificationManager.showNotification(id, notification)
-        }
+        return notificationManager.showConnectMessageNotification(connectMessage)
     }
 
     /*
@@ -903,7 +854,7 @@ open class ConnectManager(
     fun generateSimplifiedNameHash(person: Person): Single<ByteArray> {
         return Single.fromCallable { person.getSimplifiedFullName() }
             .map(String::toByteArray)
-            .flatMap(cryptoManager.hashProvider::hash)
+            .flatMap(cryptoManager::hash)
             .map { it.trim(32) }
     }
 
@@ -920,7 +871,7 @@ open class ConnectManager(
             phoneNumberUtil.format(parsedPhoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164)
         }.onErrorReturnItem(phoneNumber)
             .map(String::toByteArray)
-            .flatMap(cryptoManager.hashProvider::hash)
+            .flatMap(cryptoManager::hash)
             .map { it.trim(32) }
     }
 
@@ -959,24 +910,40 @@ open class ConnectManager(
             .map { it >= TimeUtil.getStartOfCurrentDayTimestamp().blockingGet() }
             .defaultIfEmpty(false)
     }
-}
 
-private const val NOTIFICATION_ID_KEY = "connect_notification_id"
-private const val CONTACT_ID_KEY = "connect_contact_id"
-private const val CONTACT_ARCHIVE_KEY = "connect_contact_archive"
-private const val MESSAGE_ARCHIVE_KEY = "connect_message_archive"
-private const val LAST_MESSAGE_UPDATE_TIMESTAMP_KEY = "connect_message_update_timestamp"
-private const val SUPPORT_RECOGNIZED_KEY = "connect_support_recognized"
-private const val SUPPORT_NOTIFIED_KEY = "connect_support_notified"
-private const val AUTHENTICATION_KEY_PAIR_ALIAS = "connect_authentication_key_pair"
-private const val MESSAGE_ENCRYPTION_KEY_PAIR_ALIAS = "message_encryption_key_pair"
-private const val MESSAGE_SIGNING_KEY_PAIR_ALIAS = "message_signing_key_pair"
-private const val POW_TYPE_ENROLL = "createConnectContact"
-private val CONTACT_ARCHIVE_DURATION = TimeUnit.DAYS.toMillis(7)
-private val ROUNDED_TIMESTAMP_ACCURACY = TimeUnit.MINUTES.toMillis(5)
-private val MESSAGE_ID_HKDF_LABEL = "messageId".toByteArray()
-private val MESSAGE_ENCRYPTION_HKDF_LABEL = "encryption".toByteArray()
-private const val UPDATE_TAG = "connect_update"
-private val UPDATE_INTERVAL = if (BuildConfig.DEBUG) PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS else TimeUnit.HOURS.toMillis(6)
-private val UPDATE_FLEX_PERIOD = if (BuildConfig.DEBUG) PeriodicWorkRequest.MIN_PERIODIC_FLEX_MILLIS else TimeUnit.HOURS.toMillis(2)
-private val UPDATE_INITIAL_DELAY = TimeUnit.SECONDS.toMillis(10)
+    fun persistConnectKritisData(connectKritisData: ConnectKritisData): Completable {
+        return preferencesManager.persist(LUCA_CONNECT_KRITIS_DATA, connectKritisData)
+            .doOnComplete { this.cachedConnectKritisData = connectKritisData }
+    }
+
+    fun getConnectKritisData(): Single<ConnectKritisData> {
+        return Maybe.fromCallable<ConnectKritisData> { cachedConnectKritisData }
+            .switchIfEmpty(preferencesManager.restoreIfAvailable(LUCA_CONNECT_KRITIS_DATA, ConnectKritisData::class.java))
+            .toSingle()
+    }
+
+    companion object {
+        const val KEY_ARCHIVED_CONTACT_DATA = "archived_contact_data"
+        const val KEY_ARCHIVED_MESSAGE_DATA = "archived_message_data"
+        const val LUCA_CONNECT_KRITIS_DATA = "luca_connect_kritis_data"
+
+        private const val NOTIFICATION_ID_KEY = "connect_notification_id"
+        private const val CONTACT_ID_KEY = "connect_contact_id"
+        private const val LAST_MESSAGE_UPDATE_TIMESTAMP_KEY = "connect_message_update_timestamp"
+        private const val AUTHENTICATION_KEY_PAIR_ALIAS = "connect_authentication_key_pair"
+        private const val MESSAGE_ENCRYPTION_KEY_PAIR_ALIAS = "message_encryption_key_pair"
+        private const val MESSAGE_SIGNING_KEY_PAIR_ALIAS = "message_signing_key_pair"
+        private const val POW_TYPE_ENROLL = "createConnectContact"
+        private val CONTACT_ARCHIVE_DURATION = TimeUnit.DAYS.toMillis(7)
+        val ROUNDED_TIMESTAMP_ACCURACY = TimeUnit.MINUTES.toMillis(5)
+        val MAX_MESSAGE_IDS = CONTACT_ARCHIVE_DURATION / ROUNDED_TIMESTAMP_ACCURACY
+        private val MESSAGE_ID_HKDF_LABEL = "messageId".toByteArray()
+        private val MESSAGE_ENCRYPTION_HKDF_LABEL = "encryption".toByteArray()
+        private val MESSAGE_AUTHENTICATION_HKDF_LABEL = "authentication".toByteArray()
+        private const val UPDATE_TAG = "connect_update"
+        val UPDATE_INTERVAL = if (BuildConfig.DEBUG) PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS else TimeUnit.HOURS.toMillis(6)
+        private val UPDATE_FLEX_PERIOD = if (BuildConfig.DEBUG) PeriodicWorkRequest.MIN_PERIODIC_FLEX_MILLIS else TimeUnit.HOURS.toMillis(2)
+        private val UPDATE_INITIAL_DELAY = TimeUnit.SECONDS.toMillis(10)
+    }
+
+}

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.provider.ProvidedDocument;
+import de.culture4life.luca.util.TimeUtil;
 
 public class Appointment extends ProvidedDocument {
 
@@ -50,7 +51,7 @@ public class Appointment extends ProvidedDocument {
         document.setLabName(lab);
         document.setTestingTimestamp(Long.parseLong(timestamp));
         document.setResultTimestamp(document.getTestingTimestamp());
-        document.setImportTimestamp(System.currentTimeMillis());
+        document.setImportTimestamp(TimeUtil.getCurrentMillis());
         document.setId(UUID.nameUUIDFromBytes(qrCode.getBytes()).toString());
         document.setProvider(lab);
         document.setEncodedData(url);

@@ -1,6 +1,8 @@
 package de.culture4life.luca.ui.checkin;
 
 import static de.culture4life.luca.crypto.HashProvider.TRIMMED_HASH_LENGTH;
+import static de.culture4life.luca.document.DocumentManager.HasDocumentCheckResult.VALID_DOCUMENT;
+import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_BOOSTERED;
 import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_NOT_SHARED;
 import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_PCR_TESTED;
 import static de.culture4life.luca.ui.checkin.QrCodeData.ENTRY_POLICY_QUICK_TESTED;
@@ -77,7 +79,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
     private final RegistrationManager registrationManager;
     private final CheckInManager checkInManager;
-    private final CryptoManager cryptoManager;
+    private final CryptoManager cryptoManager; // initialization deferred to first use
     private final MeetingManager meetingManager;
     private final NetworkManager networkManager;
     private final DocumentManager documentManager;
@@ -119,11 +121,10 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     @Override
     public Completable initialize() {
         return super.initialize()
-                .andThen(Completable.fromAction(() -> checkInData.setValue(null)))
+                .andThen(Completable.fromAction(() -> checkInData.postValue(null)))
                 .andThen(Completable.mergeArray(
                         registrationManager.initialize(application),
                         checkInManager.initialize(application),
-                        cryptoManager.initialize(application),
                         meetingManager.initialize(application),
                         networkManager.initialize(application),
                         documentManager.initialize(application)
@@ -131,11 +132,17 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .andThen(registrationManager.getUserIdIfAvailable()
                         .doOnSuccess(uuid -> this.userId = uuid)
                         .ignoreElement())
-                .andThen(Completable.fromAction(() -> modelDisposable.add(getCameraConsentGiven()
-                        .flatMapCompletable(cameraConsentGiven -> update(getShowCameraPreview(), new CameraRequest(cameraConsentGiven, true)))
-                        .delaySubscription(100, TimeUnit.MILLISECONDS)
-                        .subscribe())))
-                .doOnComplete(this::handleApplicationDeepLinkIfAvailable);
+                .andThen(Completable.mergeArray(
+                        invokeShowCameraPreviewInitialization(),
+                        invokeHandleDeepLinkIfAvailable()
+                ));
+    }
+
+    private Completable invokeShowCameraPreviewInitialization() {
+        return Completable.fromAction(() -> modelDisposable.add(getCameraConsentGiven()
+                .flatMapCompletable(cameraConsentGiven -> update(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(cameraConsentGiven, true))))
+                .delaySubscription(100, TimeUnit.MILLISECONDS, Schedulers.io())
+                .subscribe()));
     }
 
     @Override
@@ -243,14 +250,16 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     private Single<QrCodeData> generateQrCodeData(boolean isAnonymous, boolean shareEntryPolicy) {
-        return Single.just(new QrCodeData())
+        return cryptoManager.initialize(application)
+                .andThen(Single.just(new QrCodeData()))
                 .flatMap(qrCodeData -> checkInManager.getTraceIdWrapper(userId)
                         .flatMapCompletable(userTraceIdWrapper -> Completable.mergeArray(
                                 cryptoManager.getDailyPublicKey()
                                         .map(DailyPublicKeyData::getId)
                                         .doOnSuccess(qrCodeData::setKeyId)
                                         .ignoreElement(),
-                                cryptoManager.getGuestEphemeralKeyPair(userTraceIdWrapper.getTraceId())
+                                CheckInManager.getGuestEphemeralKeyPairAlias(userTraceIdWrapper.getTraceId())
+                                        .flatMap(cryptoManager::getKeyPair)
                                         .observeOn(Schedulers.computation())
                                         .flatMapCompletable(keyPair -> {
                                             if (!isAnonymous) {
@@ -279,16 +288,17 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                                 getEntryPolicyIfAvailable(documentManager.hasQuickTestDocument(), ENTRY_POLICY_QUICK_TESTED),
                                 getEntryPolicyIfAvailable(documentManager.hasPcrTestDocument(), ENTRY_POLICY_PCR_TESTED),
                                 getEntryPolicyIfAvailable(documentManager.hasRecoveryDocument(), ENTRY_POLICY_RECOVERED),
-                                getEntryPolicyIfAvailable(documentManager.hasVaccinationDocument(), ENTRY_POLICY_VACCINATED)
+                                getEntryPolicyIfAvailable(documentManager.hasVaccinationDocument(), ENTRY_POLICY_VACCINATED),
+                                getEntryPolicyIfAvailable(documentManager.hasBoosterDocument(), ENTRY_POLICY_BOOSTERED)
                         ).reduce(Integer::sum).defaultIfEmpty(ENTRY_POLICY_NOT_SHARED);
                     }
                 })
                 .map(entryPolicy -> (byte) (int) entryPolicy);
     }
 
-    private Maybe<Integer> getEntryPolicyIfAvailable(Single<Boolean> hasDocument, @QrCodeData.EntryPolicy int entryPolicy) {
+    private Maybe<Integer> getEntryPolicyIfAvailable(Single<DocumentManager.HasDocumentCheckResult> hasDocument, @QrCodeData.EntryPolicy int entryPolicy) {
         return hasDocument.flatMapMaybe(available -> {
-            if (available) {
+            if (available == VALID_DOCUMENT) {
                 return Maybe.just(entryPolicy);
             } else {
                 return Maybe.empty();
@@ -340,7 +350,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         return cryptoManager.getDataSecret()
                 .flatMap(userDataSecret -> CryptoManager.encode(userId)
                         .flatMap(encodedUserId -> CryptoManager.concatenate(encodedUserId, userDataSecret)))
-                .flatMap(encodedData -> cryptoManager.generateSharedDiffieHellmanSecret(userEphemeralPrivateKey)
+                .flatMap(encodedData -> cryptoManager.ecdh(userEphemeralPrivateKey)
                         .flatMap(cryptoManager::generateDataEncryptionSecret)
                         .flatMap(CryptoManager::createKeyFromSecret)
                         .flatMap(encodingKey -> cryptoManager.getSymmetricCipherProvider().encrypt(encodedData, iv, encodingKey)));
@@ -351,10 +361,9 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .flatMap(encodedTimestamp -> CryptoManager.concatenate(encodedTimestamp, encryptedUserIdAndSecret))
                 .flatMap(encodedData -> cryptoManager.getDataSecret()
                         .flatMap(cryptoManager::generateDataAuthenticationSecret)
-                        .flatMap(CryptoManager::createKeyFromSecret)
-                        .flatMap(dataAuthenticationKey -> cryptoManager.getMacProvider().sign(encodedData, dataAuthenticationKey)))
+                        .flatMap(dataAuthenticationSecret -> cryptoManager.hmac(encodedData, dataAuthenticationSecret)))
                 .flatMap(verificationTag -> CryptoManager.trim(verificationTag, 8))
-                .doOnSuccess(verificationTag -> Timber.d("Generated new verification tag: %s", SerializationUtil.serializeToBase64(verificationTag).blockingGet()));
+                .doOnSuccess(verificationTag -> Timber.d("Generated new verification tag: %s", SerializationUtil.toBase64(verificationTag).blockingGet()));
     }
 
     private Single<String> serializeQrCodeData(@NonNull QrCodeData qrCodeData) {
@@ -369,10 +378,10 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .put(qrCodeData.getUserEphemeralPublicKey())
                 .put(qrCodeData.getVerificationTag())
                 .array())
-                .flatMap(encodedQrCodeData -> cryptoManager.getHashProvider().hash(encodedQrCodeData)
+                .flatMap(encodedQrCodeData -> cryptoManager.hash(encodedQrCodeData)
                         .flatMap(checksum -> CryptoManager.trim(checksum, 4))
                         .flatMap(checksum -> CryptoManager.concatenate(encodedQrCodeData, checksum)))
-                .flatMap(SerializationUtil::serializeBase32);
+                .flatMap(SerializationUtil::toBase32);
     }
 
     private Single<Bitmap> generateQrCode(@NonNull String data) {
@@ -407,7 +416,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
             }
         }).doOnSubscribe(disposable -> {
             removeError(deepLinkError);
-            updateAsSideEffect(getShowCameraPreview(), new CameraRequest(false, true));
+            updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(false, true)));
             updateAsSideEffect(isLoading, true);
         }).doFinally(() -> updateAsSideEffect(isLoading, false));
     }
@@ -423,14 +432,17 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         Deep link handling
      */
 
-    private void handleApplicationDeepLinkIfAvailable() {
-        modelDisposable.add(application.getDeepLink()
-                .flatMapCompletable(url -> handleDeepLink(url)
-                        .doOnComplete(() -> application.onDeepLinkHandled(url)))
-                .subscribe(
-                        () -> Timber.d("Handled application deep link"),
-                        throwable -> Timber.w("Unable handle application deep link: %s", throwable.toString())
-                ));
+    private Completable invokeHandleDeepLinkIfAvailable() {
+        return Completable.fromAction(() -> {
+            modelDisposable.add(application.getDeepLink()
+                    .flatMapCompletable(url -> handleDeepLink(url)
+                            .doOnComplete(() -> application.onDeepLinkHandled(url)))
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            () -> Timber.d("Handled application deep link"),
+                            throwable -> Timber.w("Unable handle application deep link: %s", throwable.toString())
+                    ));
+        });
     }
 
     private Completable handleDeepLink(@NonNull String url) {
@@ -444,7 +456,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
             }
         }).doOnSubscribe(disposable -> {
             removeError(deepLinkError);
-            updateAsSideEffect(getShowCameraPreview(), new CameraRequest(false, true));
+            updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(false, true)));
             updateAsSideEffect(isLoading, true);
         }).doOnError(throwable -> {
             ViewError.Builder errorBuilder = createErrorBuilder(throwable)
@@ -481,7 +493,15 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .map(meetingAdditionalData -> new Gson().toJson(meetingAdditionalData));
 
         return extractMeetingHostName.andThen(Single.zip(scannerId, additionalData, Pair::new))
-                .flatMapCompletable(scannerIdAndAdditionalData -> performSelfCheckIn(scannerIdAndAdditionalData.first, scannerIdAndAdditionalData.second, true, false, false));
+                .flatMapCompletable(scannerIdAndAdditionalData ->
+                        performSelfCheckIn(
+                                scannerIdAndAdditionalData.first,
+                                scannerIdAndAdditionalData.second,
+                                true,
+                                false,
+                                false
+                        )
+                );
     }
 
     private static Single<MeetingAdditionalData> getMeetingAdditionalDataFromUrl(@NonNull String url) {
@@ -563,7 +583,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
             boolean requirePrivateMeeting,
             boolean isAnonymousCheckIn,
             boolean shareEntryPolicyState) {
-        return generateQrCodeData(isAnonymousCheckIn, shareEntryPolicyState)
+        return generateQrCodeData(isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
                 .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
                 .andThen(Completable.defer(() -> {
                     if (requirePrivateMeeting) {
@@ -623,11 +643,11 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     public void onCheckInMultiConfirmDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
+        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
     }
 
     public void onImportDocumentConfirmationDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
+        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
     }
 
     public void onPrivateMeetingJoinApproved(@NonNull String url) {
@@ -658,7 +678,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     public void onPrivateMeetingJoinDismissed(@NonNull String url) {
-        updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
+        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
     }
 
     public void onPrivateMeetingCreationRequested() {
@@ -677,15 +697,15 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     public void onPrivateMeetingCreationDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
+        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
     }
 
     public void onContactDataMissingDialogDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
+        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
     }
 
     public void onUpdateRequiredDialogDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new CameraRequest(true, true));
+        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
     }
 
     private Completable createPrivateMeeting() {
@@ -726,7 +746,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
     public static Maybe<String> getAdditionalDataFromUrlIfAvailable(@NonNull String url) {
         return getEncodedAdditionalDataFromUrlIfAvailable(url)
-                .flatMapSingle(SerializationUtil::deserializeFromBase64)
+                .flatMapSingle(SerializationUtil::fromBase64)
                 .map(String::new);
     }
 

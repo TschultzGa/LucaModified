@@ -3,12 +3,22 @@
     <item
         android:drawable="@drawable/bg_tab_indicator_inactive"
         android:gravity="top" />
-    <item android:gravity="top|center_horizontal">
+    <item
+        android:gravity="top|center_horizontal"
+        android:left="10dp"
+        android:right="10dp">
         <shape android:shape="rectangle">
-            <size
-                android:width="80dp"
-                android:height="3dp" />
             <solid android:color="?attr/colorOnSurface" />
+        </shape>
+    </item>
+    <!-- Fix white navigation bar for pre api 23 where <size> is not supported. -->
+    <item
+        android:gravity="top"
+        android:top="3dp">
+        <shape android:shape="rectangle">
+            <!-- Usually we would use ?attr/colorSurface but does not
+                 have the desired effect here for pre api 23. -->
+            <solid android:color="@color/black" />
         </shape>
     </item>
 </layer-list>

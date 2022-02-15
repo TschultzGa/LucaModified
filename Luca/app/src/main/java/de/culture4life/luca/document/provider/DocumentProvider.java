@@ -15,6 +15,7 @@ import java.util.NoSuchElementException;
 import de.culture4life.luca.children.Child;
 import de.culture4life.luca.document.DocumentVerificationException;
 import de.culture4life.luca.registration.Person;
+import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -91,7 +92,7 @@ public abstract class DocumentProvider<DocumentType extends ProvidedDocument> {
 
     public static Completable validateTime(long testingTimestamp) {
         return Completable.fromAction(() -> {
-            if (testingTimestamp > System.currentTimeMillis()) {
+            if (testingTimestamp > TimeUtil.getCurrentMillis()) {
                 throw new DocumentVerificationException(TIMESTAMP_IN_FUTURE);
             }
         });

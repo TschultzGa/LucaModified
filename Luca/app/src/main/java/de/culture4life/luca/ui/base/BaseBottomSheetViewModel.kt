@@ -7,10 +7,10 @@ import de.culture4life.luca.ui.ViewEvent
 
 abstract class BaseBottomSheetViewModel(app: Application) : BaseViewModel(app) {
 
-    val onDismissBottomSheet: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
-    val onViewDismissed: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
+    val dismissBottomSheetRequests: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
+    val bottomSheetDismissed: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
 
-    fun dismissBottomSheet() = updateAsSideEffect(onDismissBottomSheet, ViewEvent(true))
-    fun viewDismissed() = updateAsSideEffect(onViewDismissed, ViewEvent(true))
+    fun dismissBottomSheet() = updateAsSideEffect(dismissBottomSheetRequests, ViewEvent(true))
+    open fun onBottomSheetDismissed() = updateAsSideEffect(bottomSheetDismissed, ViewEvent(true))
 
 }

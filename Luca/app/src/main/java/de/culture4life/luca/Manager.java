@@ -5,9 +5,13 @@ import android.content.Context;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
+import java.util.concurrent.TimeUnit;
+
+import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import timber.log.Timber;
 
 /**
@@ -34,13 +38,13 @@ public abstract class Manager {
                 isInitializing = !isInitialized;
             }
             if (!isInitialized) {
-                long startTime = System.currentTimeMillis();
+                long startTime = TimeUtil.getCurrentMillis();
                 this.context = context.getApplicationContext();
                 this.managerDisposable = new CompositeDisposable();
                 return doInitialize(context)
                         .doOnComplete(() -> {
                             isInitialized = true;
-                            Timber.i("Completed initialization of %s in %d ms", this, (System.currentTimeMillis() - startTime));
+                            Timber.i("Completed initialization of %s in %d ms", this, (TimeUtil.getCurrentMillis() - startTime));
                         })
                         .doFinally(() -> {
                             isInitializing = false;
@@ -61,8 +65,10 @@ public abstract class Manager {
 
     @CallSuper
     public void dispose() {
-        isInitialized = false;
-        managerDisposable.dispose();
+        if (isInitialized) {
+            isInitialized = false;
+            managerDisposable.dispose();
+        }
     }
 
     protected <Type> Single<Type> getInitializedField(Type field) {
@@ -81,6 +87,18 @@ public abstract class Manager {
 
     public boolean isInitialized() {
         return isInitialized;
+    }
+
+    public Completable invoke(Completable completable) {
+        return invokeDelayed(completable, 0);
+    }
+
+    public Completable invokeDelayed(Completable completable, long delay) {
+        return Completable.fromAction(() -> managerDisposable.add(completable
+                .doOnError(throwable -> Timber.w("Invoked completable emitted an error: %s", throwable.toString()))
+                .onErrorComplete()
+                .delaySubscription(delay, TimeUnit.MILLISECONDS, Schedulers.io())
+                .subscribe()));
     }
 
     public LucaApplication getApplication() {

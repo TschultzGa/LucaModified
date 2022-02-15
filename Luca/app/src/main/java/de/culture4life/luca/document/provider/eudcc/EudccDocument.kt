@@ -3,7 +3,9 @@ package de.culture4life.luca.document.provider.eudcc
 import de.culture4life.luca.document.Document.*
 import de.culture4life.luca.document.DocumentExpiredException
 import de.culture4life.luca.document.DocumentParsingException
+import de.culture4life.luca.document.DocumentUtils
 import de.culture4life.luca.document.provider.ProvidedDocument
+import de.culture4life.luca.util.TimeUtil
 import dgca.verifier.app.decoder.CertificateDecodingError
 import dgca.verifier.app.decoder.CertificateDecodingResult
 import dgca.verifier.app.decoder.model.GreenCertificate
@@ -13,7 +15,6 @@ import org.joda.time.DateTime
 import org.joda.time.DateTimeZone
 import org.joda.time.Days
 import org.joda.time.Duration
-import java.lang.Integer.min
 import java.util.*
 
 /**
@@ -41,13 +42,6 @@ class EudccDocument(
             "EU/1/20/1525" to Procedure.Type.VACCINATION_JANNSEN,
             "EU/1/20/1507" to Procedure.Type.VACCINATION_MODERNA,
             "Sputnik-V" to Procedure.Type.VACCINATION_SPUTNIK_V
-        )
-        private val VACCINATION_DOSES = mapOf(
-            Procedure.Type.VACCINATION_COMIRNATY to 2,
-            Procedure.Type.VACCINATION_VAXZEVRIA to 2,
-            Procedure.Type.VACCINATION_JANNSEN to 1,
-            Procedure.Type.VACCINATION_MODERNA to 2,
-            Procedure.Type.VACCINATION_SPUTNIK_V to 2
         )
     }
 
@@ -92,7 +86,7 @@ class EudccDocument(
                 document.dateOfBirth = this.dateOfBirth.parseDate()
             }
             id = UUID.nameUUIDFromBytes(hashableEncodedData.toByteArray()).toString()
-            importTimestamp = System.currentTimeMillis()
+            importTimestamp = TimeUtil.getCurrentMillis()
         }
     }
 
@@ -111,49 +105,55 @@ class EudccDocument(
     }
 
     private fun setupVaccinationData(result: CertificateDecodingResult.Success) {
-        result.greenCertificate.vaccinations?.let { vaccinations ->
-            with(document) {
-                type = TYPE_VACCINATION
-                outcome = OUTCOME_PARTIALLY_IMMUNE
-                val procedures = ArrayList<Procedure>()
-                val initialVaccinationType: Procedure.Type = VACCINATION_TYPES[vaccinations[0].medicinalProduct] ?: Procedure.Type.UNKNOWN
-                for (vaccination in vaccinations) {
-                    verifyCovid19(vaccination.disease)
-                    val type = VACCINATION_TYPES[vaccination.medicinalProduct] ?: Procedure.Type.UNKNOWN
-                    val procedure = Procedure(
-                        type,
-                        vaccination.dateOfVaccination.parseDate(),
-                        vaccination.doseNumber,
-                        vaccination.totalSeriesOfDoses
-                    )
-                    if (vaccination.doseNumber >= vaccination.totalSeriesOfDoses) {
-                        validityStartTimestamp = if (isBoosterVaccination(vaccination, initialVaccinationType)) {
-                            // Booster vaccinations are effective immediately
-                            vaccination.dateOfVaccination.parseDate()
-                        } else {
-                            vaccination.dateOfVaccination.parseDate(plusMillis = TIME_UNTIL_VACCINATION_IS_VALID)
-                        }
-                        outcome = OUTCOME_FULLY_IMMUNE
+        val vaccinations = result.greenCertificate.vaccinations ?: return
+        with(document) {
+            type = TYPE_VACCINATION
+            outcome = OUTCOME_PARTIALLY_IMMUNE
+            val procedures = ArrayList<Procedure>()
+            val initialVaccinationType: Procedure.Type = VACCINATION_TYPES[vaccinations[0].medicinalProduct] ?: Procedure.Type.UNKNOWN
+            for (vaccination in vaccinations) {
+                verifyCovid19(vaccination.disease)
+                val type = VACCINATION_TYPES[vaccination.medicinalProduct] ?: Procedure.Type.UNKNOWN
+                val procedure = Procedure(
+                    type,
+                    vaccination.dateOfVaccination.parseDate(),
+                    vaccination.doseNumber,
+                    vaccination.totalSeriesOfDoses
+                )
+                if (vaccination.doseNumber >= vaccination.totalSeriesOfDoses) {
+                    val latestRecoveryFromDate = result.greenCertificate
+                        .recoveryStatements
+                        ?.filter { it.isCertificateNotValidAnymore() == false && it.isCertificateNotValidSoFar() == false }
+                        ?.maxByOrNull { DateTime.parse(it.certificateValidFrom).millis }
+                        ?.certificateValidFrom
+                    validityStartTimestamp = if (isBoosterVaccination(vaccination, initialVaccinationType, latestRecoveryFromDate)) {
+                        // Booster vaccinations are effective immediately
+                        vaccination.dateOfVaccination.parseDate()
+                    } else {
+                        vaccination.dateOfVaccination.parseDate(plusMillis = TIME_UNTIL_VACCINATION_IS_VALID)
                     }
-                    procedures.add(procedure)
+                    outcome = OUTCOME_FULLY_IMMUNE
                 }
-                document.procedures = procedures
-                vaccinations.lastOrNull()?.let {
-                    labName = it.certificateIssuer
-                    testingTimestamp = it.dateOfVaccination.parseDate()
-                    resultTimestamp = testingTimestamp
-                }
+                procedures.add(procedure)
+            }
+            document.procedures = procedures
+            vaccinations.lastOrNull()?.let {
+                labName = it.certificateIssuer
+                testingTimestamp = it.dateOfVaccination.parseDate()
+                resultTimestamp = testingTimestamp
             }
         }
     }
 
-    private fun isBoosterVaccination(vaccination: Vaccination, initialType: Procedure.Type): Boolean {
-        // TODO: 07.12.21 implement more edge case logic
-        return if (initialType != Procedure.Type.UNKNOWN) {
-            vaccination.doseNumber > min(vaccination.totalSeriesOfDoses, VACCINATION_DOSES[initialType]!!)
-        } else {
-            vaccination.doseNumber >= 3
-        }
+    private fun isBoosterVaccination(vaccination: Vaccination, initialType: Procedure.Type, latestRecoveryDateFrom: String?): Boolean {
+        val recoveryDate = if (latestRecoveryDateFrom != null) TimeUtil.zonedDateTimeFromString(latestRecoveryDateFrom) else null
+        val vaccinationDate = TimeUtil.zonedDateTimeFromString(vaccination.dateOfVaccination)
+        return DocumentUtils.isBoostered(
+            latestRecoveryDate = recoveryDate,
+            latestVaccinationDate = vaccinationDate,
+            initialType = initialType,
+            receivedDosesCount = vaccination.doseNumber
+        )
     }
 
     private fun setupRecoveredData(result: CertificateDecodingResult.Success) {
@@ -190,7 +190,6 @@ class EudccDocument(
     private fun verifyCovid19(disease: String) {
         if (disease != COVID19_DISEASE) throw DocumentParsingException("Can only handle Covid19 disease type, but received $disease")
     }
-
 }
 
 fun String.parseDate(plusDuration: Duration = Days.ZERO.toStandardDuration(), plusMillis: Long = 0L): Long {

@@ -2,7 +2,6 @@ package de.culture4life.luca.util
 
 import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.crypto.AsymmetricCipherProvider
-import de.culture4life.luca.crypto.decodeFromBase64
 import io.jsonwebtoken.security.SignatureException
 import org.junit.Assert.assertEquals
 import org.junit.Test

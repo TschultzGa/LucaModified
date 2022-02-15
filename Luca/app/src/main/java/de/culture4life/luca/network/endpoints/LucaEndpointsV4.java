@@ -14,7 +14,6 @@ import de.culture4life.luca.network.pojo.HealthDepartment;
 import de.culture4life.luca.network.pojo.KeyIssuerResponseData;
 import de.culture4life.luca.network.pojo.PowChallengeRequestData;
 import de.culture4life.luca.network.pojo.PowChallengeResponseData;
-import de.culture4life.luca.network.pojo.ResponsibleHealthDepartmentRequestData;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import okhttp3.ResponseBody;
@@ -82,7 +81,7 @@ public interface LucaEndpointsV4 {
     @POST("connect/messages/read")
     Completable markMessageAsRead(@Body ConnectMessageReadRequestData data);
 
-    @POST("zipCodes/responsible")
-    Single<List<HealthDepartment>> getResponsibleHealthDepartment(@Body ResponsibleHealthDepartmentRequestData data);
+    @GET("zipCodes/connect")
+    Single<List<HealthDepartment>> getResponsibleHealthDepartment();
 
 }

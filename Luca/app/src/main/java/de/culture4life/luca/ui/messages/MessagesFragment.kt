@@ -1,7 +1,7 @@
 package de.culture4life.luca.ui.messages
 
-import android.os.Bundle
 import android.view.View
+import androidx.core.os.bundleOf
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentMessagesBinding
@@ -63,10 +63,12 @@ class MessagesFragment : BaseFragment<MessagesViewModel>() {
             messageListView.adapter = messagesListAdapter
             messageListView.setOnItemClickListener { _, _, position, _ ->
                 val item = messagesListAdapter.getItem(position - messageListView.headerViewsCount)
-                val bundle = Bundle().apply {
-                    putSerializable(KEY_MESSAGE_LIST_ITEM, item)
+                if (item is MessageListItem.NewsListItem) {
+                    safeNavigateFromNavController(item.destination)
+                } else {
+                    val bundle = bundleOf(Pair(KEY_MESSAGE_LIST_ITEM, item))
+                    safeNavigateFromNavController(R.id.action_messagesFragment_to_messageDetailFragment, bundle)
                 }
-                safeNavigateFromNavController(R.id.action_messagesFragment_to_messageDetailFragment, bundle)
             }
             observe(viewModel.messageItems) { allItems -> messagesListAdapter.setMessageItems(allItems) }
         }

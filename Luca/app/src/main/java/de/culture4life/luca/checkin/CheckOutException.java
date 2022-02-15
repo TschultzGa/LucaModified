@@ -1,10 +1,10 @@
 package de.culture4life.luca.checkin;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import androidx.annotation.IntDef;
 
 import java.lang.annotation.Retention;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 public class CheckOutException extends Exception {
 

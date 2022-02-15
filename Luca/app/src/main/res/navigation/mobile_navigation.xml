@@ -5,6 +5,8 @@
     android:id="@+id/mainNavigation"
     app:startDestination="@+id/checkInFragment">
 
+    <!-- My luca tab -->
+
     <fragment
         android:id="@+id/myLucaFragment"
         android:name="de.culture4life.luca.ui.myluca.MyLucaFragment"
@@ -20,6 +22,14 @@
             android:id="@+id/action_myLucaFragment_to_messageDetailFragment"
             app:destination="@id/messageDetailFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/childrenFragment"
+        android:name="de.culture4life.luca.ui.children.ChildrenFragment"
+        android:label="@string/add_children_title"
+        tools:layout="@layout/fragment_adding_children" />
+
+    <!-- Check-in tab -->
 
     <fragment
         android:id="@+id/checkInFragment"
@@ -121,6 +131,27 @@
         android:label="Edit History"
         tools:layout="@layout/fragment_history" />
 
+    <!-- Messages tab -->
+
+    <fragment
+        android:id="@+id/messagesFragment"
+        android:name="de.culture4life.luca.ui.messages.MessagesFragment"
+        android:label="@string/navigation_messages"
+        tools:layout="@layout/fragment_messages">
+        <action
+            android:id="@+id/action_messagesFragment_to_messageDetailFragment"
+            app:destination="@id/messageDetailFragment" />
+        <action
+            android:id="@+id/action_messagesFragment_to_postalCodeFragment"
+            app:destination="@id/postalCodeFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/messageDetailFragment"
+        android:name="de.culture4life.luca.ui.messages.MessageDetailFragment"
+        android:label="@string/navigation_accessed_data_details"
+        tools:layout="@layout/fragment_message_detail" />
+
     <fragment
         android:id="@+id/accessedDataFragment"
         android:name="de.culture4life.luca.ui.accesseddata.AccessedDataFragment"
@@ -137,16 +168,7 @@
         android:label="@string/navigation_accessed_data_details"
         tools:layout="@layout/fragment_accessed_data_detail" />
 
-    <fragment
-        android:id="@+id/childrenFragment"
-        android:name="de.culture4life.luca.ui.children.ChildrenFragment"
-        android:label="@string/add_children_title"
-        tools:layout="@layout/fragment_adding_children" />
-
-    <fragment
-        android:id="@+id/registrationFragment"
-        android:name="de.culture4life.luca.ui.registration.RegistrationFragment"
-        tools:layout="@layout/fragment_registration_all" />
+    <!-- Account tab -->
 
     <fragment
         android:id="@+id/accountFragment"
@@ -154,21 +176,30 @@
         android:label="AccountFragment"
         tools:layout="@layout/fragment_account">
         <action
-            android:id="@+id/action_accountFragment_to_dailyKeyFragment"
-            app:destination="@id/dailyKeyFragment" />
+            android:id="@+id/action_accountFragment_to_postalCodeFragment"
+            app:destination="@id/postalCodeFragment" />
+        <action
+            android:id="@+id/action_accountFragment_to_lucaConnectFragment"
+            app:destination="@id/lucaConnectFragment" />
         <action
             android:id="@+id/action_accountFragment_to_newsFragment"
             app:destination="@id/newsFragment" />
         <action
-            android:id="@+id/action_accountFragment_to_lucaConnectFragment"
-            app:destination="@id/lucaConnectFragment" />
+            android:id="@+id/action_accountFragment_to_dailyKeyFragment"
+            app:destination="@id/dailyKeyFragment" />
     </fragment>
 
     <fragment
-        android:id="@+id/dailyKeyFragment"
-        android:name="de.culture4life.luca.ui.account.dailykey.DailyKeyFragment"
-        android:label="@string/account_tab_item_daily_key"
-        tools:layout="@layout/fragment_daily_key" />
+        android:id="@+id/postalCodeFragment"
+        android:name="de.culture4life.luca.ui.account.postalcode.PostalCodeFragment"
+        android:label="@string/account_tab_item_postal_code"
+        tools:layout="@layout/fragment_postal_code" />
+
+    <fragment
+        android:id="@+id/lucaConnectFragment"
+        android:name="de.culture4life.luca.ui.account.lucaconnect.LucaConnectFragment"
+        android:label="@string/account_tab_item_luca_connect"
+        tools:layout="@layout/fragment_luca_connect" />
 
     <fragment
         android:id="@+id/newsFragment"
@@ -177,25 +208,16 @@
         tools:layout="@layout/fragment_news" />
 
     <fragment
-        android:id="@+id/messagesFragment"
-        android:name="de.culture4life.luca.ui.messages.MessagesFragment"
-        android:label="@string/navigation_messages"
-        tools:layout="@layout/fragment_messages">
-        <action
-            android:id="@+id/action_messagesFragment_to_messageDetailFragment"
-            app:destination="@id/messageDetailFragment" />
-    </fragment>
+        android:id="@+id/dailyKeyFragment"
+        android:name="de.culture4life.luca.ui.account.dailykey.DailyKeyFragment"
+        android:label="@string/account_tab_item_daily_key"
+        tools:layout="@layout/fragment_daily_key" />
+
+    <!-- Miscellaneous -->
 
     <fragment
-        android:id="@+id/messageDetailFragment"
-        android:name="de.culture4life.luca.ui.messages.MessageDetailFragment"
-        android:label="@string/navigation_accessed_data_details"
-        tools:layout="@layout/fragment_message_detail" />
-
-    <fragment
-        android:id="@+id/lucaConnectFragment"
-        android:name="de.culture4life.luca.ui.account.lucaconnect.LucaConnectFragment"
-        android:label="@string/account_tab_item_luca_connect"
-        tools:layout="@layout/fragment_luca_connect" />
+        android:id="@+id/registrationFragment"
+        android:name="de.culture4life.luca.ui.registration.RegistrationFragment"
+        tools:layout="@layout/fragment_registration_all" />
 
 </navigation>

@@ -5,14 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.text.SpannedString;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -26,6 +24,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.text.HtmlCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
@@ -64,8 +65,6 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     protected LucaApplication application;
 
-    protected BaseActivity baseActivity;
-
     protected ViewModelType viewModel;
 
     protected CompositeDisposable viewDisposable;
@@ -101,8 +100,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        baseActivity = (BaseActivity) getActivity();
-        application = (LucaApplication) baseActivity.getApplication();
+        application = (LucaApplication) getActivity().getApplication();
         rxPermissions = new RxPermissions(this);
         try {
             navigationController = Navigation.findNavController(view);
@@ -110,14 +108,6 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
             Timber.w("No navigation controller available");
         }
 
-        // temporarily allow disk reads and writes
-        StrictMode.ThreadPolicy previousThreadPolicy = StrictMode.getThreadPolicy();
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder(previousThreadPolicy)
-                .permitDiskReads()
-                .permitDiskWrites()
-                .build());
-
-        // TODO: 08.01.21 java.lang.IllegalStateException: Cannot invoke observe on a background thread; happened on emulator twice
         initializeViewModel()
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnComplete(() -> {
@@ -128,9 +118,6 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
                         () -> Timber.d("Initialized %s with %s", this, viewModel),
                         throwable -> Timber.e(throwable, "Unable to initialize %s with %s: %s", this, viewModel, throwable.toString())
                 );
-
-        // re-enable previous thread policy
-        StrictMode.setThreadPolicy(previousThreadPolicy);
     }
 
     @Override
@@ -201,6 +188,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
                     viewModel = createdViewModel;
                     viewModel.setNavigationController(navigationController);
                 })
+                .observeOn(Schedulers.io())
                 .flatMapCompletable(BaseViewModel::initialize);
     }
 
@@ -349,13 +337,20 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     protected void hideKeyboard() {
         View view = getView();
-        Context context = getContext();
-        if (view == null || context == null) {
-            Timber.w("Unable to hide keyboard, view or context not available");
+        if (view == null) {
+            Timber.w("Unable to hide keyboard, view not available");
             return;
         }
-        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(view.getRootView().getWindowToken(), 0);
+
+        // Get compat inset controller which backports the inset api to before level 30
+        WindowInsetsControllerCompat windowInsetsController = ViewCompat.getWindowInsetsController(view);
+        if (windowInsetsController == null) {
+            Timber.w("Unable to hide keyboard, insets controller not available");
+            return;
+        }
+
+        // Use compat inset controller to hide keyboard (IME). Counterpart would be windowInsetsController.show(...);
+        windowInsetsController.hide(WindowInsetsCompat.Type.ime());
     }
 
     protected void safeNavigateFromNavController(@IdRes int destination) {

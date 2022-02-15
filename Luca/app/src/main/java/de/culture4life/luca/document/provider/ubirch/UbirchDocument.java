@@ -1,5 +1,7 @@
 package de.culture4life.luca.document.provider.ubirch;
 
+import static de.culture4life.luca.document.provider.ubirch.UbirchDocumentProvider.URL_PREFIX;
+
 import androidx.annotation.NonNull;
 
 import org.joda.time.format.DateTimeFormat;
@@ -11,8 +13,7 @@ import java.util.UUID;
 
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.provider.ProvidedDocument;
-
-import static de.culture4life.luca.document.provider.ubirch.UbirchDocumentProvider.URL_PREFIX;
+import de.culture4life.luca.util.TimeUtil;
 
 public class UbirchDocument extends ProvidedDocument {
 
@@ -64,7 +65,7 @@ public class UbirchDocument extends ProvidedDocument {
         document.setTestingTimestamp(testDate.getTime());
 
         document.setResultTimestamp(document.getTestingTimestamp());
-        document.setImportTimestamp(System.currentTimeMillis());
+        document.setImportTimestamp(TimeUtil.getCurrentMillis());
         document.setId(UUID.nameUUIDFromBytes(toCompactJson().getBytes()).toString());
         document.setProvider("Ubirch");
         document.setEncodedData(url);

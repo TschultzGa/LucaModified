@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
@@ -118,7 +119,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
             }
         }
 
-        observe(checkInFlowViewModel.onViewDismissed) {
+        observe(checkInFlowViewModel.bottomSheetDismissed) {
             viewModel.onCheckInMultiConfirmDismissed()
         }
     }
@@ -178,7 +179,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     override fun onStop() {
-        viewModel.setBundle(null)
+        clearBundle()
         super.onStop()
     }
 
@@ -193,7 +194,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
         bundle.getString(BARCODE_DATA_KEY)?.let { barcode ->
             viewModel.processBarcode(barcode)
                 .delaySubscription(500, TimeUnit.MILLISECONDS) // avoid processing if checked in
-                .doOnComplete { viewModel.setBundle(null) }
+                .doOnComplete { clearBundle() }
                 .onErrorComplete()
                 .subscribe()
                 .addTo(viewDisposable)
@@ -216,10 +217,10 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     private fun showCheckInConfirmFlow(url: String, locationResponseData: LocationResponseData) {
         hideCameraPreview()
 
-        checkInFlowBottomSheet.arguments = Bundle().apply {
-            putString(CheckInFlowBottomSheetFragment.KEY_LOCATION_URL, url)
-            putSerializable(CheckInFlowBottomSheetFragment.KEY_LOCATION_RESPONSE_DATA, locationResponseData)
-        }
+        checkInFlowBottomSheet.arguments = bundleOf(
+            Pair(CheckInFlowBottomSheetFragment.KEY_LOCATION_URL, url),
+            Pair(CheckInFlowBottomSheetFragment.KEY_LOCATION_RESPONSE_DATA, locationResponseData)
+        )
 
         checkInFlowBottomSheet.show(parentFragmentManager, CheckInFlowBottomSheetFragment.TAG)
     }
@@ -337,13 +338,19 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
 
     override fun setTorchEnabled(isEnabled: Boolean) {
         super.setTorchEnabled(isEnabled)
-        binding.flashLightButtonImageView.setImageResource(
+        with(binding.flashLightButtonImageView) {
             if (isEnabled) {
-                R.drawable.ic_flashlight_off
+                setImageResource(R.drawable.ic_flashlight_off)
+                contentDescription = getString(R.string.check_in_scan_turn_off_flashlight_action)
             } else {
-                R.drawable.ic_flashlight_on
+                setImageResource(R.drawable.ic_flashlight_on)
+                contentDescription = getString(R.string.check_in_scan_turn_on_flashlight_action)
             }
-        )
+        }
     }
 
+    private fun clearBundle() {
+        arguments?.clear()
+        viewModel.setBundle(null)
+    }
 }

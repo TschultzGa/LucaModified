@@ -4,7 +4,6 @@ import androidx.test.runner.AndroidJUnit4
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith

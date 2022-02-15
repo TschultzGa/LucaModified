@@ -26,7 +26,7 @@ class BaercodeKey {
         this.xCoordinate = xCoordinate;
         this.yCoordinate = yCoordinate;
         byte[] keyId = Arrays.copyOfRange(xCoordinate, xCoordinate.length - 16, xCoordinate.length);
-        this.keyId = SerializationUtil.serializeToBase64(keyId).blockingGet();
+        this.keyId = SerializationUtil.toBase64(keyId).blockingGet();
     }
 
     public static BaercodeKey from(@NonNull JsonNode dataItems) throws IOException {

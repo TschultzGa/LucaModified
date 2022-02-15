@@ -9,13 +9,12 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
+import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.ui.BaseQrCodeFragment.Companion.IMAGE_ANALYSIS_RESOLUTION
 import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildFragment
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
-import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
@@ -83,7 +82,7 @@ abstract class BaseQrCodeFlowChildFragment<ChildViewModel : BaseQrCodeFlowChildV
                     }
                     return@flatMapCompletable Completable.error(IllegalStateException("Camera permission not granted"))
                 }
-                return@flatMapCompletable Completable.complete();
+                return@flatMapCompletable Completable.complete()
             }
 
         requestConsentIfRequired
@@ -138,11 +137,11 @@ abstract class BaseQrCodeFlowChildFragment<ChildViewModel : BaseQrCodeFlowChildV
                     } catch (e: Exception) {
                         emitter.onError(e)
                     }
-                }, ContextCompat.getMainExecutor(context))
+                }, ContextCompat.getMainExecutor(requireContext()))
             })
             .flatMapCompletable { cameraProvider ->
                 Completable.create { emitter ->
-                    cameraProvider?.let { bindCameraPreview(it) }
+                    cameraProvider.let { bindCameraPreview(it!!) }
                     emitter.setCancellable { unbindCameraPreview() }
                 }
             }
@@ -188,7 +187,7 @@ abstract class BaseQrCodeFlowChildFragment<ChildViewModel : BaseQrCodeFlowChildV
 
     protected fun autoFocus(focusPoint: MeteringPoint) {
         try {
-            Timber.d("Attempting to auto focus (%f, %f)", focusPoint.x, focusPoint.y)
+            Timber.d("Attempting to auto focus %s", focusPoint)
             val autoFocusAction = FocusMeteringAction.Builder(
                 focusPoint,
                 FocusMeteringAction.FLAG_AF
@@ -230,22 +229,21 @@ abstract class BaseQrCodeFlowChildFragment<ChildViewModel : BaseQrCodeFlowChildV
     }
 
     private fun showCameraConsentDialog(directToSettings: Boolean) {
-        val builder = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.check_in_enable_camera_access_title)
-            .setMessage(R.string.check_in_enable_camera_access_description)
-            .setNegativeButton(R.string.action_cancel) { _, _ ->
-                viewModel!!.onCameraConsentDenied()
+        val consentManager = application.consentManager
+        consentManager.initialize(application)
+            .andThen(consentManager.requestConsentAndGetResult(ConsentManager.ID_ENABLE_CAMERA))
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { consent, _ ->
+                if (consent.approved) {
+                    if (directToSettings) {
+                        application.openAppSettings()
+                    } else {
+                        viewModel!!.onCameraConsentGiven()
+                    }
+                } else {
+                    viewModel!!.onCameraConsentDenied()
+                }
             }
-        if (directToSettings) {
-            builder.setPositiveButton(R.string.action_settings) { _, _ ->
-                application.openAppSettings()
-            }
-        } else {
-            builder.setPositiveButton(R.string.action_enable) { _, _ ->
-                viewModel!!.onCameraConsentGiven()
-            }
-        }
-        BaseDialogFragment(builder).show()
     }
 
     protected fun showCameraPermissionPermanentlyDeniedError() {

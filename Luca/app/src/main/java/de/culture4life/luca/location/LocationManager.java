@@ -1,5 +1,8 @@
 package de.culture4life.luca.location;
 
+import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -20,6 +23,7 @@ import com.google.android.gms.location.LocationResult;
 
 import java.util.concurrent.TimeUnit;
 
+import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.Manager;
 import de.culture4life.luca.util.RxTasks;
 import io.reactivex.rxjava3.core.Completable;
@@ -27,19 +31,18 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 
-import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
-import static android.Manifest.permission.ACCESS_FINE_LOCATION;
-
 public class LocationManager extends Manager {
 
-    private Context context;
     private FusedLocationProviderClient fusedLocationProviderClient;
 
     @Override
     protected Completable doInitialize(@NonNull Context context) {
         return Completable.fromAction(() -> {
-            this.context = context;
-            fusedLocationProviderClient = new FusedLocationProviderClient(context);
+            if (!LucaApplication.isRunningUnitTests()) {
+                // Leaks context. No problem in production because there will only be one context.
+                // https://github.com/android/location-samples/issues/26
+                fusedLocationProviderClient = new FusedLocationProviderClient(context);
+            }
         });
     }
 

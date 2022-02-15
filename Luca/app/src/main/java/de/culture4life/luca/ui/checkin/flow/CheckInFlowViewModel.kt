@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.network.pojo.LocationResponseData
 import de.culture4life.luca.ui.ViewEvent
-import de.culture4life.luca.ui.checkin.CheckInViewModel
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
+import de.culture4life.luca.ui.checkin.CheckInViewModel
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe

@@ -11,7 +11,7 @@ public class AccessibilityServiceUtilTest extends LucaInstrumentationTest {
     @Test
     @Ignore("Enable only temporarily when your device has talkBack enabled")
     public void testIsGoogleTalkbackActive() {
-        Assert.assertTrue(AccessibilityServiceUtil.isGoogleTalkbackActive(application));
+        Assert.assertTrue(AccessibilityServiceUtil.isScreenReaderActive(application));
     }
 
 }

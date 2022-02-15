@@ -4,6 +4,7 @@ import android.content.Context
 import de.culture4life.luca.Manager
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.network.pojo.PowChallengeRequestData
+import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -99,7 +100,7 @@ class PowManager(
     }
 
     private fun checkExpirationTimestamp(challenge: PowChallenge) {
-        require(challenge.expirationTimestamp > System.currentTimeMillis()) { "Challenge expired" }
+        require(challenge.expirationTimestamp > TimeUtil.getCurrentMillis()) { "Challenge expired" }
     }
 
 }

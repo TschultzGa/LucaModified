@@ -237,19 +237,17 @@ public class RegistrationViewModel extends BaseViewModel {
 
     private Completable additionalStepsAfterUpdate() {
         return Completable.mergeArray(
+                deleteResponsibleHealthDepartmentIfRequired(),
                 unEnrollIfRequired(),
                 updateSharedDataIfRequired(),
-                reImportDocumentsIfRequired(),
-                updateResponsibleHealthDepartmentIfRequired()
+                reImportDocumentsIfRequired()
         );
     }
 
-    private Completable updateResponsibleHealthDepartmentIfRequired() {
+    private Completable deleteResponsibleHealthDepartmentIfRequired() {
         return Single.fromCallable(this::isPostalCodeChanged)
-                .filter(shouldUnEnroll -> shouldUnEnroll)
-                .flatMapCompletable(shouldUnEnroll ->
-                        healthDepartmentManager.deleteResponsibleHealthDepartment()
-                                .andThen(healthDepartmentManager.updateResponsibleHealthDepartmentIfRequired()));
+                .filter(postalCodeChanged -> postalCodeChanged)
+                .flatMapCompletable(postalCodeChanged -> healthDepartmentManager.deleteResponsibleHealthDepartment());
     }
 
     private Completable unEnrollIfRequired() {
@@ -450,7 +448,7 @@ public class RegistrationViewModel extends BaseViewModel {
                 .flatMap(registrationManager::requestPhoneNumberVerificationTan)
                 .flatMapCompletable(challengeId -> Completable.mergeArray(
                         addToRecentTanChallengeIds(challengeId),
-                        preferencesManager.persist(LAST_TAN_REQUEST_TIMESTAMP_KEY, System.currentTimeMillis())
+                        preferencesManager.persist(LAST_TAN_REQUEST_TIMESTAMP_KEY, TimeUtil.getCurrentMillis())
                 ))
                 .andThen(incrementTanRequestTimeoutDuration())
                 .doOnSubscribe(disposable -> {
@@ -490,7 +488,7 @@ public class RegistrationViewModel extends BaseViewModel {
 
     private Completable assertTanRateLimitNotReached() {
         return getNextPossibleTanVerificationTimestamp()
-                .map(nextPossibleTimestamp -> nextPossibleTimestamp - System.currentTimeMillis())
+                .map(nextPossibleTimestamp -> nextPossibleTimestamp - TimeUtil.getCurrentMillis())
                 .flatMapCompletable(remainingTimeoutDuration -> {
                     if (remainingTimeoutDuration <= 0) {
                         return Completable.complete();
@@ -517,7 +515,7 @@ public class RegistrationViewModel extends BaseViewModel {
 
     private Completable resetTanRequestRateLimits() {
         return preferencesManager.restoreIfAvailable(LAST_TAN_REQUEST_TIMESTAMP_KEY, Long.class)
-                .map(lastTanRequestTimestamp -> System.currentTimeMillis() - lastTanRequestTimestamp)
+                .map(lastTanRequestTimestamp -> TimeUtil.getCurrentMillis() - lastTanRequestTimestamp)
                 .filter(durationSinceLastRequest -> durationSinceLastRequest > TimeUnit.DAYS.toMillis(1))
                 .doOnSuccess(durationSinceLastRequest -> Timber.i("Resetting TAN request rate limits"))
                 .flatMapCompletable(durationSinceLastRequest -> preferencesManager.persist(NEXT_TAN_REQUEST_TIMEOUT_DURATION_KEY, INITIAL_TAN_REQUESTS_TIMEOUT));

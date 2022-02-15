@@ -3,12 +3,12 @@ package de.culture4life.luca.connect
 import com.google.gson.Gson
 import de.culture4life.luca.LucaInstrumentationTest
 import de.culture4life.luca.crypto.AsymmetricCipherProvider
-import de.culture4life.luca.crypto.decodeFromBase64
-import de.culture4life.luca.crypto.decodeFromHex
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.health.ResponsibleHealthDepartment
 import de.culture4life.luca.network.pojo.ConnectMessageResponseData
 import de.culture4life.luca.registration.RegistrationData
+import de.culture4life.luca.util.decodeFromBase64
+import de.culture4life.luca.util.decodeFromHex
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import org.junit.After
@@ -133,7 +133,6 @@ class ConnectManagerInstrumentationTest : LucaInstrumentationTest() {
             name = "",
             publicHDEKP = "BC2/k5zXF2Yu+Ix2jlDK4bexZDCVWkXgCNCXOTBpIMc8TCAwpZbR75zwMWlfW+USjMOzIRKKXWEDALxstVvkU80=",
             publicHDSKP = "",
-            connectEnrollmentSupported = true,
             postalCode = "12345"
         )
         val messageEncryptionPrivateKey =

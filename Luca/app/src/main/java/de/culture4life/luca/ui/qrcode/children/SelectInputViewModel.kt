@@ -33,7 +33,7 @@ class SelectInputViewModel(app: Application) : BaseQrCodeFlowChildViewModel(app)
                     return@doOnError
                 } else if (it is NoSuchElementException) {
                     errorBuilder.withDescription(R.string.luca_connect_add_certificate_no_qr_code_error_description)
-                        .isExpected()
+                        .isExpected
                 }
 
                 addError(errorBuilder.build())

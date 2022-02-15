@@ -6,6 +6,7 @@ import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentScanQrCodeBinding
 import de.culture4life.luca.ui.qrcode.AddCertificateFlowViewModel
+import io.reactivex.rxjava3.core.Completable
 
 class ScanQrCodeFragment : BaseQrCodeFlowChildFragment<ScanQrCodeViewModel, AddCertificateFlowViewModel>() {
 
@@ -38,6 +39,11 @@ class ScanQrCodeFragment : BaseQrCodeFlowChildFragment<ScanQrCodeViewModel, AddC
             }
         )
         binding.startCameraLinearLayout.isVisible = !isVisible
+    }
+
+    // TODO Find better way to inject barcode content for automated tests.
+    fun processBarcode(barcodeContent: String): Completable {
+        return viewModel.processBarcode(barcodeContent)
     }
 
     companion object {

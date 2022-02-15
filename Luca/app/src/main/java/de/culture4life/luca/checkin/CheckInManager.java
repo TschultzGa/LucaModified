@@ -3,12 +3,11 @@ package de.culture4life.luca.checkin;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static de.culture4life.luca.crypto.HashProvider.TRIMMED_HASH_LENGTH;
-import static de.culture4life.luca.history.HistoryManager.KEEP_DATA_DURATION;
 import static de.culture4life.luca.location.GeofenceManager.MAXIMUM_GEOFENCE_RADIUS;
 import static de.culture4life.luca.location.GeofenceManager.MINIMUM_GEOFENCE_RADIUS;
 import static de.culture4life.luca.location.GeofenceManager.UPDATE_INTERVAL_DEFAULT;
-import static de.culture4life.luca.notification.LucaNotificationManager.NOTIFICATION_ID_EVENT;
-import static de.culture4life.luca.util.SerializationUtil.serializeToBase64;
+import static de.culture4life.luca.notification.LucaNotificationManager.NOTIFICATION_ID_CHECKOUT_TRIGGERED;
+import static de.culture4life.luca.util.SerializationUtil.toBase64;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -48,11 +47,14 @@ import de.culture4life.luca.BuildConfig;
 import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.Manager;
 import de.culture4life.luca.R;
+import de.culture4life.luca.archive.Archiver;
 import de.culture4life.luca.crypto.AsymmetricCipherProvider;
 import de.culture4life.luca.crypto.CryptoManager;
+import de.culture4life.luca.crypto.EciesResult;
 import de.culture4life.luca.crypto.TraceIdWrapper;
 import de.culture4life.luca.crypto.TraceIdWrapperList;
 import de.culture4life.luca.crypto.WrappedSecret;
+import de.culture4life.luca.genuinity.GenuinityManager;
 import de.culture4life.luca.history.HistoryManager;
 import de.culture4life.luca.location.GeofenceException;
 import de.culture4life.luca.location.GeofenceManager;
@@ -67,7 +69,6 @@ import de.culture4life.luca.network.pojo.TraceData;
 import de.culture4life.luca.network.pojo.TraceDeletionRequestData;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
-import de.culture4life.luca.ui.MainActivity;
 import de.culture4life.luca.ui.checkin.CheckInViewModel;
 import de.culture4life.luca.ui.checkin.QrCodeData;
 import de.culture4life.luca.util.SerializationUtil;
@@ -92,11 +93,12 @@ import timber.log.Timber;
 public class CheckInManager extends Manager {
 
     private static final String KEY_CHECK_IN_DATA = "check_in_data_2";
-    private static final String KEY_ARCHIVED_CHECK_IN_DATA = "archived_check_in_data";
+    public static final String KEY_ARCHIVED_CHECK_IN_DATA = "archived_check_in_data";
     private static final String KEY_ADDITIONAL_CHECK_IN_PROPERTIES_DATA = "additional_check_in_properties";
     private static final String KEY_LAST_CHECK_IN_DATA_UPDATE_TIMESTAMP = "last_check_in_data_update_timestamp";
     private static final String KEY_TRACE_ID_WRAPPERS = "tracing_id_wrappers";
     private static final String KEY_PREFIX_TRACING_SECRET = "tracing_secret_";
+    private static final String ALIAS_GUEST_EPHEMERAL_KEY_PAIR = "user_ephemeral_key_pair";
     private static final String ALIAS_SCANNER_EPHEMERAL_KEY_PAIR = "scanner_ephemeral_key_pair";
     public static final String KEY_INCLUDE_ENTRY_POLICY = "include_entry_policy";
     public static final String KEY_ENABLE_AUTOMATIC_CHECK_OUT = "enable_automatic_check_out";
@@ -117,9 +119,11 @@ public class CheckInManager extends Manager {
     private final NetworkManager networkManager;
     private final GeofenceManager geofenceManager;
     private final LocationManager locationManager;
-    private final CryptoManager cryptoManager;
+    private final CryptoManager cryptoManager; // initialization deferred to first use
     private final HistoryManager historyManager;
     private final LucaNotificationManager notificationManager;
+    private final GenuinityManager genuinityManager;
+    private final Archiver<CheckInData> archiver;
 
     private boolean skipMinimumCheckInDurationAssertion;
     private boolean skipMinimumDistanceAssertion;
@@ -144,7 +148,16 @@ public class CheckInManager extends Manager {
 
     private WorkManager workManager;
 
-    public CheckInManager(@NonNull PreferencesManager preferencesManager, @NonNull NetworkManager networkManager, @NonNull GeofenceManager geofenceManager, @NonNull LocationManager locationManager, @NonNull HistoryManager historyManager, @NonNull CryptoManager cryptoManager, @NonNull LucaNotificationManager notificationManager) {
+    public CheckInManager(
+            @NonNull PreferencesManager preferencesManager,
+            @NonNull NetworkManager networkManager,
+            @NonNull GeofenceManager geofenceManager,
+            @NonNull LocationManager locationManager,
+            @NonNull HistoryManager historyManager,
+            @NonNull CryptoManager cryptoManager,
+            @NonNull LucaNotificationManager notificationManager,
+            @NonNull GenuinityManager genuinityManager
+    ) {
         this.preferencesManager = preferencesManager;
         this.networkManager = networkManager;
         this.geofenceManager = geofenceManager;
@@ -152,6 +165,8 @@ public class CheckInManager extends Manager {
         this.historyManager = historyManager;
         this.cryptoManager = cryptoManager;
         this.notificationManager = notificationManager;
+        this.genuinityManager = genuinityManager;
+        archiver = new Archiver<>(preferencesManager, KEY_ARCHIVED_CHECK_IN_DATA, ArchivedCheckInData.class, CheckInData::getTimestamp);
 
         skipMinimumDistanceAssertion = true;
     }
@@ -164,32 +179,37 @@ public class CheckInManager extends Manager {
                 geofenceManager.initialize(context),
                 locationManager.initialize(context),
                 historyManager.initialize(context),
-                cryptoManager.initialize(context),
                 notificationManager.initialize(context)
-        ).andThen(Completable.mergeArray(
-                deleteOldArchivedCheckInData(),
-                preferencesManager.restoreIfAvailable(KEY_CHECK_IN_DATA, CheckInData.class)
-                        .doOnSuccess(restoredCheckInData -> this.checkInData = restoredCheckInData)
-                        .ignoreElement(),
-                Completable.fromAction(() -> {
-                    if (!LucaApplication.isRunningUnitTests()) {
-                        this.workManager = WorkManager.getInstance(context);
-                    }
-                })
-        )).andThen(initializeCheckInDataUpdates())
-                .andThen(enableCheckOutReminderNotification());
+        ).andThen(Completable.fromAction(() -> {
+            if (!LucaApplication.isRunningUnitTests()) {
+                this.workManager = WorkManager.getInstance(context);
+            }
+        })).andThen(Completable.mergeArray(
+                invokeInitializeCheckInData(),
+                invokeStartUpdatingCheckInDataInRegularIntervals(),
+                invokeDeleteOldArchivedCheckInData()
+        ));
+    }
+
+    @Override
+    public void dispose() {
+        archiver.clearCachedData();
+        super.dispose();
     }
 
     /*
         Check-in data updates
      */
 
-    private Completable initializeCheckInDataUpdates() {
-        return Completable.fromAction(() -> managerDisposable.add(startUpdatingCheckInDataInRegularIntervals()
-                .delaySubscription(CHECK_IN_DATA_UPDATE_INITIAL_DELAY, TimeUnit.MILLISECONDS, Schedulers.io())
-                .doOnError(throwable -> Timber.e("Unable to start updating in regular intervals: %s", throwable.toString()))
-                .onErrorComplete()
-                .subscribe()));
+    private Completable invokeInitializeCheckInData() {
+        return invoke(preferencesManager.restoreIfAvailable(KEY_CHECK_IN_DATA, CheckInData.class)
+                .doOnSuccess(restoredCheckInData -> this.checkInData = restoredCheckInData)
+                .ignoreElement()
+                .andThen(enableCheckOutReminderNotification()));
+    }
+
+    private Completable invokeStartUpdatingCheckInDataInRegularIntervals() {
+        return invokeDelayed(startUpdatingCheckInDataInRegularIntervals(), CHECK_IN_DATA_UPDATE_INITIAL_DELAY);
     }
 
     private Completable startUpdatingCheckInDataInRegularIntervals() {
@@ -259,7 +279,7 @@ public class CheckInManager extends Manager {
                     }
                 })
                 .flatMapCompletable(this::processCheckIn)
-                .andThen(preferencesManager.persist(KEY_LAST_CHECK_IN_DATA_UPDATE_TIMESTAMP, System.currentTimeMillis()))
+                .andThen(preferencesManager.persist(KEY_LAST_CHECK_IN_DATA_UPDATE_TIMESTAMP, TimeUtil.getCurrentMillis()))
                 .doOnSubscribe(disposable -> Timber.v("Updating check-in data. useOlderTraceIds = [%b]", useOlderTraceIds))
                 .doOnComplete(() -> Timber.v("Check-in data update complete"))
                 .doOnError(throwable -> Timber.w("Check-in data update failed: %s", throwable.toString()));
@@ -267,7 +287,7 @@ public class CheckInManager extends Manager {
 
     public Single<Long> getDurationSinceLastCheckInDataUpdate() {
         return preferencesManager.restoreOrDefault(KEY_LAST_CHECK_IN_DATA_UPDATE_TIMESTAMP, 0L)
-                .map(lastUpdateTimestamp -> System.currentTimeMillis() - lastUpdateTimestamp);
+                .map(lastUpdateTimestamp -> TimeUtil.getCurrentMillis() - lastUpdateTimestamp);
     }
 
     public Single<Long> getNextRecommendedCheckInDataUpdateDelay() {
@@ -329,7 +349,7 @@ public class CheckInManager extends Manager {
         return networkManager.getLucaEndpointsV3()
                 .flatMap(lucaEndpointsV3 -> lucaEndpointsV3.getScanner(scannerId.toString()))
                 .map(jsonObject -> jsonObject.get("publicKey").getAsString())
-                .flatMap(SerializationUtil::deserializeFromBase64)
+                .flatMap(SerializationUtil::fromBase64)
                 .flatMap(AsymmetricCipherProvider::decodePublicKey);
     }
 
@@ -347,73 +367,52 @@ public class CheckInManager extends Manager {
      * Overview: Check-In via a Printed QR Code</a>
      */
     private Single<CheckInRequestData> generateCheckInData(@NonNull QrCodeData qrCodeData, @NonNull PublicKey locationPublicKey) {
-        return Single.fromCallable(() -> {
-            CheckInRequestData checkInRequestData = new CheckInRequestData();
+        return cryptoManager.initialize(context)
+                .andThen(Single.fromCallable(() -> {
+                    CheckInRequestData requestData = new CheckInRequestData();
 
-            checkInRequestData.setDeviceType(qrCodeData.getDeviceType());
+                    requestData.setDeviceType(qrCodeData.getDeviceType());
 
-            long timestamp = TimeUtil.decodeUnixTimestamp(qrCodeData.getTimestamp())
-                    .flatMap(TimeUtil::roundUnixTimestampDownToMinute).blockingGet();
-            checkInRequestData.setUnixTimestamp(timestamp);
+                    long timestamp = TimeUtil.decodeUnixTimestamp(qrCodeData.getTimestamp())
+                            .flatMap(TimeUtil::roundUnixTimestampDownToMinute).blockingGet();
+                    requestData.setUnixTimestamp(timestamp);
 
-            String serialisedTraceId = serializeToBase64(qrCodeData.getTraceId()).blockingGet();
-            checkInRequestData.setTraceId(serialisedTraceId);
+                    String serialisedTraceId = toBase64(qrCodeData.getTraceId()).blockingGet();
+                    requestData.setTraceId(serialisedTraceId);
 
-            KeyPair scannerEphemeralKeyPair = generateScannerEphemeralKeyPair().blockingGet();
-            persistScannerEphemeralKeyPair(scannerEphemeralKeyPair).blockingAwait();
+                    KeyPair scannerEphemeralKeyPair = cryptoManager.generateKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR).blockingGet();
 
-            String serializedScannerPublicKey = AsymmetricCipherProvider.encode((ECPublicKey) scannerEphemeralKeyPair.getPublic())
-                    .flatMap(SerializationUtil::serializeToBase64)
-                    .blockingGet();
-            checkInRequestData.setScannerEphemeralPublicKey(serializedScannerPublicKey);
+                    String serializedScannerPublicKey = AsymmetricCipherProvider.encode((ECPublicKey) scannerEphemeralKeyPair.getPublic())
+                            .flatMap(SerializationUtil::toBase64)
+                            .blockingGet();
+                    requestData.setScannerEphemeralPublicKey(serializedScannerPublicKey);
 
-            String serializedGuestPublicKey = cryptoManager.getGuestEphemeralKeyPair(qrCodeData.getTraceId())
-                    .flatMap(keyPair -> AsymmetricCipherProvider.encode((ECPublicKey) keyPair.getPublic()))
-                    .flatMap(SerializationUtil::serializeToBase64)
-                    .blockingGet();
-            checkInRequestData.setGuestEphemeralPublicKey(serializedGuestPublicKey);
+                    String serializedGuestPublicKey = getGuestEphemeralKeyPairAlias(qrCodeData.getTraceId())
+                            .flatMap(cryptoManager::getKeyPairPublicKey)
+                            .flatMap(AsymmetricCipherProvider::encode)
+                            .flatMap(SerializationUtil::toBase64)
+                            .blockingGet();
+                    requestData.setGuestEphemeralPublicKey(serializedGuestPublicKey);
 
-            byte[] iv = cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH).blockingGet();
-            String encodedIv = serializeToBase64(iv).blockingGet();
-            checkInRequestData.setIv(encodedIv);
+                    byte[] encodedQrCodeData = ByteBuffer.allocate(75)
+                            .put((byte) 3)
+                            .put(qrCodeData.getKeyId())
+                            .put(qrCodeData.getUserEphemeralPublicKey())
+                            .put(qrCodeData.getVerificationTag())
+                            .put(qrCodeData.getEncryptedData())
+                            .array();
 
-            byte[] diffieHellmanSecret = cryptoManager.getAsymmetricCipherProvider()
-                    .generateSecret(scannerEphemeralKeyPair.getPrivate(), locationPublicKey).blockingGet();
+                    EciesResult eciesResult = cryptoManager.eciesEncrypt(encodedQrCodeData, scannerEphemeralKeyPair, locationPublicKey).blockingGet();
+                    requestData.setReEncryptedQrCodeData(toBase64(eciesResult.getEncryptedData()).blockingGet());
+                    requestData.setMac(toBase64(eciesResult.getMac()).blockingGet());
+                    requestData.setIv(toBase64(eciesResult.getIv()).blockingGet());
 
-            byte[] encryptedQrCodeData = encryptQrCodeData(qrCodeData, iv, diffieHellmanSecret).blockingGet();
-            String serialisedEncryptedQrCodeData = serializeToBase64(encryptedQrCodeData).blockingGet();
-            checkInRequestData.setReEncryptedQrCodeData(serialisedEncryptedQrCodeData);
-
-            String serialisedMac = createQrCodeDataMac(encryptedQrCodeData, diffieHellmanSecret)
-                    .flatMap(SerializationUtil::serializeToBase64).blockingGet();
-            checkInRequestData.setMac(serialisedMac);
-
-            return checkInRequestData;
-        });
-    }
-
-    private Single<byte[]> encryptQrCodeData(@NonNull QrCodeData qrCodeData, @NonNull byte[] iv, @NonNull byte[] diffieHellmanSecret) {
-        return cryptoManager.generateDataEncryptionSecret(diffieHellmanSecret)
-                .flatMap(CryptoManager::createKeyFromSecret)
-                .flatMap(encryptionKey -> Single.fromCallable(
-                        () -> ByteBuffer.allocate(75)
-                                .put((byte) 3)
-                                .put(qrCodeData.getKeyId())
-                                .put(qrCodeData.getUserEphemeralPublicKey())
-                                .put(qrCodeData.getVerificationTag())
-                                .put(qrCodeData.getEncryptedData())
-                                .array())
-                        .flatMap(encodedQrCodeData -> cryptoManager.getSymmetricCipherProvider().encrypt(encodedQrCodeData, iv, encryptionKey)))
-                .doOnSuccess(bytes -> Timber.d("Encrypted QR code data: %s to %s", qrCodeData.toString(), SerializationUtil.serializeToBase64(bytes).blockingGet()));
-    }
-
-    public Single<byte[]> createQrCodeDataMac(byte[] encryptedQrCodeData, @NonNull byte[] diffieHellmanSecret) {
-        return cryptoManager.generateDataAuthenticationSecret(diffieHellmanSecret)
-                .flatMap(CryptoManager::createKeyFromSecret)
-                .flatMap(dataAuthenticationKey -> cryptoManager.getMacProvider().sign(encryptedQrCodeData, dataAuthenticationKey));
+                    return requestData;
+                }));
     }
 
     public Single<Boolean> isCheckedIn() {
+        // TODO: 06.01.22 refactor to subject
         return getCheckInDataIfAvailable()
                 .isEmpty()
                 .map(notCheckedIn -> !notCheckedIn);
@@ -469,7 +468,7 @@ public class CheckInManager extends Manager {
         return getTraceDataFromBackend(useOlderTraceIds)
                 .flatMap(traceData -> TimeUtil.convertFromUnixTimestamp(traceData.getCheckOutTimestamp())
                         .toMaybe()
-                        .map(checkoutTimestamp -> checkoutTimestamp == 0 || checkoutTimestamp > System.currentTimeMillis()))
+                        .map(checkoutTimestamp -> checkoutTimestamp == 0 || checkoutTimestamp > TimeUtil.getCurrentMillis()))
                 .defaultIfEmpty(false)
                 .doOnSubscribe(disposable -> Timber.d("Requesting check-in status from backend"));
     }
@@ -510,47 +509,26 @@ public class CheckInManager extends Manager {
     }
 
     private Single<AdditionalCheckInPropertiesRequestData> generateAdditionalCheckInProperties(@NonNull JsonObject properties, @NonNull byte[] traceId, @NonNull PublicKey locationPublicKey) {
-        return Single.fromCallable(() -> {
-            AdditionalCheckInPropertiesRequestData additionalCheckInProperties = new AdditionalCheckInPropertiesRequestData();
+        return cryptoManager.initialize(context)
+                .andThen(Single.fromCallable(() -> {
+                    AdditionalCheckInPropertiesRequestData requestData = new AdditionalCheckInPropertiesRequestData();
 
-            String serializedTraceId = serializeToBase64(traceId).blockingGet();
-            additionalCheckInProperties.setTraceId(serializedTraceId);
+                    String serializedTraceId = toBase64(traceId).blockingGet();
+                    requestData.setTraceId(serializedTraceId);
 
-            byte[] iv = cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH).blockingGet();
-            String encodedIv = serializeToBase64(iv).blockingGet();
-            additionalCheckInProperties.setIv(encodedIv);
+                    KeyPair scannerEphemeralKeyPair = cryptoManager.getKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR).blockingGet();
+                    String serializedScannerPublicKey = AsymmetricCipherProvider.encode((ECPublicKey) scannerEphemeralKeyPair.getPublic())
+                            .flatMap(SerializationUtil::toBase64).blockingGet();
+                    requestData.setScannerPublicKey(serializedScannerPublicKey);
 
-            KeyPair scannerEphemeralKeyPair = getScannerEphemeralKeyPair().blockingGet();
-            byte[] encryptedProperties = encryptAdditionalCheckInProperties(properties, iv, scannerEphemeralKeyPair.getPrivate(), locationPublicKey).blockingGet();
-            String serializedEncryptedProperties = serializeToBase64(encryptedProperties).blockingGet();
-            additionalCheckInProperties.setEncryptedProperties(serializedEncryptedProperties);
+                    byte[] encodedProperties = new Gson().toJson(properties).getBytes(StandardCharsets.UTF_8);
+                    EciesResult eciesResult = cryptoManager.eciesEncrypt(encodedProperties, scannerEphemeralKeyPair, locationPublicKey).blockingGet();
+                    requestData.setEncryptedProperties(toBase64(eciesResult.getEncryptedData()).blockingGet());
+                    requestData.setMac(toBase64(eciesResult.getMac()).blockingGet());
+                    requestData.setIv(toBase64(eciesResult.getIv()).blockingGet());
 
-            String serializedMac = createAdditionalPropertiesMac(encryptedProperties, scannerEphemeralKeyPair.getPrivate(), locationPublicKey)
-                    .flatMap(SerializationUtil::serializeToBase64).blockingGet();
-            additionalCheckInProperties.setMac(serializedMac);
-
-            String serializedScannerPublicKey = AsymmetricCipherProvider.encode((ECPublicKey) scannerEphemeralKeyPair.getPublic())
-                    .flatMap(SerializationUtil::serializeToBase64).blockingGet();
-            additionalCheckInProperties.setScannerPublicKey(serializedScannerPublicKey);
-
-            return additionalCheckInProperties;
-        });
-    }
-
-    private Single<byte[]> encryptAdditionalCheckInProperties(@NonNull JsonObject properties, @NonNull byte[] iv, @NonNull PrivateKey scannerEphemeralPrivateKey, @NonNull PublicKey locationPublicKey) {
-        return cryptoManager.getAsymmetricCipherProvider().generateSecret(scannerEphemeralPrivateKey, locationPublicKey)
-                .flatMap(cryptoManager::generateDataEncryptionSecret)
-                .flatMap(CryptoManager::createKeyFromSecret)
-                .flatMap(encryptionKey -> Single.fromCallable(() -> new Gson().toJson(properties))
-                        .map(serializedProperties -> serializedProperties.getBytes(StandardCharsets.UTF_8))
-                        .flatMap(encodedQrCodeData -> cryptoManager.getSymmetricCipherProvider().encrypt(encodedQrCodeData, iv, encryptionKey)));
-    }
-
-    public Single<byte[]> createAdditionalPropertiesMac(byte[] encryptedProperties, @NonNull PrivateKey scannerEphemeralPrivateKey, @NonNull PublicKey locationPublicKey) {
-        return cryptoManager.getAsymmetricCipherProvider().generateSecret(scannerEphemeralPrivateKey, locationPublicKey)
-                .flatMap(cryptoManager::generateDataAuthenticationSecret)
-                .flatMap(CryptoManager::createKeyFromSecret)
-                .flatMap(dataAuthenticationKey -> cryptoManager.getMacProvider().sign(encryptedProperties, dataAuthenticationKey));
+                    return requestData;
+                }));
     }
 
     /*
@@ -611,7 +589,7 @@ public class CheckInManager extends Manager {
                 .flatMap(checkOutRequestData -> getCheckedInTraceId()
                         .toSingle()
                         .flatMap(traceId -> Completable.mergeArray(
-                                SerializationUtil.serializeToBase64(traceId)
+                                SerializationUtil.toBase64(traceId)
                                         .doOnSuccess(checkOutRequestData::setTraceId)
                                         .ignoreElement(),
                                 TimeUtil.getCurrentUnixTimestamp()
@@ -674,12 +652,11 @@ public class CheckInManager extends Manager {
     private Completable showAutomaticCheckoutNotification() {
         return Completable.fromAction(() -> {
             NotificationCompat.Builder notificationBuilder = notificationManager.createEventNotificationBuilder(
-                    MainActivity.class,
-                    R.string.notification_auto_checkout_triggered_title,
+                    notificationManager.createOpenAppIntent(),
+                    context.getString(R.string.notification_auto_checkout_triggered_title),
                     context.getString(R.string.notification_auto_checkout_triggered_description)
             );
-
-            notificationManager.showNotification(NOTIFICATION_ID_EVENT, notificationBuilder.build())
+            notificationManager.showNotification(NOTIFICATION_ID_CHECKOUT_TRIGGERED, notificationBuilder.build())
                     .subscribe();
         });
     }
@@ -760,7 +737,8 @@ public class CheckInManager extends Manager {
     private Completable showCheckOutReminderNotification() {
         return notificationManager.showNotificationUntilDisposed(
                 LucaNotificationManager.NOTIFICATION_ID_CHECKOUT_REMINDER,
-                notificationManager.createCheckOutReminderNotificationBuilder(MainActivity.class).build());
+                notificationManager.createCheckOutReminderNotificationBuilder().build()
+        );
     }
 
     private Maybe<Long> calculateDurationToCheckOutReminder() {
@@ -780,28 +758,28 @@ public class CheckInManager extends Manager {
     }
 
     private Single<TraceDeletionRequestData> generateDeletionRequestData(@NonNull String traceId) {
-        return Single.fromCallable(() -> {
-            byte[] traceIdBytes = CryptoManager.decodeFromString(traceId).blockingGet();
-            PrivateKey privateKey = cryptoManager.getGuestEphemeralKeyPair(traceIdBytes)
-                    .map(KeyPair::getPrivate)
-                    .blockingGet();
+        return cryptoManager.initialize(context)
+                .andThen(Single.fromCallable(() -> {
+                    byte[] traceIdBytes = SerializationUtil.fromBase64(traceId).blockingGet();
+                    PrivateKey privateKey = getGuestEphemeralKeyPairAlias(traceIdBytes)
+                            .flatMap(cryptoManager::getKeyPairPrivateKey)
+                            .blockingGet();
 
-            long timestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet();
-            byte[] timestampBytes = TimeUtil.encodeUnixTimestamp(timestamp).blockingGet();
+                    long timestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet();
+                    byte[] timestampBytes = TimeUtil.encodeUnixTimestamp(timestamp).blockingGet();
 
-            byte[] signedData = CryptoManager.concatenate(
-                    "DELETE_TRACE".getBytes(StandardCharsets.UTF_8),
-                    traceIdBytes,
-                    timestampBytes
-            ).blockingGet();
+                    byte[] signedData = CryptoManager.concatenate(
+                            "DELETE_TRACE".getBytes(StandardCharsets.UTF_8),
+                            traceIdBytes,
+                            timestampBytes
+                    ).blockingGet();
 
-            String encodedSignature = cryptoManager.getSignatureProvider()
-                    .sign(signedData, privateKey)
-                    .flatMap(CryptoManager::encodeToString)
-                    .blockingGet();
+                    String encodedSignature = cryptoManager.ecdsa(signedData, privateKey)
+                            .flatMap(SerializationUtil::toBase64)
+                            .blockingGet();
 
-            return new TraceDeletionRequestData(traceId, timestamp, encodedSignature);
-        });
+                    return new TraceDeletionRequestData(traceId, timestamp, encodedSignature);
+                }));
     }
 
     public Completable deleteCheckInLocally(@NonNull String traceId) {
@@ -855,7 +833,11 @@ public class CheckInManager extends Manager {
     public Maybe<Long> getCurrentCheckInDuration() {
         return getCheckInDataIfAvailable()
                 .map(CheckInData::getTimestamp)
-                .map(checkInTimestamp -> System.currentTimeMillis() - checkInTimestamp);
+                .flatMapSingle(checkInTimestamp -> genuinityManager
+                        .initialize(context)
+                        .andThen(genuinityManager.getOrFetchOrRestoreServerTimeOffset().onErrorReturnItem(0L))
+                        .map(serverOffset -> TimeUtil.getCurrentMillis() - checkInTimestamp - serverOffset)
+                );
     }
 
     public Maybe<Location> getVenueLocation() {
@@ -971,20 +953,8 @@ public class CheckInManager extends Manager {
         Archive
      */
 
-    public Completable addCheckInDataToArchive(@NonNull CheckInData checkInData) {
-        return getArchivedCheckInData()
-                .mergeWith(Observable.just(checkInData))
-                .toList()
-                .map(ArchivedCheckInData::new)
-                .flatMapCompletable(archivedCheckInData -> preferencesManager.persist(KEY_ARCHIVED_CHECK_IN_DATA, archivedCheckInData))
-                .doOnComplete(() -> Timber.i("Added check-in data to archive: %s", checkInData));
-    }
-
     public Observable<CheckInData> getArchivedCheckInData() {
-        return preferencesManager.restoreIfAvailable(KEY_ARCHIVED_CHECK_IN_DATA, ArchivedCheckInData.class)
-                .map(ArchivedCheckInData::getCheckIns)
-                .defaultIfEmpty(new ArrayList<>())
-                .flatMapObservable(Observable::fromIterable);
+        return archiver.getData();
     }
 
     public Maybe<CheckInData> getArchivedCheckInData(@NonNull String traceId) {
@@ -993,13 +963,18 @@ public class CheckInManager extends Manager {
                 .firstElement();
     }
 
+    private Completable invokeDeleteOldArchivedCheckInData() {
+        return invokeDelayed(deleteOldArchivedCheckInData(), TimeUnit.SECONDS.toMillis(3));
+    }
+
+    public Completable addCheckInDataToArchive(@NonNull CheckInData checkInData) {
+        return archiver.addData(checkInData);
+    }
+
     public Completable deleteOldArchivedCheckInData() {
-        return getArchivedCheckInData()
-                .filter(checkInData -> checkInData.getTimestamp() > System.currentTimeMillis() - KEEP_DATA_DURATION)
-                .toList()
-                .map(ArchivedCheckInData::new)
-                .flatMapCompletable(archivedCheckInData -> preferencesManager.persist(KEY_ARCHIVED_CHECK_IN_DATA, archivedCheckInData))
-                .doOnComplete(() -> Timber.d("Deleted old archived check-in data"));
+        return archiver.deleteDataOlderThan()
+                .doOnComplete(() -> Timber.d("Deleted old archived check-in data"))
+                .doOnError(throwable -> Timber.w("Unable to delete old check-in data: %s", throwable.toString()));
     }
 
     /*
@@ -1032,7 +1007,7 @@ public class CheckInManager extends Manager {
 
     private Observable<TraceData> getTraceDataFromBackend(@NonNull List<byte[]> traceIds) {
         return Observable.fromIterable(traceIds)
-                .flatMapSingle(SerializationUtil::serializeToBase64)
+                .flatMapSingle(SerializationUtil::toBase64)
                 .toList()
                 .filter(serializedTraceIds -> !serializedTraceIds.isEmpty())
                 .map(serializedTraceIds -> {
@@ -1053,7 +1028,7 @@ public class CheckInManager extends Manager {
     public Maybe<byte[]> getCheckedInTraceId() {
         return getCheckInDataIfAvailable()
                 .map(CheckInData::getTraceId)
-                .flatMapSingle(SerializationUtil::deserializeFromBase64);
+                .flatMapSingle(SerializationUtil::fromBase64);
     }
 
     public Single<Boolean> hasRecentTraceIds(boolean useOlderTraceIds) {
@@ -1066,7 +1041,7 @@ public class CheckInManager extends Manager {
         return getTraceIdWrappers()
                 .filter(traceIdWrapper -> {
                     long creationTimestamp = TimeUtil.convertFromUnixTimestamp(traceIdWrapper.getTimestamp()).blockingGet();
-                    long age = System.currentTimeMillis() - creationTimestamp;
+                    long age = TimeUtil.getCurrentMillis() - creationTimestamp;
                     if (useOlderTraceIds) {
                         return age > MAXIMUM_YOUNGER_TRACE_ID_AGE;
                     } else {
@@ -1102,13 +1077,13 @@ public class CheckInManager extends Manager {
     }
 
     public Single<byte[]> generateTraceId(@NonNull UUID userId, long roundedUnixTimestamp) {
-        return Single.zip(CryptoManager.encode(userId), TimeUtil.encodeUnixTimestamp(roundedUnixTimestamp), Pair::new)
+        return cryptoManager.initialize(context)
+                .andThen(Single.zip(CryptoManager.encode(userId), TimeUtil.encodeUnixTimestamp(roundedUnixTimestamp), Pair::new))
                 .flatMap(encodedDataPair -> CryptoManager.concatenate(encodedDataPair.first, encodedDataPair.second))
                 .flatMap(encodedData -> getCurrentTracingSecret()
-                        .flatMap(CryptoManager::createKeyFromSecret)
-                        .flatMap(traceKey -> cryptoManager.getMacProvider().sign(encodedData, traceKey)))
+                        .flatMap(tracingSecret -> cryptoManager.hmac(encodedData, tracingSecret)))
                 .flatMap(traceId -> CryptoManager.trim(traceId, TRIMMED_HASH_LENGTH))
-                .doOnSuccess(traceId -> Timber.d("Generated new trace ID: %s", SerializationUtil.serializeToBase64(traceId).blockingGet()));
+                .doOnSuccess(traceId -> Timber.d("Generated new trace ID: %s", SerializationUtil.toBase64(traceId).blockingGet()));
     }
 
     /**
@@ -1140,13 +1115,11 @@ public class CheckInManager extends Manager {
 
     /**
      * Delete all trace IDs and their associated user ephemeral key pair that do not belong to any check-in.
-     *
-     * @see CryptoManager#deleteGuestEphemeralKeyPair
      */
     public Completable deleteUnusedTraceData() {
         Observable<String> allTraceIds = getTraceIdWrappers()
                 .map(TraceIdWrapper::getTraceId)
-                .flatMapSingle(CryptoManager::encodeToString);
+                .flatMapSingle(SerializationUtil::toBase64);
 
         Observable<String> checkedInTraceIds = getArchivedTraceIds();
 
@@ -1160,9 +1133,11 @@ public class CheckInManager extends Manager {
                 }
         ).flatMapObservable(Observable::fromIterable);
 
-        return discardableTraceIds
-                .flatMapSingle(CryptoManager::decodeFromString)
-                .flatMapCompletable(cryptoManager::deleteGuestEphemeralKeyPair)
+        return cryptoManager.initialize(context)
+                .andThen(discardableTraceIds)
+                .flatMapSingle(SerializationUtil::fromBase64)
+                .flatMapSingle(CheckInManager::getGuestEphemeralKeyPairAlias)
+                .flatMapCompletable(cryptoManager::deleteKeyPair)
                 .andThen(preferencesManager.delete(KEY_TRACE_ID_WRAPPERS));
     }
 
@@ -1194,7 +1169,8 @@ public class CheckInManager extends Manager {
     }
 
     private Single<byte[]> generateTracingSecret() {
-        return cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH)
+        return cryptoManager.initialize(context)
+                .andThen(cryptoManager.generateSecureRandomData(TRIMMED_HASH_LENGTH))
                 .doOnSuccess(bytes -> Timber.d("Generated new tracing secret"));
     }
 
@@ -1219,7 +1195,8 @@ public class CheckInManager extends Manager {
     }
 
     public Observable<Pair<Long, byte[]>> restoreRecentTracingSecrets(long duration) {
-        return generateRecentStartOfDayTimestamps(duration)
+        return cryptoManager.initialize(context)
+                .andThen(generateRecentStartOfDayTimestamps(duration))
                 .flatMapMaybe(startOfDayTimestamp -> cryptoManager.restoreWrappedSecretIfAvailable(KEY_PREFIX_TRACING_SECRET + startOfDayTimestamp)
                         .map(secret -> new Pair<>(startOfDayTimestamp, secret)));
     }
@@ -1231,42 +1208,6 @@ public class CheckInManager extends Manager {
     }
 
     /*
-        Scanner ephemeral key pair
-     */
-
-    /**
-     * Get previously persisted scanner ephemeral key - used during self check-in to complete
-     * re-encryption of {@link CheckInRequestData} usually performed by the Scanner Frontend.
-     *
-     * @see <a href="https://luca-app.de/securityoverview/processes/guest_self_checkin.html">Security
-     * Overview: Check-In via a Printed QR Code</a>
-     */
-    public Single<KeyPair> getScannerEphemeralKeyPair() {
-        return cryptoManager.getAsymmetricCipherProvider().getKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR);
-    }
-
-    /**
-     * Generate a new scanner ephemeral key - used during self check-in to re-encrypt {@link
-     * CheckInRequestData}.
-     *
-     * @see CheckInManager#generateCheckInData(QrCodeData, UUID)
-     */
-    public Single<KeyPair> generateScannerEphemeralKeyPair() {
-        return cryptoManager.getAsymmetricCipherProvider().generateKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR, context)
-                .doOnSuccess(keyPair -> Timber.d("Generated new scanner ephemeral key pair: %s", keyPair.getPublic()));
-    }
-
-    /**
-     * Persist given scanner ephemeral keypair to BC keystore.
-     *
-     * @param keyPair ephemeral scanner key to persist
-     */
-    public Completable persistScannerEphemeralKeyPair(@NonNull KeyPair keyPair) {
-        return cryptoManager.getAsymmetricCipherProvider().setKeyPair(ALIAS_SCANNER_EPHEMERAL_KEY_PAIR, keyPair)
-                .andThen(cryptoManager.persistKeyStoreToFile());
-    }
-
-    /*
         Utilities
      */
 
@@ -1275,6 +1216,11 @@ public class CheckInManager extends Manager {
                 .map(uuid -> url.contains("luca-app.de/webapp/"))
                 .onErrorReturnItem(false)
                 .blockingGet();
+    }
+
+    public static Single<String> getGuestEphemeralKeyPairAlias(byte[] traceId) {
+        return SerializationUtil.toBase64(traceId)
+                .map(serializedTraceId -> ALIAS_GUEST_EPHEMERAL_KEY_PAIR + "-" + serializedTraceId);
     }
 
     public void setSkipMinimumCheckInDurationAssertion(boolean skipMinimumCheckInDurationAssertion) {

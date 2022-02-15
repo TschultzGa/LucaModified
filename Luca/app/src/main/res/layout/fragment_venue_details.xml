@@ -68,25 +68,16 @@
         app:layout_constraintTop_toBottomOf="@id/headingTextViewsLayout" />
 
     <TextView
-        android:id="@+id/subHeadingTextView"
-        style="@style/TextAppearance.Luca.Headline3"
-        android:text="@string/venue_checked_in"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
-
-    <TextView
         android:id="@+id/checkInTimeTextView"
         style="@style/TextAppearance.Luca.Body1"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_margin="@dimen/spacing_default"
         android:text="@string/venue_check_in_time"
-        app:layout_constraintEnd_toEndOf="@id/subHeadingTextView"
-        app:layout_constraintStart_toStartOf="@id/subHeadingTextView"
-        app:layout_constraintTop_toBottomOf="@id/subHeadingTextView" />
-
-
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
+    
     <TextView
         android:id="@+id/additionalDataTitleTextView"
         style="@style/TextAppearance.Luca.Body1"
@@ -96,8 +87,8 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="@string/dummy_heading"
-        app:layout_constraintEnd_toEndOf="@id/subHeadingTextView"
-        app:layout_constraintStart_toStartOf="@id/subHeadingTextView"
+        app:layout_constraintEnd_toEndOf="@id/checkInTimeTextView"
+        app:layout_constraintStart_toStartOf="@id/checkInTimeTextView"
         app:layout_constraintTop_toBottomOf="@id/checkInTimeTextView" />
 
     <TextView
@@ -108,8 +99,8 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="@string/dummy_heading"
-        app:layout_constraintEnd_toEndOf="@id/subHeadingTextView"
-        app:layout_constraintStart_toStartOf="@id/subHeadingTextView"
+        app:layout_constraintEnd_toEndOf="@id/checkInTimeTextView"
+        app:layout_constraintStart_toStartOf="@id/checkInTimeTextView"
         app:layout_constraintTop_toBottomOf="@id/additionalDataTitleTextView" />
 
 
@@ -121,9 +112,11 @@
         android:layout_margin="@dimen/spacing_default"
         android:fontFamily="monospace"
         android:gravity="center"
+        android:maxLines="1"
         android:text="00:00:00"
         android:textSize="@dimen/font_size_xxlarge"
         android:typeface="monospace"
+        app:autoSizeTextType="uniform"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/additionalDataValueTextView"
@@ -201,11 +194,10 @@
                 android:id="@+id/reportImageView"
                 android:layout_width="?attr/minTouchTargetSize"
                 android:layout_height="match_parent"
-                android:layout_marginStart="@dimen/spacing_default"
                 android:layout_marginEnd="@dimen/spacing_default"
                 android:contentDescription="@string/venue_url_report_title"
                 android:scaleType="centerInside"
-                android:src="@drawable/ic_warning_triangle" />
+                android:src="@drawable/ic_exclamation_mark_white" />
 
         </LinearLayout>
 
@@ -225,14 +217,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="48dp"
+            android:layout_marginBottom="@dimen/spacing_default"
             android:labelFor="@id/automaticCheckoutToggle"
             android:text="@string/venue_automatic_check_out"
+            android:maxLines="2"
+            app:autoSizeTextType="uniform"
             app:layout_constrainedWidth="true"
-            app:layout_constraintBottom_toBottomOf="@id/automaticCheckoutToggle"
+            app:layout_constraintBottom_toTopOf="@id/slideToActView"
             app:layout_constraintEnd_toStartOf="@id/automaticCheckoutToggle"
             app:layout_constraintHorizontal_bias="0"
-            app:layout_constraintStart_toStartOf="@id/slideToActView"
-            app:layout_constraintTop_toTopOf="@id/automaticCheckoutToggle" />
+            app:layout_constraintStart_toStartOf="@id/slideToActView" />
 
         <ImageView
             android:id="@+id/automaticCheckoutInfoImageView"
@@ -252,11 +246,11 @@
             style="@style/ThemeOverlay.Luca.Switch.Muted"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/spacing_default"
             android:accessibilityTraversalAfter="@id/automaticCheckOutTextView"
             android:checked="false"
-            app:layout_constraintBottom_toTopOf="@id/slideToActView"
+            app:layout_constraintBottom_toBottomOf="@id/automaticCheckOutTextView"
             app:layout_constraintEnd_toEndOf="@id/slideToActView"
+            app:layout_constraintTop_toTopOf="@id/automaticCheckOutTextView"
             app:switchPadding="@dimen/spacing_large" />
 
         <androidx.constraintlayout.widget.Group
@@ -271,6 +265,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/spacing_large"
+            android:focusable="true"
             android:contentDescription="@string/venue_check_out_content_description"
             app:area_margin="0dp"
             app:bump_vibration="50"

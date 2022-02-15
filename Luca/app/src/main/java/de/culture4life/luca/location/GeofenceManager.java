@@ -1,5 +1,7 @@
 package de.culture4life.luca.location;
 
+import static android.app.PendingIntent.FLAG_IMMUTABLE;
+import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.location.LocationManager.PROVIDERS_CHANGED_ACTION;
 
 import android.app.PendingIntent;
@@ -7,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -300,7 +303,11 @@ public class GeofenceManager extends Manager {
         synchronized (pendingIntentsMap) {
             pendingIntent = pendingIntentsMap.get(geofencingRequest);
             if (pendingIntent == null) {
-                pendingIntent = PendingIntent.getBroadcast(context, geofencingRequest.hashCode(), new Intent(context, GeofenceBroadcastReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    pendingIntent = PendingIntent.getBroadcast(context, geofencingRequest.hashCode(), new Intent(context, GeofenceBroadcastReceiver.class), FLAG_IMMUTABLE | FLAG_UPDATE_CURRENT);
+                } else {
+                    pendingIntent = PendingIntent.getBroadcast(context, geofencingRequest.hashCode(), new Intent(context, GeofenceBroadcastReceiver.class), FLAG_UPDATE_CURRENT);
+                }
                 pendingIntentsMap.put(geofencingRequest, pendingIntent);
             }
         }

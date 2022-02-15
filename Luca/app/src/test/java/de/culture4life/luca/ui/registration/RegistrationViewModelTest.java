@@ -1,5 +1,7 @@
 package de.culture4life.luca.ui.registration;
 
+import static org.junit.Assert.assertEquals;
+
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -10,8 +12,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
-
-import static org.junit.Assert.assertEquals;
 
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)

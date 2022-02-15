@@ -5,25 +5,22 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
+import de.culture4life.luca.archive.Archiver
 import de.culture4life.luca.checkin.CheckInManager
 import de.culture4life.luca.crypto.*
 import de.culture4life.luca.crypto.CryptoManager.Companion.concatenate
-import de.culture4life.luca.crypto.CryptoManager.Companion.encodeToString
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.network.endpoints.LucaEndpointsV3
 import de.culture4life.luca.network.pojo.*
-import de.culture4life.luca.network.pojo.TransferData.TraceSecretWrapper
 import de.culture4life.luca.preference.PreferencesManager
-import de.culture4life.luca.registration.RegistrationManager.Companion.USER_ACTIVITY_REPORT_INTERVAL
 import de.culture4life.luca.util.SerializationUtil
-import de.culture4life.luca.util.TimeUtil.convertToUnixTimestamp
-import de.culture4life.luca.util.addTo
+import de.culture4life.luca.util.TimeUtil
+import de.culture4life.luca.util.encodeToBase64
+import de.culture4life.luca.util.toUnixTimestamp
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.functions.Predicate
-import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 import java.net.HttpURLConnection
 import java.nio.charset.StandardCharsets
@@ -40,12 +37,15 @@ import java.util.concurrent.TimeUnit
 class RegistrationManager(
     private val preferencesManager: PreferencesManager,
     private val networkManager: NetworkManager,
-    private val cryptoManager: CryptoManager
+    private val cryptoManager: CryptoManager // initialization deferred to first use
 ) : Manager() {
 
     // we can't pass the check-in manager via the constructor
     // because we have a cyclic dependency
+    // initialization deferred to first use
     private lateinit var checkInManager: CheckInManager
+
+    private val archiver = Archiver(preferencesManager, KEY_ARCHIVED_REGISTRATION_DATA, RegistrationArchive::class.java) { it.registrationTimestamp }
 
     private var cachedRegistrationData: RegistrationData? = null
 
@@ -53,16 +53,21 @@ class RegistrationManager(
         return Completable.mergeArray(
             preferencesManager.initialize(context),
             networkManager.initialize(context),
-            cryptoManager.initialize(context)
-        ).andThen(Completable.fromAction {
-            this.context = context
-            checkInManager = application.checkInManager
-        }).andThen(
+        ).andThen(
+            Completable.fromAction {
+                checkInManager = application.checkInManager
+            }
+        ).andThen(
             Completable.mergeArray(
                 invokeReportActiveUserIfRequired(),
                 invokeRemovalOfOldDataFromArchive(),
             )
         )
+    }
+
+    override fun dispose() {
+        archiver.clearCachedData()
+        super.dispose()
     }
 
     /**
@@ -77,8 +82,8 @@ class RegistrationManager(
                         networkManager.lucaEndpointsV3
                             .flatMapCompletable { endpoint: LucaEndpointsV3 -> endpoint.deleteUser(userId.toString(), deletionRequestData) }
                             .onErrorResumeNext {
-                                if (NetworkManager.isHttpException(it, HttpURLConnection.HTTP_FORBIDDEN)
-                                    && !LucaApplication.IS_USING_STAGING_ENVIRONMENT
+                                if (NetworkManager.isHttpException(it, HttpURLConnection.HTTP_FORBIDDEN) &&
+                                    !LucaApplication.IS_USING_STAGING_ENVIRONMENT
                                 ) {
                                     // The deletion failed because the signature verification failed.
                                     // However, this is an unrecoverable error that prevents the user
@@ -93,13 +98,13 @@ class RegistrationManager(
     }
 
     private fun createDeletionData(userIdParam: UUID): Single<UserDeletionRequestData> {
-        return Single.just(userIdParam)
+        return cryptoManager.initialize(context)
+            .andThen(Single.just(userIdParam))
             .map(UUID::toByteArray)
             .flatMap { encodedUserId -> concatenate(UserDeletionRequestData.DELETE_USER, encodedUserId) }
             .flatMap { data ->
-                cryptoManager.getKeyPairPrivateKey(CryptoManager.ALIAS_GUEST_KEY_PAIR)
-                    .flatMap { cryptoManager.signatureProvider.sign(data, it) }
-                    .flatMap(SerializationUtil::serializeToBase64)
+                cryptoManager.ecdsa(data, ALIAS_GUEST_KEY_PAIR)
+                    .flatMap(SerializationUtil::toBase64)
                     .onErrorReturnItem("")
                     .map(::UserDeletionRequestData)
             }
@@ -216,15 +221,15 @@ class RegistrationManager(
                     getRegistrationData()
                         .doOnSuccess {
                             it.id = userId
-                            it.registrationTimestamp = System.currentTimeMillis()
+                            it.registrationTimestamp = TimeUtil.getCurrentMillis()
                         }
                         .flatMapCompletable {
                             Completable.mergeArray(
                                 persistRegistrationData(it),
-                                addToArchive(it)
+                                archiver.addData(it)
                             )
                         }
-                        .andThen(preferencesManager.persist(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, System.currentTimeMillis()))
+                        .andThen(preferencesManager.persist(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, TimeUtil.getCurrentMillis()))
                 )
             }
     }
@@ -253,7 +258,7 @@ class RegistrationManager(
                             .flatMapCompletable { lucaEndpointsV3 ->
                                 lucaEndpointsV3.updateUser(userId.toString(), registrationRequestData)
                             }
-                            .andThen(preferencesManager.persist(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, System.currentTimeMillis()))
+                            .andThen(preferencesManager.persist(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, TimeUtil.getCurrentMillis()))
                     }
             }
             .doOnComplete { Timber.i("Updated user") }
@@ -268,15 +273,14 @@ class RegistrationManager(
     }
 
     private fun invokeReportActiveUserIfRequired(): Completable {
-        return Completable.fromAction {
-            managerDisposable.add(hasCompletedRegistration()
+        return invokeDelayed(
+            hasCompletedRegistration()
                 .filter { it }
                 .flatMapCompletable { reportActiveUser() }
-                .subscribeOn(Schedulers.io())
                 .doOnError { throwable -> Timber.w("Unable to report active user: %s", throwable.toString()) }
-                .retryWhen { error -> error.delay(10, TimeUnit.SECONDS) }
-                .subscribe())
-        }
+                .retryWhen { error -> error.delay(10, TimeUnit.SECONDS) },
+            TimeUnit.SECONDS.toMillis(2)
+        )
     }
 
     /**
@@ -287,10 +291,10 @@ class RegistrationManager(
      */
     fun reportActiveUser(): Completable {
         return preferencesManager.restoreOrDefault(LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, 0L)
-            .map { System.currentTimeMillis() - it }
+            .map { TimeUtil.getCurrentMillis() - it }
             .flatMapCompletable {
                 if (it >= USER_ACTIVITY_REPORT_INTERVAL) {
-                    updateUser()
+                    registerUser()
                 } else {
                     Completable.complete()
                 }
@@ -309,14 +313,15 @@ class RegistrationManager(
      * Overview: Secrets](https://luca-app.de/securityoverview/properties/secrets.html.term-guest-keypair)
      */
     fun createUserRegistrationRequestData(): Single<UserRegistrationRequestData> {
-        return getRegistrationData()
+        return cryptoManager.initialize(context)
+            .andThen(getRegistrationData())
             .map(::ContactData)
             .flatMap(::encryptContactData)
             .flatMap { (encryptedData, iv) ->
                 Single.fromCallable {
                     val mac = createContactDataMac(encryptedData).blockingGet()
                     val signature = createContactDataSignature(encryptedData, mac, iv).blockingGet()
-                    val publicKey = cryptoManager.getKeyPairPublicKey(CryptoManager.ALIAS_GUEST_KEY_PAIR).blockingGet()
+                    val publicKey = cryptoManager.getKeyPairPublicKey(ALIAS_GUEST_KEY_PAIR).blockingGet()
                     UserRegistrationRequestData().apply {
                         this.encryptedContactData = encryptedData.encodeToBase64()
                         this.iv = iv.encodeToBase64()
@@ -341,13 +346,13 @@ class RegistrationManager(
      * Overview: Encrypting the Contact Data](https://luca-app.de/securityoverview/processes/guest_registration.html.encrypting-the-contact-data)
      */
     private fun encryptContactData(contactData: ContactData): Single<Pair<ByteArray, ByteArray>> {
-        return SerializationUtil.serializeToJson(contactData)
+        return SerializationUtil.toJson(contactData)
             .map { contactDataJson -> contactDataJson.toByteArray(StandardCharsets.UTF_8) }
             .flatMap { encodedContactData ->
                 Single.zip(
                     cryptoManager.getDataSecret()
                         .flatMap(cryptoManager::generateDataEncryptionSecret)
-                        .map { it.toSecretKey() },
+                        .map(ByteArray::toSecretKey),
                     cryptoManager.generateSecureRandomData(HashProvider.TRIMMED_HASH_LENGTH),
                     ::Pair
                 ).flatMap { (key, iv) ->
@@ -368,8 +373,7 @@ class RegistrationManager(
     private fun createContactDataMac(encryptedContactData: ByteArray): Single<ByteArray> {
         return cryptoManager.getDataSecret()
             .flatMap(cryptoManager::generateDataAuthenticationSecret)
-            .map(ByteArray::toSecretKey)
-            .flatMap { cryptoManager.macProvider.sign(encryptedContactData, it) }
+            .flatMap { cryptoManager.hmac(encryptedContactData, it) }
     }
 
     /**
@@ -380,10 +384,7 @@ class RegistrationManager(
      */
     private fun createContactDataSignature(encryptedContactData: ByteArray, mac: ByteArray, iv: ByteArray): Single<ByteArray> {
         return concatenate(encryptedContactData, mac, iv)
-            .flatMap { concatenatedData ->
-                cryptoManager.getKeyPairPrivateKey(CryptoManager.ALIAS_GUEST_KEY_PAIR)
-                    .flatMap { cryptoManager.signatureProvider.sign(concatenatedData, it) }
-            }
+            .flatMap { cryptoManager.ecdsa(it, ALIAS_GUEST_KEY_PAIR) }
     }
     /*
         Data transfer request
@@ -419,18 +420,18 @@ class RegistrationManager(
      * Overview: Secrets](https://www.luca-app.de/securityoverview/properties/secrets.html.term-guest-data-transfer-object)
      */
     private fun createDataTransferRequestData(days: Int): Single<DataTransferRequestData> {
-        return createTransferData(days)
+        return cryptoManager.initialize(context)
+            .andThen(createTransferData(days))
             .doOnSuccess { Timber.i("Encrypting transfer data: %s", it) }
-            .flatMap(::encryptTransferData)
-            .map { (encryptedTransferData, iv) ->
+            .flatMap(SerializationUtil::toJson)
+            .map(String::toByteArray)
+            .flatMap(cryptoManager::eciesEncrypt)
+            .map { eciesData ->
                 DataTransferRequestData().apply {
-                    this.encryptedContactData = encryptedTransferData.encodeToBase64()
-                    this.iv = iv.encodeToBase64()
-                    this.mac = createTransferDataMac(encryptedTransferData)
-                        .map(ByteArray::encodeToBase64)
-                        .blockingGet()
-                    this.guestKeyPairPublicKey = cryptoManager.getKeyPairPublicKey(CryptoManager.ALIAS_GUEST_KEY_PAIR)
-                        .flatMap(AsymmetricCipherProvider::encode)
+                    this.encryptedContactData = eciesData.encryptedData.encodeToBase64()
+                    this.iv = eciesData.iv.encodeToBase64()
+                    this.mac = eciesData.mac.encodeToBase64()
+                    this.guestKeyPairPublicKey = AsymmetricCipherProvider.encode(eciesData.ephemeralPublicKey)
                         .map(ByteArray::encodeToBase64)
                         .blockingGet()
                     this.dailyKeyPairPublicKeyId = cryptoManager.getDailyPublicKey()
@@ -441,123 +442,65 @@ class RegistrationManager(
     }
 
     /**
-     * Create guest data transfer object containing tracing secrets (previous 14 days), user ID and
-     * the user's data secret.
+     * Create guest data transfer object containing tracing secrets, data secrets and user IDs.
      *
-     * @return [TransferData]
-     * @see [Security
-     * Overview: Accessing the Infected Guest’s Tracing Secrets](https://www.luca-app.de/securityoverview/processes/tracing_access_to_history.html.accessing-the-infected-guest-s-tracing-secrets)
+     * @see [Tracing the Check-In History of an Infected Guest](https://luca-app.de/securityoverview/processes/tracing_access_to_history.html?highlight=transfer#accessing-the-infected-guest-s-tracing-secrets)
      */
-    fun createTransferData(days: Int): Single<TransferData> {
-        return Single.fromCallable {
-            TransferData().apply {
-                userId = getUserIdIfAvailable()
-                    .toSingle()
-                    .map(UUID::toString)
-                    .blockingGet()
-                traceSecretWrappers = checkInManager.initialize(context)
-                    .andThen(checkInManager.restoreRecentTracingSecrets(TimeUnit.DAYS.toMillis(days.toLong())))
-                    .map { pair ->
-                        val traceSecretWrapper = TraceSecretWrapper()
-                        traceSecretWrapper.timestamp = convertToUnixTimestamp(pair.first!!).blockingGet()
-                        traceSecretWrapper.secret = encodeToString(pair.second!!).blockingGet()
-                        traceSecretWrapper
+    private fun createTransferData(days: Int): Single<TransferData> {
+        return cryptoManager.initialize(context)
+            .andThen(
+                Single.fromCallable {
+                    val dataSecret = cryptoManager.getDataSecret()
+                        .map(ByteArray::encodeToBase64)
+                        .blockingGet()
+
+                    val userDataWrappers = archiver.getData()
+                        .map {
+                            UserDataWrapper(
+                                id = it.id.toString(),
+                                registrationTimestamp = it.registrationTimestamp.toUnixTimestamp(),
+                                dataSecret = dataSecret,
+                                traceSecretWrappers = mutableListOf()
+                            )
+                        }.toList().blockingGet()
+
+                    val getTracingSecrets = checkInManager.initialize(context)
+                        .andThen(checkInManager.restoreRecentTracingSecrets(TimeUnit.DAYS.toMillis(days.toLong())))
+                        .map {
+                            TraceSecretWrapper(
+                                timestamp = it.first.toUnixTimestamp(),
+                                traceSecret = it.second.encodeToBase64()
+                            )
+                        }
+                        .cache()
+
+                    userDataWrappers.forEachIndexed { index, element ->
+                        val startUnixTimestamp = element.registrationTimestamp
+                        val endUnixTimestamp = if (index < userDataWrappers.lastIndex) {
+                            userDataWrappers[index + 1].registrationTimestamp
+                        } else {
+                            TimeUtil.getCurrentMillis().toUnixTimestamp()
+                        }
+                        Timber.d("Filtering trace secret wrappers between $startUnixTimestamp and $endUnixTimestamp for ${element.id}")
+                        val wrappers = getTracingSecrets
+                            .doOnNext { Timber.v("Checking trace secret wrapper: $it") }
+                            .filter { it.timestamp in startUnixTimestamp until endUnixTimestamp }
+                            .switchIfEmpty(
+                                // can happen for the very first check-in due to timestamp rounding
+                                getTracingSecrets.lastElement().toObservable()
+                            )
+                            .toList()
+                            .blockingGet()
+                        element.traceSecretWrappers.addAll(wrappers)
                     }
-                    .toList()
-                    .blockingGet()
-                dataSecret = cryptoManager.getDataSecret()
-                    .map(ByteArray::encodeToBase64)
-                    .blockingGet()
-            }
-        }
-    }
 
-    /**
-     * Encrypt given transfer data using the daily keypair before uploading to the luca server.
-     *
-     * @param transferData to be encrypted
-     * @return iv and ciphertext of transfer data
-     */
-    private fun encryptTransferData(transferData: TransferData): Single<Pair<ByteArray, ByteArray>> {
-        return SerializationUtil.serializeToJson(transferData)
-            .doOnSuccess { Timber.d("Serialized transfer data: %s", it) }
-            .map(String::toByteArray)
-            .flatMap { encodedContactData ->
-                cryptoManager.generateSecureRandomData(HashProvider.TRIMMED_HASH_LENGTH)
-                    .flatMap { iv ->
-                        cryptoManager.generateSharedDiffieHellmanSecret()
-                            .flatMap { cryptoManager.generateDataEncryptionSecret(it) }
-                            .map { it.toSecretKey() }
-                            .map { dataEncryptionKey -> Pair(dataEncryptionKey, iv) }
-                    }
-                    .flatMap { (dataEncryptionKey, iv) ->
-                        cryptoManager.symmetricCipherProvider
-                            .encrypt(encodedContactData, iv, dataEncryptionKey)
-                            .map { encryptedData -> Pair(encryptedData, iv) }
-                    }
-            }
-    }
-
-    /**
-     * Compute HMAC of given encrypted transfer data using the data authentication secret computed
-     * from base secret and daily key.
-     *
-     * @param encryptedTransferData to authenticate
-     * @return HMAC of passed data
-     */
-    private fun createTransferDataMac(encryptedTransferData: ByteArray): Single<ByteArray> {
-        return cryptoManager.generateSharedDiffieHellmanSecret()
-            .flatMap { cryptoManager.generateDataAuthenticationSecret(it) }
-            .map(ByteArray::toSecretKey)
-            .flatMap { cryptoManager.macProvider.sign(encryptedTransferData, it) }
-    }
-
-    /*
-        Archive
-     */
-
-    fun getArchiveEntries(): Observable<RegistrationData> {
-        return preferencesManager.restoreIfAvailable(ARCHIVE_KEY, RegistrationArchive::class.java)
-            .flattenAsObservable(RegistrationArchive::entries)
-    }
-
-    private fun addToArchive(entry: RegistrationData): Completable {
-        return getArchiveEntries().mergeWith(Observable.just(entry))
-            .toList()
-            .map(::RegistrationArchive)
-            .flatMapCompletable(this::persistArchive)
-    }
-
-    private fun persistArchive(archive: RegistrationArchive): Completable {
-        return preferencesManager.persist(ARCHIVE_KEY, archive)
+                    TransferData(userDataWrappers)
+                }
+            )
     }
 
     private fun invokeRemovalOfOldDataFromArchive(): Completable {
-        return Completable.fromAction {
-            removeOldDataFromArchive()
-                .doOnComplete { Timber.d("Removed old data from archive") }
-                .doOnError { Timber.w("Unable to remove old data from archive: %s", it.toString()) }
-                .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .subscribe()
-                .addTo(managerDisposable)
-        }
-    }
-
-    private fun removeOldDataFromArchive(): Completable {
-        return removeDataFromArchive { it.registrationTimestamp < System.currentTimeMillis() - ARCHIVE_DURATION }
-    }
-
-    private fun removeDataFromArchive(filter: Predicate<RegistrationData>): Completable {
-        return getArchiveEntries()
-            .filter { !filter.test(it) }
-            .toList()
-            .map(::RegistrationArchive)
-            .flatMapCompletable(this::persistArchive)
-    }
-
-    fun clearArchive(): Completable {
-        return removeDataFromArchive { true }
+        return invokeDelayed(archiver.deleteDataOlderThan(ARCHIVE_DURATION), TimeUnit.SECONDS.toMillis(3))
     }
 
     companion object {
@@ -565,10 +508,9 @@ class RegistrationManager(
         const val REGISTRATION_DATA_KEY = "registration_data_2"
         const val USER_ID_KEY = "user_id"
         const val LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY = "last_user_activity_report_timestamp"
+        const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"
         val USER_ACTIVITY_REPORT_INTERVAL = TimeUnit.DAYS.toMillis((365 / 2).toLong())
+        private val ARCHIVE_DURATION = USER_ACTIVITY_REPORT_INTERVAL
+        private const val KEY_ARCHIVED_REGISTRATION_DATA = "registration_archive"
     }
-
 }
-
-private const val ARCHIVE_KEY = "registration_archive"
-private val ARCHIVE_DURATION = USER_ACTIVITY_REPORT_INTERVAL

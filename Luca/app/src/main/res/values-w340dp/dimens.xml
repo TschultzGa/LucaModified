@@ -11,4 +11,6 @@
     <dimen name="font_size_xxlarge">62.5sp</dimen>
     <dimen name="qr_card_size">200dp</dimen>
 	<dimen name="camera_box_size">400dp</dimen>
+	<dimen name="static_font_size_for_bottom_navigation_items">14dp</dimen>
+	<dimen name="action_bar_title_horizontal_margin">48dp</dimen>
 </resources>

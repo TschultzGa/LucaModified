@@ -26,6 +26,7 @@
         <item name="colorControlDisabled">@color/grey_700</item>
         <item name="colorControlBackground">@color/grey_500</item>
         <item name="colorControlBackgroundActivated">?attr/colorPrimaryDark</item>
+        <item name="colorFocused">@color/blue_100</item>
 
         <item name="android:colorBackground">?attr/colorSurface</item>
         <item name="android:windowBackground">?attr/colorSurface</item>
@@ -47,6 +48,8 @@
         <item name="bottomSheetDialogTheme">@style/Widget.Luca.BottomSheet.Modal</item>
 
         <item name="elevationOverlayEnabled">false</item>
+
+        <item name="android:filterTouchesWhenObscured">true</item>
     </style>
 
     <style name="Theme.Luca.DayNight.Light">
@@ -60,6 +63,7 @@
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowAnimationStyle">@style/Animation.Design.BottomSheetDialog</item>
         <item name="bottomSheetStyle">@style/BottomSheetWrapper</item>
+        <item name="android:windowSoftInputMode">adjustPan</item>
     </style>
 
     <style name="BottomSheetWrapper" parent="@style/Widget.Design.BottomSheet.Modal">
@@ -85,6 +89,10 @@
 
     <style name="ThemeOverlay.Luca.BottomNavigationView" parent="@style/ThemeOverlay.MaterialComponents">
         <item name="colorSurface">@null</item>
+    </style>
+
+    <style name="ThemeOverlay.Luca.BottomNavigationView.StaticFontSize" parent="@style/ThemeOverlay.MaterialComponents">
+        <item name="android:textSize">@dimen/static_font_size_for_bottom_navigation_items</item>
     </style>
 
     <style name="ThemeOverlay.Luca.TextInputLayout" parent="">
@@ -113,7 +121,10 @@
         <item name="android:maxLines">1</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_margin">@dimen/spacing_default</item>
+        <item name="android:layout_marginTop">@dimen/spacing_default</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_default</item>
+        <item name="android:layout_marginStart">@dimen/action_bar_title_horizontal_margin</item>
+        <item name="android:layout_marginEnd">@dimen/action_bar_title_horizontal_margin</item>
         <item name="layout_constrainedWidth">true</item>
         <item name="layout_constraintEnd_toEndOf">parent</item>
         <item name="layout_constraintStart_toStartOf">parent</item>
@@ -135,7 +146,7 @@
         <item name="layout_constraintStart_toStartOf">parent</item>
         <item name="tint">?attr/colorOnSurface</item>
         <item name="android:src">@drawable/ic_back</item>
-        <item name="contentDescription">@string/action_back</item>
+        <item name="android:contentDescription">@string/action_back</item>
     </style>
 
     <style name="ActionBarMenuImageView" parent="ActionBarImageView">
@@ -464,6 +475,28 @@
     <style name="ShapeAppearance.App.MediumComponent" parent="ShapeAppearance.MaterialComponents.MediumComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/corner_size_medium</item>
+    </style>
+
+    <style name="Widget.Luca.LibrariesActivity" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="toolbarStyle">@style/Widget.Luca.LibrariesActivity.Toolbar</item>
+        <item name="aboutLibrariesStyle">@style/CustomAboutLibrariesStyle</item>
+        <item name="android:windowBackground">@color/black</item>
+    </style>
+
+    <style name="Widget.Luca.LibrariesActivity.Toolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="titleTextAppearance">@style/ActionBarTitleTextView</item>
+        <item name="android:background">@color/black</item>
+    </style>
+
+    <style name="CustomAboutLibrariesStyle" parent="">
+        <item name="aboutLibrariesCardBackground">?attr/colorSurface</item>
+        <item name="aboutLibrariesDescriptionTitle">?android:textColorPrimary</item>
+        <item name="aboutLibrariesDescriptionText">?android:textColorSecondary</item>
+        <item name="aboutLibrariesDescriptionDivider">@color/opensource_divider</item>
+        <item name="aboutLibrariesOpenSourceTitle">?android:textColorPrimary</item>
+        <item name="aboutLibrariesOpenSourceText">?android:textColorSecondary</item>
+        <item name="aboutLibrariesSpecialButtonText">?android:textColorPrimary</item>
+        <item name="aboutLibrariesOpenSourceDivider">@color/opensource_divider</item>
     </style>
 
 </resources>

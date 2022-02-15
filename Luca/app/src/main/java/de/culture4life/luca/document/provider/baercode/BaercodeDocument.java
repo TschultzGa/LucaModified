@@ -18,6 +18,7 @@ import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.DocumentParsingException;
 import de.culture4life.luca.document.provider.ProvidedDocument;
 import de.culture4life.luca.util.SerializationUtil;
+import de.culture4life.luca.util.TimeUtil;
 
 public class BaercodeDocument extends ProvidedDocument {
 
@@ -47,7 +48,7 @@ public class BaercodeDocument extends ProvidedDocument {
         JsonNode coseSignMessage = coseMessage.getCoseSignMessage();
         JsonNode coseEncrypt0 = CoseMessage.MAPPER.readTree(coseSignMessage.get(2).binaryValue());
         base64KeyId = coseEncrypt0.get(1).get("4").asText();
-        document.setEncodedData(SerializationUtil.serializeToBase64(data).blockingGet());
+        document.setEncodedData(SerializationUtil.toBase64(data).blockingGet());
     }
 
     /**
@@ -84,7 +85,7 @@ public class BaercodeDocument extends ProvidedDocument {
         document.setType(getType(procedure));
         document.setOutcome(getOutcome(procedures, result));
         document.setTestingTimestamp(procedure.getTimestamp());
-        document.setImportTimestamp(System.currentTimeMillis());
+        document.setImportTimestamp(TimeUtil.getCurrentMillis());
         // We don't have a correct result time stamp, use the procedure time instead
         document.setResultTimestamp(procedure.getTimestamp());
     }

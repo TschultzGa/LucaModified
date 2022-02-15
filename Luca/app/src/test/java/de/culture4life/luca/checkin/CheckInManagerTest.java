@@ -2,26 +2,42 @@ package de.culture4life.luca.checkin;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static de.culture4life.luca.crypto.CryptoManagerTest.decodeSecret;
 import static de.culture4life.luca.history.HistoryManager.SHARE_DATA_DURATION;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.robolectric.annotation.Config;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.LucaUnitTest;
-import de.culture4life.luca.crypto.CryptoManager;
+import de.culture4life.luca.genuinity.GenuinityManager;
+import de.culture4life.luca.util.SerializationUtil;
+import de.culture4life.luca.util.TimeUtil;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.observers.TestObserver;
 
 @Config(sdk = 28)
 @RunWith(AndroidJUnit4.class)
@@ -33,11 +49,35 @@ public class CheckInManagerTest extends LucaUnitTest {
 
     private CheckInManager checkInManager;
 
+    @Mock
+    private GenuinityManager genuinityManager;
+
+    private AutoCloseable mockitoCloseable;
+
     @Before
     public void setup() {
-        checkInManager = spy(getInitializedManager(application.getCheckInManager()));
+        mockitoCloseable = MockitoAnnotations.openMocks(this);
+        when(genuinityManager.initialize(any())).thenReturn(Completable.complete());
+        checkInManager = spy(
+                getInitializedManager(
+                        new CheckInManager(
+                                application.getPreferencesManager(),
+                                application.getNetworkManager(),
+                                application.getGeofenceManager(),
+                                application.getLocationManager(),
+                                application.getHistoryManager(),
+                                application.getCryptoManager(),
+                                application.getNotificationManager(),
+                                genuinityManager
+                        )
+                )
+        );
     }
 
+    @After
+    public void after() throws Exception {
+        mockitoCloseable.close();
+    }
 
     @Test
     public void getTraceIdWrapper_generateNew_isNotEmpty() {
@@ -77,7 +117,7 @@ public class CheckInManagerTest extends LucaUnitTest {
         doReturn(Single.just(decodeSecret(ENCODED_TRACE_SECRET)))
                 .when(checkInManager).getCurrentTracingSecret();
         checkInManager.generateTraceId(USER_ID, 1601481600L)
-                .flatMap(CryptoManager::encodeToString)
+                .flatMap(SerializationUtil::toBase64)
                 .test()
                 .assertValue(ENCODED_TRACE_ID);
     }
@@ -92,11 +132,26 @@ public class CheckInManagerTest extends LucaUnitTest {
     }
 
     @Test
-    public void generateScannerEphemeralKeyPair_publicKey_usesEc() {
-        checkInManager.generateScannerEphemeralKeyPair()
-                .map(keyPair -> keyPair.getPublic().getAlgorithm())
-                .test()
-                .assertValue("EC");
+    public void getCurrentCheckInDuration_withServerTimeOffset_emitsCorrectDuration() throws InterruptedException {
+        // Given
+        // Local time is 10 minutes after server time and checked in for 20 minutes after server time
+        ZonedDateTime serverCheckinTime = LocalDateTime.parse("1993-12-20T10:00").atZone(ZoneOffset.UTC);
+        ZonedDateTime localTime = serverCheckinTime.plusMinutes(20);
+        long localTimeOffsetToServer = TimeUnit.MINUTES.toMillis(10);
+        long expectedCheckinDuration = TimeUnit.MINUTES.toMillis(10);
+        CheckInData checkInData = mock(CheckInData.class);
+
+        TimeUtil.setClock(Clock.fixed(Instant.ofEpochMilli(localTime.toInstant().toEpochMilli()), ZoneOffset.UTC));
+        doReturn(serverCheckinTime.toInstant().toEpochMilli()).when(checkInData).getTimestamp();
+        doReturn(Single.just(localTimeOffsetToServer)).when(genuinityManager).getOrFetchOrRestoreServerTimeOffset();
+        doReturn(Maybe.just(checkInData)).when(checkInManager).getCheckInDataIfAvailable();
+
+        // When
+        TestObserver<Long> getting = checkInManager.getCurrentCheckInDuration().test();
+
+        // Then
+        getting.await().assertNoErrors().assertValue(expectedCheckinDuration);
+        TimeUtil.setClock(Clock.systemUTC());
     }
 
     @Test

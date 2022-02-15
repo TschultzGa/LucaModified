@@ -1,5 +1,9 @@
 package de.culture4life.luca.crypto;
 
+import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
+import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_ECDH;
+import static com.nexenio.rxkeystore.RxKeyStore.PROVIDER_BOUNCY_CASTLE;
+
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -27,10 +31,6 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.EllipticCurve;
 
 import io.reactivex.rxjava3.core.Single;
-
-import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
-import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_ECDH;
-import static com.nexenio.rxkeystore.RxKeyStore.PROVIDER_BOUNCY_CASTLE;
 
 /**
  * Provides EC cryptography using the secp256r1 curve.

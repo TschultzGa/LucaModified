@@ -1,4 +1,4 @@
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Global -->
     <string name="unknown">Unbekannt</string>
     <string name="feature_unavailable">Demnächst verfügbar</string>
@@ -32,10 +32,22 @@
     <string name="action_change">Wechseln</string>
     <string name="action_back">Zurück</string>
     <string name="action_accept">Einwilligen</string>
+    <string name="action_agree">Zustimmen</string>
     <string name="action_check_in">Einchecken</string>
     <string name="action_open">Öffnen</string>
     <string name="action_delete">Löschen</string>
     <string name="action_delete_selected">Auswahl Löschen</string>
+
+    <!-- Consent -->
+    <string name="consent_title">Einverständnis</string>
+    <string name="consent_accept_action">@string/action_accept</string>
+    <string name="consent_enable_camera_title">Kamera aktivieren</string>
+    <string name="consent_enable_camera_description">luca benötigt Zugriff auf deine Kamera, um QR-Codes von Testergebnissen, Locations oder Privaten Meetings scannen zu können. Nur die Daten im QR-Code werden verarbeitet und keine anderen Daten werden gespeichert.</string>
+    <string name="consent_import_document_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO zur Verarbeitung meiner Daten im Zuge der lokalen Hinterlegung meines COVID-Tests, meines Genesen- oder Impfausweises in der luca App. Die in dem Dokument hinterlegten Daten können mit meinen Angaben zu meinem Vor- und Nachnamen in der luca App abgeglichen werden. Ebenfalls bin ich einverstanden, dass eine pseudonymisierte Kennung auf dem luca Server hinterlegt wird. Dies dient ausschließlich der Vorbeugung von Missbrauch, sodass ein Dokument nicht durch unterschiedliche Personen genutzt werden kann. Die individuelle Kennung des Dokuments wird nach 72 Stunden ab Hinterlegung automatisch aus dem luca System gelöscht.</string>
+    <string name="consent_include_entry_policy_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
+    <string name="consent_share_entry_policy_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
+    <string name="consent_postal_code_matching_title">@string/notification_postal_code_matching_title</string>
+    <string name="consent_postal_code_matching_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 6 (1) 1 a) DSGVO für die Verarbeitung meiner lokal in der App hinterlegten Postleitzahl zum Zwecke der Freischaltung von regionalen Funktionalitäten. Meine PLZ wurde zunächst zum Zweck der Kontaktnachverfolgung erhoben und verschlüsselt im luca System abgespeichert. Ich bin einverstanden, dass die Postleitzahl ebenfalls lokal auf meinem Endgerät von der luca App verarbeitet wird. Dadurch kann mir luca neue und regional limitierte Funktionalitäten aufzeigen und freischalten. Die Verarbeitung wird nur lokal innerhalb meiner eigenen App ausgeführt. Eine weitere Speicherung erfolgt nicht. Ich kann meinen Widerruf jederzeit innerhalb meiner Einstellungen (unter „Account“) ausführen.</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Etwas lief schief</string>
@@ -78,7 +90,7 @@
     <string name="notification_meeting_host_description">Du hast ein privates Treffen aktiv. Bitte beende es, sobald deine Gäste gegangen sind.</string>
     <string name="notification_service_error_title">luca hat Probleme</string>
     <string name="notification_data_accessed_title">@string/accessed_data_dialog_title</string>
-    <string name="notification_data_accessed_description">Ein Gesundheitsamt hat im Rahmen einer Datenanfrage deine Kontaktdaten erhalten.</string>
+    <string name="notification_data_accessed_description">Ein Gesundheitsamt hat im Rahmen einer Datenauskunft deine Kontaktdaten erhalten.</string>
     <string name="notification_auto_checkout_triggered_title">@string/auto_checkout_info_title</string>
     <string name="notification_auto_checkout_triggered_description">Du hast den Standort verlassen und wurdest darum automatisch ausgecheckt.</string>
     <string name="notification_check_out_reminder_title">Auschecken?</string>
@@ -89,6 +101,8 @@
     <string name="notification_action_check_out">Auschecken</string>
     <string name="notification_action_end_meeting">@string/meeting_end_action</string>
     <string name="notification_action_enroll_connect">@string/luca_connect_intro_action</string>
+    <string name="notification_postal_code_matching_title">Aktiviere den Postleitzahl-Abgleich</string>
+    <string name="notification_postal_code_matching_description">Aktivierst du den Postleitzahl-Abgleich erhältst du Informationen zu standortabhängigen Features und Funktionen. Diese Einstellung kannst du jederzeit in deinem Account-Tab widerrufen.</string>
 
     <!-- Welcome -->
     <string name="welcome_app_slogan">Gemeinsam erleben.</string>
@@ -223,13 +237,13 @@
 
     <!-- Check in -->
     <string name="check_in_scan_qr_code_action">QR-Code scannen</string>
+    <string name="check_in_scan_turn_on_flashlight_action">Taschenlampe einschalten</string>
+    <string name="check_in_scan_turn_off_flashlight_action">Taschenlampe ausschalten</string>
     <string name="check_in_show_your_qr_code_description">Das ist dein QR-Code. Lass ihn an einem luca-Standort scannen, um dich einzuchecken.</string>
     <string name="check_in_scan_qr_code_description">Scanne den QR-Code eines luca-Standorts oder eines privaten Treffens, um dich einzuchecken.</string>
     <string name="check_in_show_your_qr_code_action">Meinen QR-Code anzeigen</string>
     <string name="check_in_show_your_qr_code_title">Mein QR-Code</string>
     <string name="check_in_activate_camera_action">Drücken um Kamera zu aktivieren</string>
-    <string name="check_in_enable_camera_access_title">Kamera aktivieren</string>
-    <string name="check_in_enable_camera_access_description">luca benötigt Zugriff auf deine Kamera, um QR-Codes von Testergebnissen, Locations oder Privaten Meetings scannen zu können. Nur die Daten im QR-Code werden verarbeitet und keine anderen Daten werden gespeichert.</string>
     <string name="check_in_invalid_deeplink_error">Der von dir gescannte QR-Code ist kein valider Check-in Link.\n\nInhalt des QR-Codes:\n<xliff:g example="https://www.luca-app.de/" id="deeplink">%1$s</xliff:g></string>
     <string name="check_in_voluntary_info_title">Freiwilliger Check-in</string>
     <string name="check_in_voluntary_info_description">Der Check-in an diesem Standort ist freiwillig. Wenn du trotzdem bei der Kontaktnachverfolgung helfen und im Risikofall gewarnt werden möchtest, kannst du dich freiwillig und sogar anonym einchecken. Beim anonymen Check-in werden deine Kontaktdaten nicht mit dem Gesundheitsamt geteilt.</string>
@@ -238,14 +252,11 @@
     <string name="check_in_voluntary_info_action_button">Freiwillig einchecken</string>
     <string name="check_in_include_entry_policy_title">2G/3G-Status teilen</string>
     <string name="check_in_include_entry_policy_description">luca Standorte können Zugangsbeschränkungen haben, die einen 2G/3G-Nachweis erfordern. Wenn du deinen Status teilst, erhalten Standorte die Information, ob du ihre Zugangsregelung erfüllst, sehen aber nicht deine Nachweise.</string>
-    <string name="check_in_include_entry_policy_consent_title">Einverständnis</string>
-    <string name="check_in_include_entry_policy_consent_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
     <string name="check_in_documents_unavailable_title">@string/check_in_include_entry_policy_title</string>
     <string name="check_in_documents_unavailable_description">Du hast in deinem „Mein luca“-Tab aktuell keine Dokumente hinterlegt und kannst deinen 2G/3G-Status deswegen nicht teilen. Bitte zeige wenn du eingecheckt bist manuell deinen 2G/3G-Nachweis vor. Falls du beim nächsten Check-in deinen 2G/3G-Status automatisch teilen möchtest, füge deinen Nachweis im „Mein luca“-Tab hinzu.</string>
-    <string name="check_in_consent_entry_policy_sharing_title">Einverständnis</string>
-    <string name="check_in_consent_entry_policy_sharing_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, den Status meines hinterlegten COVID-Tests, meines Genesen- oder Impfausweises (negativ getestet, genesen oder geimpft) zu verarbeiten. Beim Check-In prüft meine luca App, ob mein hinterlegtes Dokument mit der Zugangsregelung des Standortes übereinstimmt. In meiner luca App wird angezeigt, ob ich die Zugangsregelung des Standorts in dem ich eingecheckt bin erfülle. Mein Dokument oder die darin enthaltenen Daten und Informationen werden nicht außerhalb meiner Luca App gespeichert oder übermittelt.</string>
-    <string name="check_in_consent_entry_policy_sharing_button">AKZEPTIEREN</string>
-    <string name="check_in_dont_show_again_default_text">Zukünftig nicht mehr fragen und Einstellung merken</string>
+    <string name="check_in_documents_invalid_title">@string/check_in_include_entry_policy_title</string>
+    <string name="check_in_documents_invalid_description">Dein Zertifikat konnte nicht verifiziert werden. Prüfe bitte, ob dein Zertifikat von einer dazu befähigten Stelle ausgestellt wurde und lasse dir im Zweifel ein neues Zertifikat ausstellen. Den Status dieses Zertifikats kannst du nicht in Check-ins teilen.</string>
+    <string name="check_in_do_not_show_again_default_text">Zukünftig nicht mehr fragen und Einstellung merken</string>
 
     <!-- Private Meeting -->
     <string name="meeting_heading">Privates Treffen</string>
@@ -275,7 +286,6 @@
 
     <!-- Venues -->
     <string name="venue_heading">@string/dummy_heading</string>
-    <string name="venue_checked_in">Du bist eingecheckt!</string>
     <string name="venue_check_in_time">Check-in:    <xliff:g example="18.08.2020 – 19:23" id="time">%1$s</xliff:g> <b>Uhr</b></string>
     <string name="venue_current_stay_timer_heading">Aktueller Aufenthalt</string>
 
@@ -323,7 +333,7 @@
 
     <string name="venue_check_out_error">Auschecken fehlgeschlagen</string>
     <string name="venue_check_out_error_permission">Eine benötigte Berechtigung wurde nicht erteilt.</string>
-    <string name="venue_check_out_error_duration">Du wurdest eben erst eingecheckt. Bitte checke erst aus, wenn du die Location verlassen hast.</string>
+    <string name="venue_check_out_error_duration">Du kannst dich erst nach zwei Minuten das erste Mal auchecken. Bitte checke dich aus, sobald du den Standort verlässt.</string>
     <string name="venue_check_out_error_in_range">Du scheinst noch bei der Location zu sein. Bitte checke erst aus, wenn du die Location verlassen hast.</string>
     <string name="venue_check_out_error_location_unavailable">Wir können deinen Standort nicht verifizieren. Bitte aktiviere die Standortdienste.</string>
     <string name="venue_check_out_error_generic">Du konntest nicht ausgecheckt werden. Bitte prüfe deine Internetverbindung.</string>
@@ -331,7 +341,7 @@
     <string name="auto_checkout_info_title">Automatischer Check-out</string>
     <string name="auto_checkout_info_description">Wenn du diese Funktion aktivierst, wirst du automatisch ausgecheckt, sobald du den Standort verlässt, bei dem du gerade eingecheckt bist.\n\nDazu muss luca auf deinen Standort zugreifen können. Bei Aktivierung wird der automatische Check-out als Voreinstellung übernommen. Alternativ kannst du ihn beim nächsten Check-in deaktivieren.</string>
     <string name="auto_checkout_location_access_title">Standortzugriff aktivieren</string>
-    <string name="auto_checkout_location_access_description">Die Funktion des automatischen Check-outs nutzt Geofencing. Wenn ein luca-Standort diese Funktion verwendet, kannst du durch die Nutzung der Standortdienste deines Handys automatisch auschecken, selbst wenn die App geschlossen ist. Dies erfolgt nur aufgrund deiner Einwilligung gem. Art. 6 (1) 1 a) DSGVO (mehr: <a href="https://www.luca-app.de/app-privacy-policy/">Datenschutzerklärung - App</a>. Natürlich kannst du dich auch jederzeit manuell auschecken.</string>
+    <string name="auto_checkout_location_access_description">Die Funktion des automatischen Check-outs nutzt Geofencing und benötigt dafür deinen genauen Standort. Wenn ein luca-Standort diese Funktion verwendet, kannst du durch die Nutzung der Standortdienste deines Handys automatisch auschecken, selbst wenn die App geschlossen ist. Dies erfolgt nur aufgrund deiner Einwilligung gem. Art. 6 (1) 1 a) DSGVO (mehr: <a href="https://www.luca-app.de/app-privacy-policy/">Datenschutzerklärung - App</a>. Natürlich kannst du dich auch jederzeit manuell auschecken.</string>
     <string name="auto_checkout_background_location_access_title">@string/auto_checkout_location_access_title</string>
     <string name="auto_checkout_background_location_access_description">Für die Funktion des automatischen Check-outs muss luca auf deinen Standort zugreifen können solange du eingecheckt bist, selbst wenn die App geschlossen ist. Aktiviere dafür bitte die folgende Option: <xliff:g example="Allow all the time" id="locationPermissionOption">%1$s</xliff:g></string>
     <string name="auto_checkout_enable_location_title">Standortdienste aktivieren</string>
@@ -392,10 +402,18 @@
     <string name="luca_connect_share_data_mail">@string/data_request_contact_data_mail</string>
     <string name="luca_connect_share_data_action">Freigeben</string>
 
-    <string name="luca_connect_consent_title">Einverständniserklärung</string>
+    <string name="luca_connect_kritis_title">Optional: Weitere Informationen</string>
+    <string name="luca_connect_kritis_description">Bist du Teil der kritischen Infrastruktur (KRITIS) oder arbeitest du mit vulnerablen Gruppen zusammen? Wenn du nicht sicher bist, ob du zur kritischen Infrastruktur gehörst, findest du <a href="http://www.luca-app.de/weitere-informationen-fuer-gesundheitsaemter-wer-gehoert-zur-kritischen-infrastruktur/">hier</a> mehr Informationen.\n\nAchtung: Fülle diese Boxen nur aus, wenn du Teil einer kritischen Infrastruktur (KRITIS) bist oder mit vulnerablen Gruppen zusammenarbeitest.</string>
+    <string name="luca_connect_kritis_critical_checkbox">Ich bin Teil der kritischen Infrastruktur (KRITIS)</string>
+    <string name="luca_connect_kritis_vulnerable_checkbox">Ich arbeite mit vulnerablen Gruppen</string>
+    <string name="luca_connect_kritis_industry_text_input_description">Branche (optional)</string>
+    <string name="luca_connect_kritis_company_text_input_description">Unternehmensname (optional)</string>
+    <string name="luca_connect_kritis_input_error">@string/registration_invalid_value_field_error</string>
+
+    <string name="luca_connect_consent_title">@string/consent_title</string>
     <string name="luca_connect_consent_checkbox">Hiermit bestätige ich den Wahrheitsgehalt meiner hinterlegten Kontaktdaten. Der Impf-/Genesenennachweis gehört zu meiner Person.</string>
-    <string name="luca_connect_consent_description">Ich erkläre mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, mein Impf- oder Genesenenzertifikat sowie meine bereits in der luca App hinterlegten Kontaktdaten meinem für mich zuständigen Gesundheitsamt über das luca System zur Verfügung zu stellen. Das Gesundheitsamt kann mich bei Bedarf im luca System suchen, auf meine übermittelten Daten zugreifen, und mir über die luca App Meldungen zukommen lassen. Mein Einverständnis kann ich jederzeit über den Account Tab in meiner luca App widerrufen. Die Löschung erfolgt automatisch, spätestens nach 7 Tagen Inaktivität.</string>
-    <string name="luca_connect_consent_action">zustimmen</string>
+    <string name="luca_connect_consent_description">Ich erkläre mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO, mein Impf- oder Genesenenzertifikat sowie meine bereits in der luca App hinterlegten Kontaktdaten meinem für mich zuständigen Gesundheitsamt über das luca System zur Verfügung zu stellen. Ich kann mich freiwillig dazu entscheiden, zusätzlich Daten zu meiner Tätigkeit als Teil von kritischen Infrastrukturen oder mit vulnerablen Gruppen anzugeben. Das Gesundheitsamt kann mich bei Bedarf im luca System suchen, auf meine übermittelten Daten zugreifen, und mir über die luca App Meldungen zukommen lassen. Mein Einverständnis kann ich jederzeit über den Account Tab in meiner luca App widerrufen. Die Löschung erfolgt automatisch, spätestens nach 7 Tagen Inaktivität.</string>
+    <string name="luca_connect_consent_action">@string/action_agree</string>
 
     <string name="luca_connect_outro_title">Vielen Dank für deine Mithilfe!</string>
     <string name="luca_connect_outro_description">Durch deine Beteiligung an luca Connect hilfst du deinem zuständigen Gesundheitsamt mit der Bereitstellung deines Genesenen- oder Impfnachweises sowie deiner Kontaktdaten beim frühzeitigen Stoppen von Infektionsketten.\nDein Gesundheitsamt kann dich mit wichtigen Informationen und Meldungen schnell und direkt über die luca App versorgen.</string>
@@ -446,19 +464,19 @@
     <!-- Accessed Data -->
     <string name="accessed_data_heading">Meldungen</string>
     <string name="accessed_data_empty_title">@string/history_empty_title</string>
-    <string name="accessed_data_empty_description">Keine Datenanfragen durch Gesundheitsämter innerhalb der letzten 14&#160;Tage.</string>
+    <string name="accessed_data_empty_description">Keine Datenauskünfte durch Gesundheitsämter innerhalb der letzten 14&#160;Tage.</string>
     <string name="accessed_data_title"><xliff:g example="Health department Berlin Mitte" id="healthDepartmentName">%1$s</xliff:g></string>
     <string name="accessed_data_description"><xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g></string>
-    <string name="accessed_data_dialog_title">Neue Datenanfrage</string>
-    <string name="accessed_data_dialog_description">Ein oder mehrere Gesundheitsämter haben im Rahmen einer Datenanfrage deine Kontaktdaten erhalten.\n\nIm Rahmen einer Kontaktnachverfolgung wurden deine Kontaktdaten von einem oder mehreren Gesundheitsämtern entschlüsselt. Diese werten gerade aus, ob ein Risiko besteht und werden sich möglicherweise bei dir melden.\n\nBitte handle verantwortungsvoll.</string>
-    <string name="accessed_data_banner_text">Du hast eine neue Datenanfrage.</string>
-    <string name="accessed_data_dialog_action_show">Alle Datenanfragen</string>
+    <string name="accessed_data_dialog_title">Neue Datenauskunft</string>
+    <string name="accessed_data_dialog_description">Ein oder mehrere Gesundheitsämter haben im Rahmen einer Datenauskunft deine Kontaktdaten erhalten.\n\nIm Rahmen einer Kontaktnachverfolgung wurden deine Kontaktdaten von einem oder mehreren Gesundheitsämtern entschlüsselt. Diese werten gerade aus, ob ein Risiko besteht und werden sich möglicherweise bei dir melden.\n\nBitte handle verantwortungsvoll.</string>
+    <string name="accessed_data_banner_text">Du hast eine neue Datenauskunft.</string>
+    <string name="accessed_data_dialog_action_show">Alle Datenauskünfte</string>
     <string name="accessed_data_dialog_action_dismiss">@string/action_ok</string>
     <string name="accessed_data_banner_action_show">Anzeigen</string>
     <string name="accessed_data_level_1_title">Hinweis: Mögliches Infektionsrisiko</string>
-    <string name="accessed_data_level_1_description">Ein oder mehrere Gesundheitsämter haben im Rahmen einer Datenanfrage deine Kontaktdaten erhalten.</string>
+    <string name="accessed_data_level_1_description">Ein oder mehrere Gesundheitsämter haben im Rahmen einer Datenauskunft deine Kontaktdaten erhalten.</string>
     <string name="accessed_data_level_1_detailed_description">Im Rahmen einer Kontaktnachverfolgung wurden deine Kontaktdaten von einem oder mehreren Gesundheitsämtern entschlüsselt. Diese werten gerade aus, ob ein Risiko besteht und werden sich möglicherweise bei dir melden.\n\nBitte handle verantwortungsvoll.</string>
-    <string name="accessed_data_level_1_banner_text">Du hast eine neue Datenanfrage.</string>
+    <string name="accessed_data_level_1_banner_text">Du hast eine neue Datenauskunft.</string>
     <string name="accessed_data_level_2_title">Mögliches Infektionsrisiko</string>
     <string name="accessed_data_level_2_description">Du warst zeitgleich mit einer Person in einem luca-Standort eingecheckt, die später positiv auf das Coronavirus (SARS-CoV-2) getestet wurde.</string>
     <string name="accessed_data_level_2_detailed_description">Bitte handle verantwortungsvoll, reduziere deine Kontakte und melde dich gegebenenfalls beim Gesundheitsamt – vor allem, wenn bei dir Symptome auftreten. Das Gesundheitsamt empfiehlt dir, einen Schnelltest zu machen.</string>
@@ -467,7 +485,7 @@
     <string name="accessed_data_level_3_description">Du warst zeitgleich mit einer Person in einem luca-Standort eingecheckt, die später positiv auf das Coronavirus (SARS-CoV-2) getestet wurde. Ein Gesundheitsamt hat die Situation vor Ort ausgewertet und geht von einem erhöhten Infektionsrisiko für dich aus.</string>
     <string name="accessed_data_level_3_detailed_description">@string/accessed_data_level_2_detailed_description</string>
     <string name="accessed_data_level_3_banner_text">Achtung! Es besteht ein erhöhtes Infektionsrisiko.</string>
-    <string name="accessed_data_level_4_title">Mehrfache Datenanfrage</string>
+    <string name="accessed_data_level_4_title">Mehrfache Datenauskunft</string>
     <string name="accessed_data_level_4_description">Du warst in einem luca-Standort eingecheckt, in dem mehr als ein Gesundheitsamt Daten entschlüsselt hat. Das bedeutet möglicherweise, dass sich dort mehrere Personen aufgehalten haben, die später positiv auf das Coronavirus (SARS-CoV-2) getestet wurden. Es besteht das Risiko, dass es sich um ein erhöhtes Infektionsgeschehen handelt.</string>
     <string name="accessed_data_level_4_detailed_description">Bitte handle verantwortungsvoll, reduziere deine Kontakte und melde dich gegebenenfalls beim für dich zuständigen Gesundheitsamt – vor allem, wenn bei dir Symptome auftreten. Vielleicht hast du auch die Möglichkeit, einen Test zu machen.\n\nDieser Hinweis wurde automatisiert von luca ausgelöst.</string>
     <string name="accessed_data_level_4_banner_text">Achtung! Du warst in einen luca-Standort eingecheckt, in dem mehr als ein Gesundheitsamt Daten entschlüsselt hat.</string>
@@ -483,7 +501,6 @@
     <string name="document_import_anyway_action">Trotzdem importieren</string>
     <string name="document_import_hint">Scanne den QR-Code deines Dokuments, um dieses zur App hinzuzufügen.</string>
     <string name="document_import_success_message">Das Dokument wurde importiert</string>
-    <string name="document_import_consent">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO zur Verarbeitung meiner Daten im Zuge der lokalen Hinterlegung meines COVID-Tests, meines Genesen- oder Impfausweises in der luca App. Die in dem Dokument hinterlegten Daten können mit meinen Angaben zu meinem Vor- und Nachnamen in der luca App abgeglichen werden. Ebenfalls bin ich einverstanden, dass eine pseudonymisierte Kennung auf dem luca Server hinterlegt wird. Dies dient ausschließlich der Vorbeugung von Missbrauch, sodass ein Dokument nicht durch unterschiedliche Personen genutzt werden kann. Die individuelle Kennung des Dokuments wird nach 72 Stunden ab Hinterlegung automatisch aus dem luca System gelöscht.</string>
     <string name="document_import_error_title">Das Dokument konnte nicht importiert werden</string>
     <string name="document_import_error_name_mismatch_description">Es konnte nicht validiert werden, dass dieses Dokument für dich erstellt wurde. Bitte prüfe, ob dein Name richtig in der App hinterlegt ist.</string>
     <string name="document_import_error_name_mismatch_including_children_description">Es konnte nicht validiert werden, dass dieses Dokument für dich oder deine Kinder erstellt wurde. Bitte prüfe, ob die Namen richtig in der App hinterlegt sind.</string>
@@ -529,6 +546,8 @@
     <string name="delete_appointment_action">Termin löschen</string>
     <string name="delete_certificate_action">Nachweis löschen</string>
     <string name="document_delete_confirmation_message">Soll das Dokument wirklich aus der App gelöscht werden?</string>
+    <string name="document_not_verified_dialog_title">Zertifikat konnte nicht verifiziert werden</string>
+    <string name="document_not_verified_dialog_description">Wir konnten dein Zertifikat nicht verifizieren. Prüfe bitte, ob dein Zertifikat von einer dazu befähigten Stelle ausgestellt wurde und lasse dir im Zweifel ein neues Zertifikat ausstellen. Den Status dieses Zertifikats kannst du nicht in Check-ins teilen.</string>
     <string name="document_vaccination_procedure">%1$s. Impfung:</string>
     <string name="document_recovery_procedure">Infektion %1$s - %2$s</string>
     <string name="vaccine_comirnaty">BioNTech/Pfizer</string>
@@ -594,9 +613,8 @@
     <!-- Account tab -->
     <string name="account_tab_section_settings">Einstellungen</string>
     <string name="account_tab_item_edit_contact_data">Kontaktdaten</string>
+    <string name="account_tab_item_postal_code">Postleitzahl-Abgleich</string>
     <string name="account_tab_item_luca_connect">luca Connect</string>
-    <string name="account_tab_item_luca_connect_switch_title">luca Connect aktivieren</string>
-    <string name="account_tab_item_luca_connect_description">Aktivierst du luca Connect, unterstützt du dein Gesundheitsamt und erhältst wichtige Meldungen vom zuständigen Gesundheitsamt persönlich direkt in deiner luca App.\n\nDeine Daten werden verschlüsselt an dein zuständiges Gesundheitsamt übermittelt und können nur von diesem verarbeitet werden. Sie werden nur bei Suchen durch Gesundheitsamtsmitarbeiter:innen angezeigt.</string>
 
     <string name="account_tab_section_help">Hilfe</string>
     <string name="account_tab_item_guides">Neuigkeiten</string>
@@ -604,16 +622,27 @@
     <string name="account_tab_item_support">Support</string>
 
     <string name="account_tab_section_info">Informationen</string>
-    <string name="account_tab_item_data_request">Daten anfragen</string>
+    <string name="account_tab_item_data_request">Datenauskunft</string>
     <string name="account_tab_item_data_protection">Datenschutz</string>
     <string name="account_tab_item_terms">AGB</string>
     <string name="account_tab_item_imprint">Impressum</string>
+    <string name="account_tab_item_licenses">Lizenzen</string>
     <string name="account_tab_item_daily_key">Tagesschlüssel</string>
     <string name="account_tab_item_app_version">App Version</string>
     <string name="account_tab_item_app_data">App Daten</string>
     <string name="account_tab_item_source_code">Quelltext</string>
 
     <string name="account_tab_item_delete_account">Account löschen</string>
+
+    <string name="account_tab_title_content_description">Account. Mein Konto</string>
+
+    <!-- Postal code settings -->
+    <string name="postal_code_settings_switch_title">Postleitzahl-Abgleich aktivieren</string>
+    <string name="postal_code_settings_description">Manche unserer (neuen) Features und Funktionen sind standortabhängig. Aktiviere den Postleitzahl-Abgleich, um Informationen zu standortabhängigen Features zu erhalten.</string>
+
+    <!-- luca Connect settings -->
+    <string name="luca_connect_settings_switch_title">luca Connect aktivieren</string>
+    <string name="luca_connect_settings_description">Aktivierst du luca Connect, unterstützt du dein Gesundheitsamt und erhältst wichtige Meldungen vom zuständigen Gesundheitsamt persönlich direkt in deiner luca App.\n\nDeine Daten werden verschlüsselt an dein zuständiges Gesundheitsamt übermittelt und können nur von diesem verarbeitet werden. Sie werden nur bei Suchen durch Gesundheitsamtsmitarbeiter:innen angezeigt.</string>
 
     <!-- Version details -->
     <string name="version_details_dialog_title">@string/account_tab_item_app_version</string>
@@ -630,10 +659,10 @@
     <string name="delete_account_dialog_message">Löschst du deinen Account, kannst du keine neuen Check-ins vornehmen und auf deine Historie zugreifen.\n\nDaten, die durch einen Check-in bei einem Betreiber verschlüsselt hinterlegt wurden, werden gemäß der Corona/COVID-19 Infektionsschutzverordnung nach 4 Wochen gelöscht.\n\nNach der Löschung des Accounts kannst du noch bis zu 4 Wochen nach dem letzten Check-in von dem Gesundheitsamt benachrichtigt werden.</string>
     <string name="delete_account_dialog_action">Löschen</string>
 
-    <!-- Data request -->
+    <!-- Data report -->
     <string name="data_request_tracing_title">Kontaktnachverfolgung</string>
     <string name="data_request_tracing_content_prefix">Deine Daten, die für die Kontaktnachverfolgung erhoben und verarbeitet wurden, sind lokal in deiner App und verschlüsselt auf dem luca-Server gespeichert. Der luca-Server wird von der Deutschen Telekom AG gehostet. Zertifizierung zu dieser finden Sie unter: https://open-telekom-cloud.com/de/sicherheit/datenschutz-compliance. Ebenfalls stellt die Bundesdruckerei Gruppe GmbH weitere IT-Infrastrukturleistungen, die eine sichere Übermittlung deiner Daten an die Gesundheitsämter ermöglichen. Unser Unterauftragnehmer neXenio GmbH übernimmt die Softwareentwicklung, Softwarewartungs- und Softwarebetriebsleistungen. Sowohl wir als auch die nexenio GmbH können zu keinem Zeitpunkt deine Daten entschlüsseln und in der Klarform einsehen. Bei der Registrierung verifizieren wir deine Telefonnummer durch automatisierten SMS-Versand. Hierfür erfolgt die Übermittlung der Telefonnummer an unsere SMS-Versanddienstleister:innen. Die aktuellen Empfänger kannst du unserer aktuellen Datenschutzerklärung entnehmen: https://www.luca-app.de/app-privacy-policy/\n\nNur du kannst deine Daten innerhalb deiner App einsehen, bearbeiten und löschen. Wenn du bereits bei einer luca Location eingecheckt und ein Gesundheitsamt diese bei der Betreiber:in angefragt hat, werden die zweifach verschlüsselten Daten von der Betreiber:in und anschließend von dem Gesundheitsamt entschlüsselt. Nur das Gesundheitsamt kann auf die entschlüsselten Daten im Zuge der Kontaktnachverfolgung zugreifen und deine Daten einsehen. Deine Daten geben wir mit Ausnahme der Gesundheitsämter (Rechtsgrundlage Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit der jeweiligen Landesverordnung zur Bekämpfung von COVID-19 Infektionen, Infektionsschutzgesetz) grundsätzlich nicht an Dritte weiter.</string>
-    <string name="data_request_tracing_content_suffix">Alle Informationen über die Verarbeitungen, Zwecke, Rechtsgrundlagen und Löschfristen findest du in unserer Datenschutzerklärung: https://www.luca–app.de/app–privacy-policy/. Deine Daten werden nicht in Drittländer übermittelt. Automatisierte Entscheidungsfindungen sowie Profiling gemäß Art. 22 DSGVO werden von uns sowie den Auftragnehmern des luca Systems nicht getätigt.\n\nMöchtest du eine Auskunft über deine Daten erhalten, die wir durch deine eigene Kontaktaufnahme (z. B. bei Supportanfragen) bei uns als Klardaten von dir erhalten haben, wende dich bitte an unser Privacy Team unter privacy@culture4life.de. Bitte teile uns auch weitere Hinweise mit, die uns ermöglichen, dich zu identifizieren und dazugehörige Daten bei uns zu recherchieren. Wenn du mit uns über Social Media in Kontakt warst, sind weitere Hinweise wie deine E-Mail-Adresse oder dein Pseudonym, das du in den Social-Media-Kanälen verwendest, wichtig um dir die Auskunft erteilen zu können.\n\nDu hast gemäß Art. 77 DSGVO das Recht, dich bei der Aufsichtsbehörde zu beschweren, wenn du der Ansicht bist, dass die Verarbeitung deiner personenbezogenen Daten nicht rechtmäßig erfolgt. Die Anschrift der für unser Unternehmen zuständigen Aufsichtsbehörde lautet: Berliner Beauftragte für Datenschutz und Informationsfreiheit, Friedrichstr. 219, 10969 Berlin, Tel.: 030/13889-0, E-Mail: mailbox@datenschutz-berlin.de.</string>
+    <string name="data_request_tracing_content_suffix" tools:ignore="TypographyDashes">Alle Informationen über die Verarbeitungen, Zwecke, Rechtsgrundlagen und Löschfristen findest du in unserer Datenschutzerklärung: https://www.luca–app.de/app–privacy-policy/. Deine Daten werden nicht in Drittländer übermittelt. Automatisierte Entscheidungsfindungen sowie Profiling gemäß Art. 22 DSGVO werden von uns sowie den Auftragnehmern des luca Systems nicht getätigt.\n\nMöchtest du eine Auskunft über deine Daten erhalten, die wir durch deine eigene Kontaktaufnahme (z. B. bei Supportanfragen) bei uns als Klardaten von dir erhalten haben, wende dich bitte an unser Privacy Team unter privacy@culture4life.de. Bitte teile uns auch weitere Hinweise mit, die uns ermöglichen, dich zu identifizieren und dazugehörige Daten bei uns zu recherchieren. Wenn du mit uns über Social Media in Kontakt warst, sind weitere Hinweise wie deine E-Mail-Adresse oder dein Pseudonym, das du in den Social-Media-Kanälen verwendest, wichtig um dir die Auskunft erteilen zu können.\n\nDu hast gemäß Art. 77 DSGVO das Recht, dich bei der Aufsichtsbehörde zu beschweren, wenn du der Ansicht bist, dass die Verarbeitung deiner personenbezogenen Daten nicht rechtmäßig erfolgt. Die Anschrift der für unser Unternehmen zuständigen Aufsichtsbehörde lautet: Berliner Beauftragte für Datenschutz und Informationsfreiheit, Friedrichstr. 219, 10969 Berlin, Tel.: 030/13889-0, E-Mail: mailbox@datenschutz-berlin.de.</string>
     <string name="data_request_documents_title">COVID Zertifikate</string>
     <string name="data_request_documents_content_prefix">Innerhalb deiner luca App hast du die Möglichkeit ein Testergebnis, ein Impf- oder Genesenausweis zu hinterlegen. Deine dort hinterlegten und an die luca App übertragenen Daten verlassen dein Smartphone nicht. Deine Daten sind nur lokal in deiner App auf deinem Smartphone gespeichert. Eine Übermittlung an unsere Server, an den Betreiber oder an die Gesundheitsämter findet nicht statt. Deine Daten werden nicht an Dritte weitergegeben.\n\nIn der App werden nur die notwendigen Informationen zum Identitätsabgleich (Vor- und Nachname, Geburtsdatum, Impfdatum, Aussteller und Impfstoff) angezeigt. Weitere Daten können in dem Test oder Ausweisdokument enthalten sein, werden dir innerhalb der App jedoch nicht angezeigt. Alle in dem QR Code enthaltene Daten sind hier gelistet. Zur Vorbeugung von Missbrauch, sodass das Dokument nicht mehrfach von unterschiedlichen Personen in der luca App hinterlegt werden kann, wird von deiner luca App eine pseudonymisierte Kennung erstellt und an das luca System übertragen. Nur diese Kennung wird im luca System gespeichert. Diese können wir dir nicht zuordnen.</string>
     <string name="data_request_documents_content_suffix">@string/data_request_tracing_content_suffix</string>
@@ -727,7 +756,7 @@
     <!-- Updated terms -->
     <string name="updated_terms_description">Wir aktualisieren unsere Nutzungsbedingungen und Datenschutzerklärung.</string>
     <string name="updated_terms_info">Tippe auf „ZUSTIMMEN”, um die aktualisierten <b><a href="https://www.luca-app.de/app-terms-and-conditions-2/">Nutzungsbedingungen</a></b> und die <b><a href="https://www.luca-app.de/app-privacy-policy/">Datenschutzerklärung</a></b> zu akzeptieren.</string>
-    <string name="updated_terms_button_agree">ZUSTIMMEN</string>
+    <string name="updated_terms_button_agree">@string/action_agree</string>
     <string name="updated_terms_changes_action">Änderungen</string>
 
     <!-- Notification Settings -->

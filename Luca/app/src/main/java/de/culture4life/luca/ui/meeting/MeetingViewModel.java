@@ -97,7 +97,7 @@ public class MeetingViewModel extends BaseViewModel {
     private Completable keepUpdatingMeetingDuration() {
         return Observable.interval(0, 1, TimeUnit.SECONDS)
                 .flatMapMaybe(tick -> meetingManager.getCurrentMeetingDataIfAvailable())
-                .map(meetingData -> System.currentTimeMillis() - meetingData.getCreationTimestamp())
+                .map(meetingData -> TimeUtil.getCurrentMillis() - meetingData.getCreationTimestamp())
                 .defaultIfEmpty(0L)
                 .map(VenueDetailsViewModel::getReadableDuration)
                 .flatMapCompletable(readableDuration -> update(duration, readableDuration));
@@ -118,7 +118,7 @@ public class MeetingViewModel extends BaseViewModel {
 
                     for (MeetingGuestData guestData : meetingData.getGuestData()) {
                         String name = MeetingManager.getReadableGuestName(guestData);
-                        boolean isCheckedOut = guestData.getCheckOutTimestamp() > 0 && guestData.getCheckOutTimestamp() < System.currentTimeMillis();
+                        boolean isCheckedOut = guestData.getCheckOutTimestamp() > 0 && guestData.getCheckOutTimestamp() < TimeUtil.getCurrentMillis();
                         guests.add(new Guest(name, !isCheckedOut));
                     }
                     updateAsSideEffect(allGuests, guests);
@@ -144,7 +144,7 @@ public class MeetingViewModel extends BaseViewModel {
                 .map(MeetingAdditionalData::new)
                 .map(meetingAdditionalData -> new Gson().toJson(meetingAdditionalData))
                 .map(json -> json.getBytes(StandardCharsets.UTF_8))
-                .flatMap(SerializationUtil::serializeToBase64);
+                .flatMap(SerializationUtil::toBase64);
 
         return Single.zip(scannerId, additionalData, Pair::new)
                 .flatMap(meetingIdAndData -> generateQrCodeData(meetingIdAndData.first, meetingIdAndData.second));

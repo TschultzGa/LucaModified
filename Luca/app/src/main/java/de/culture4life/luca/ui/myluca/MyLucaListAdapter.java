@@ -29,6 +29,8 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     public interface MyLucaListClickListener {
         void onDelete(@NonNull MyLucaListItem myLucaListItem);
+
+        void onIcon(@NonNull MyLucaListItem myLucaListItem);
     }
 
     public static final int SINGLE_ITEM_VIEW_HOLDER = 0;
@@ -77,9 +79,10 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 notifyItemChanged(position);
             });
             View.OnClickListener deleteClickListener = (v -> clickListener.onDelete(item));
+            View.OnClickListener iconClickListener = (v -> clickListener.onIcon(item));
 
             holder.show(item);
-            holder.setListeners(expandClickListener, deleteClickListener);
+            holder.setListeners(expandClickListener, deleteClickListener, iconClickListener);
             setLeftPaddingForChild(holder.getBinding().getRoot(), itemsWrapper.isChildSection());
         } else if (viewHolder.getItemViewType() == MULTIPLE_ITEM_VIEW_HOLDER) {
             Integer hashCode = items.hashCode();

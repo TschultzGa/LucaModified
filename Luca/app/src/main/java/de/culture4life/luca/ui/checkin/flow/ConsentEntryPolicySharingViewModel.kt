@@ -2,8 +2,8 @@ package de.culture4life.luca.ui.checkin.flow
 
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
-import de.culture4life.luca.ui.base.BaseBottomSheetViewModel
 import de.culture4life.luca.ui.ViewEvent
+import de.culture4life.luca.ui.base.BaseBottomSheetViewModel
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable

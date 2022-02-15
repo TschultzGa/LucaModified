@@ -414,7 +414,7 @@ public class Document {
     }
 
     public boolean isValid() {
-        long now = System.currentTimeMillis();
+        long now = TimeUtil.getCurrentMillis();
         return now > getValidityStartTimestamp() && now < getExpirationTimestamp();
     }
 
@@ -485,5 +485,5 @@ public class Document {
                 ", isEudcc=" + isEudcc +
                 '}';
     }
-    
+
 }

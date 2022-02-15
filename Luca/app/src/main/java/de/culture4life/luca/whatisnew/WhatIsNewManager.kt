@@ -1,36 +1,64 @@
 package de.culture4life.luca.whatisnew
 
 import android.content.Context
+import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.Manager
 import de.culture4life.luca.R
+import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.preference.PreferencesManager
 import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.subjects.PublishSubject
+import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 class WhatIsNewManager(
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val notificationManager: LucaNotificationManager
 ) : Manager() {
 
     private var cachedContentPages: Observable<WhatIsNewPage>? = null
+    private var cachedMessages: Observable<WhatIsNewMessage>? = null
+    private val messageUpdatesSubject: PublishSubject<WhatIsNewMessage> = PublishSubject.create()
+    var isFirstSessionAfterAppUpdate: Boolean? = null
 
     override fun doInitialize(context: Context): Completable {
-        return preferencesManager.initialize(context)
-            .andThen(Completable.fromAction { this.context = context })
+        return Completable.mergeArray(
+            preferencesManager.initialize(context),
+            notificationManager.initialize(context)
+        ).andThen(
+            invoke(
+                checkAndUpdateLastUsedVersionNumber()
+                    .delay(1, TimeUnit.SECONDS)
+                    .andThen(showNotificationsForUnseenMessagesIfRequired())
+            )
+        )
+    }
+
+    override fun dispose() {
+        cachedContentPages = null
+        cachedMessages = null
+        isFirstSessionAfterAppUpdate = null
+        super.dispose()
     }
 
     fun shouldWhatIsNewBeShown(): Single<Boolean> {
         return Single.zip(
             getIndexOfLastSeenPage(),
-            getIndexOfMostRecentPage(),
-            { lastSeen, mostRecent -> lastSeen < mostRecent }
-        )
+            getIndexOfMostRecentPage()
+        ) { lastSeen, mostRecent -> lastSeen < mostRecent }
     }
 
     fun disableWhatIsNewScreenForCurrentVersion(): Completable {
         return getIndexOfMostRecentPage()
             .flatMapCompletable(this::saveLastSeenPageIndex)
     }
+
+    /*
+        Pages
+     */
 
     fun markPageAsSeen(seenPageIndex: Int): Completable {
         return getIndexOfLastSeenPage()
@@ -177,6 +205,153 @@ class WhatIsNewManager(
         val startIndex: Int,
         val size: Int
     )
-}
 
-private const val KEY_LAST_WHAT_IS_NEW_PAGE_SEEN_INDEX = "key_last_what_is_new_page_seen_index"
+    /*
+        Messages
+     */
+
+    private fun showNotificationsForUnseenMessagesIfRequired(): Completable {
+        return Completable.defer {
+            if (isFirstSessionAfterAppUpdate == true) {
+                getAllMessages()
+                    .filter { !it.notified && !it.seen && it.enabled }
+                    .flatMapCompletable { showNotificationForMessage(it) }
+            } else {
+                return@defer Completable.complete()
+            }
+        }
+    }
+
+    fun showNotificationForMessage(message: WhatIsNewMessage): Completable {
+        return notificationManager.initialize(application)
+            .andThen(notificationManager.showNewsMessageNotification(message))
+            .andThen(markMessageAsNotified(message.id!!))
+    }
+
+    fun updateMessage(id: String, applyBlock: WhatIsNewMessage.() -> WhatIsNewMessage): Completable {
+        return restoreOrCreateMessage(id)
+            .map { applyBlock(it) }
+            .flatMapCompletable {
+                preferencesManager.persist(id, it)
+                    .doOnComplete {
+                        cachedMessages = null
+                        messageUpdatesSubject.onNext(it)
+                        Timber.d("Message updated: $it")
+                    }
+            }
+    }
+
+    fun markMessageAsNotified(id: String): Completable {
+        return updateMessage(id) { copy(notified = true) }
+    }
+
+    fun markMessageAsSeen(id: String): Completable {
+        return updateMessage(id) { copy(seen = true) }
+    }
+
+    fun getMessage(id: String): Single<WhatIsNewMessage> {
+        return getAllMessages()
+            .filter { it.id == id }
+            .firstOrError()
+    }
+
+    fun getAllMessages(): Observable<WhatIsNewMessage> {
+        return Observable.defer {
+            if (cachedMessages == null) {
+                cachedMessages = Single.mergeArray(
+                    restoreOrCreatePostalCodeMessage(),
+                    restoreOrCreateLucaConnectMessage()
+                ).toObservable().cache()
+            }
+            cachedMessages!!
+        }
+    }
+
+    fun getMessageUpdates(): Observable<WhatIsNewMessage> {
+        return messageUpdatesSubject
+    }
+
+    fun getMessageUpdates(id: String): Observable<WhatIsNewMessage> {
+        return getMessageUpdates().filter { it.id == id }
+    }
+
+    private fun restoreOrCreateMessage(id: String, enabledByDefault: Boolean = true): Single<WhatIsNewMessage> {
+        return preferencesManager.restoreOrDefault(id, WhatIsNewMessage(enabled = enabledByDefault))
+            .map { it.copy(id = id) }
+    }
+
+    private fun restoreOrCreatePostalCodeMessage(): Single<WhatIsNewMessage> {
+        return restoreOrCreateMessage(ID_POSTAL_CODE_MESSAGE)
+            .map {
+                it.copy(
+                    title = context.getString(R.string.notification_postal_code_matching_title),
+                    content = context.getString(R.string.notification_postal_code_matching_description),
+                    destination = R.id.postalCodeFragment
+                )
+            }
+    }
+
+    private fun restoreOrCreateLucaConnectMessage(): Single<WhatIsNewMessage> {
+        return restoreOrCreateMessage(ID_LUCA_CONNECT_MESSAGE, enabledByDefault = false)
+            .map {
+                it.copy(
+                    title = context.getString(R.string.notification_luca_connect_supported_title),
+                    content = context.getString(R.string.notification_luca_connect_supported_description),
+                    destination = R.id.lucaConnectFragment
+                )
+            }
+    }
+
+    /*
+        Updates
+     */
+
+    /**
+     * Required because the last used version number has not been persisted in app versions
+     * before 2.4.1, but we still want to detect if the app has been updated from that version.
+     */
+    private fun migrateLastUsedVersionNumberIfRequired(): Completable {
+        return restoreLastUsedVersionNumberIfAvailable()
+            .isEmpty()
+            .filter { it } // no version number available yet
+            .flatMapSingle { application.registrationManager.hasCompletedRegistration() }
+            .filter { it } // indicates that the app has been used in a previous version
+            .flatMapCompletable {
+                persistLastUsedVersionNumber(BuildConfig.VERSION_CODE - 1)
+                    .doOnComplete { Timber.i("Migrated last used version number") }
+            }
+    }
+
+    /**
+     * Checks if the app has been updated since the last session and updates
+     * [isFirstSessionAfterAppUpdate] accordingly.
+     */
+    private fun checkAndUpdateLastUsedVersionNumber(): Completable {
+        return migrateLastUsedVersionNumberIfRequired()
+            .andThen(restoreLastUsedVersionNumberIfAvailable())
+            .defaultIfEmpty(BuildConfig.VERSION_CODE)
+            .doOnSuccess {
+                isFirstSessionAfterAppUpdate = it < BuildConfig.VERSION_CODE
+                Timber.d("Is first session after app update: $isFirstSessionAfterAppUpdate")
+            }
+            .flatMapCompletable { persistLastUsedVersionNumber() }
+    }
+
+    private fun restoreLastUsedVersionNumberIfAvailable(): Maybe<Int> {
+        return preferencesManager.restoreIfAvailable(KEY_LAST_USED_VERSION_NUMBER, Int::class.java);
+    }
+
+    private fun persistLastUsedVersionNumber(lastVersionNumber: Int = BuildConfig.VERSION_CODE): Completable {
+        return preferencesManager.persist(KEY_LAST_USED_VERSION_NUMBER, lastVersionNumber)
+    }
+
+    companion object {
+
+        private const val KEY_LAST_USED_VERSION_NUMBER = "last_used_version_number"
+        private const val KEY_LAST_WHAT_IS_NEW_PAGE_SEEN_INDEX = "key_last_what_is_new_page_seen_index"
+        const val ID_POSTAL_CODE_MESSAGE = "news_message_postal_code"
+        const val ID_LUCA_CONNECT_MESSAGE = "news_message_luca_connect"
+
+    }
+
+}

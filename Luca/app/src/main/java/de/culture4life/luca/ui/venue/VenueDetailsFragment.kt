@@ -58,7 +58,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         }
         observe(viewModel.title) { value -> binding.actionBarTitleTextView.text = value }
         observe(viewModel.checkInTime) { value ->
-            binding.checkInTimeTextView.text = getFormattedString(R.string.venue_checked_in_time, value)
+            binding.checkInTimeTextView.text = String.format(getString(R.string.venue_checked_in_time), value)
         }
         observe(viewModel.additionalDataTitle) { binding.additionalDataTitleTextView.text = it }
         observe(viewModel.additionalDataValue) { binding.additionalDataValueTextView.text = it }
@@ -154,11 +154,19 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         }
         binding.slideToActView.onSlideUserFailedListener = object : OnSlideUserFailedListener {
             override fun onSlideFailed(view: SlideToActView, isOutside: Boolean) {
-                if (AccessibilityServiceUtil.isGoogleTalkbackActive(requireContext())) {
+                if (AccessibilityServiceUtil.isScreenReaderActive(requireContext())) {
                     viewModel.onSlideCompleted()
                 } else {
                     Toast.makeText(context, R.string.venue_slider_clicked, Toast.LENGTH_SHORT).show()
                 }
+            }
+        }
+        if (AccessibilityServiceUtil.isKeyboardConnected(requireContext())) {
+            binding.slideToActView.setOnKeyListener { _, _, event ->
+                if (AccessibilityServiceUtil.isKeyConfirmButton(event)) {
+                    viewModel.onSlideCompleted()
+                }
+                false
             }
         }
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP_MR1) {
@@ -245,7 +253,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
             .setNegativeButton(R.string.action_cancel) { _, _ -> viewModel.onEnablingAutomaticCheckOutFailed() }
             .setOnCancelListener { _ -> viewModel.onEnablingAutomaticCheckOutFailed() }
             .setOnDismissListener { _ -> viewModel.onEnablingAutomaticCheckOutFailed() }
-        if (Manifest.permission.ACCESS_FINE_LOCATION == permission.name || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        if (Manifest.permission.ACCESS_FINE_LOCATION == permission.name || Manifest.permission.ACCESS_COARSE_LOCATION == permission.name || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             builder.setTitle(R.string.auto_checkout_location_access_title)
             builder.setMessage(R.string.auto_checkout_location_access_description)
         } else {
@@ -261,7 +269,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
             builder.setPositiveButton(R.string.action_settings) { _, _ -> application.openAppSettings() }
         } else {
             builder.setPositiveButton(R.string.action_grant) { _, _ ->
-                if (Manifest.permission.ACCESS_FINE_LOCATION == permission.name) {
+                if (Manifest.permission.ACCESS_FINE_LOCATION == permission.name || Manifest.permission.ACCESS_COARSE_LOCATION == permission.name) {
                     viewModel.requestLocationPermissionForAutomaticCheckOut()
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     viewModel.requestBackgroundLocationPermissionForAutomaticCheckOut()

@@ -1,3 +1,9 @@
+# Release 2.4.1
+
+- luca Connect
+
+In this update, we present luca Connect! luca Connect directly connects your local health department to you. If you choose to voluntarily share your data, your health department can contact you fast and directly with notifications and instructions for action.
+
 # Release 2.4.0
 
 - Notifications Tab 

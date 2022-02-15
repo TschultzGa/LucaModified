@@ -1,7 +1,7 @@
 package de.culture4life.luca.ui.account.news
 
 import android.content.Intent
-import android.os.Bundle
+import androidx.core.os.bundleOf
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.databinding.FragmentNewsBinding
 import de.culture4life.luca.ui.BaseFragment
@@ -14,7 +14,7 @@ class NewsFragment : BaseFragment<NewsViewModel>() {
 
     override fun getViewBinding(): ViewBinding {
         binding = FragmentNewsBinding.inflate(layoutInflater)
-        return binding;
+        return binding
     }
 
     override fun getViewModelClass(): Class<NewsViewModel> =
@@ -35,11 +35,11 @@ class NewsFragment : BaseFragment<NewsViewModel>() {
         val intent = Intent(context, WhatIsNewActivity::class.java)
         intent.apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-            val bundle = Bundle().apply {
-                putBoolean(WhatIsNewActivity.SHOW_ONLY_UNSEEN_PAGES, false)
-                putBoolean(WhatIsNewActivity.FINISH_ON_EXIT, true)
-                putSerializable(WhatIsNewActivity.SHOW_PAGE_GROUP, pageGroup)
-            }
+            val bundle = bundleOf(
+                Pair(WhatIsNewActivity.SHOW_ONLY_UNSEEN_PAGES, false),
+                Pair(WhatIsNewActivity.FINISH_ON_EXIT, true),
+                Pair(WhatIsNewActivity.SHOW_PAGE_GROUP, pageGroup)
+            )
             putExtras(bundle)
         }
 

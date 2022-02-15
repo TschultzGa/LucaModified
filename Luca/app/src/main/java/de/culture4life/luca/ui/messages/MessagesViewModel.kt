@@ -9,27 +9,31 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
 class MessagesViewModel(application: Application) : BaseViewModel(application) {
 
-    private val historyManager = this.application.historyManager
+    private val whatIsNewManager = this.application.whatIsNewManager
     private val dataAccessManager = this.application.dataAccessManager
     private val connectManager = this.application.connectManager
 
+    private val newsMessageItems = MutableLiveData<List<MessageListItem>>()
     private val lucaConnectMessageItems = MutableLiveData<List<MessageListItem>>()
     private val dataAccessMessageItems = MutableLiveData<List<MessageListItem>>()
     val messageItems = MediatorLiveData<List<MessageListItem>>().apply {
         fun combine() {
-            val lucaConnect = lucaConnectMessageItems.value ?: emptyList()
+            val news = newsMessageItems.value ?: emptyList()
             val dataAccess = dataAccessMessageItems.value ?: emptyList()
-            value = lucaConnect
+            val lucaConnect = lucaConnectMessageItems.value ?: emptyList()
+            value = news
                 .plus(dataAccess)
+                .plus(lucaConnect)
                 .sortedByDescending { it.timestamp }
         }
-        addSource(lucaConnectMessageItems) { combine() }
+        addSource(newsMessageItems) { combine() }
         addSource(dataAccessMessageItems) { combine() }
+        addSource(lucaConnectMessageItems) { combine() }
     }
-
     val connectEnrollmentStatus = MutableLiveData<Boolean>()
     val connectEnrollmentSupportedStatus = MutableLiveData<Boolean>()
 
@@ -37,7 +41,7 @@ class MessagesViewModel(application: Application) : BaseViewModel(application) {
         return super.initialize()
             .andThen(
                 Completable.mergeArray(
-                    historyManager.initialize(application),
+                    whatIsNewManager.initialize(application),
                     dataAccessManager.initialize(application),
                     connectManager.initialize(application)
                 )
@@ -49,7 +53,8 @@ class MessagesViewModel(application: Application) : BaseViewModel(application) {
     private fun invokeMessagesUpdate(): Completable {
         return Completable.fromAction {
             Completable.mergeArray(
-                updateAccessedDataItems(),
+                updateNewsItems(),
+                updateDataAccessItems(),
                 updateLucaConnectItems()
             )
                 .doOnSubscribe { updateAsSideEffect(isLoading, true) }
@@ -63,27 +68,44 @@ class MessagesViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
-    private fun updateAccessedDataItems(): Completable {
-        return dataAccessManager.orRestoreAccessedData
-            .flattenAsObservable { it.traceData }
-            .flatMapSingle { dataAccessManager.createMessagesListItem(it) }
+    private fun updateNewsItems(): Completable {
+        return whatIsNewManager.getAllMessages()
+            .filter { it.enabled }
+            .map { MessageListItem.NewsListItem(it) }
             .toList()
-            .flatMapCompletable { items -> update(dataAccessMessageItems, items) }
+            .flatMapCompletable { update(newsMessageItems, it) }
+    }
+
+    private fun updateDataAccessItems(): Completable {
+        return dataAccessManager.previouslyAccessedTraceData
+            .flatMapSingle { accessedTraceData ->
+                dataAccessManager.getNotificationTexts(accessedTraceData)
+                    .map { MessageListItem.AccessedDataListItem(accessedTraceData, it) }
+            }
+            .toList()
+            .flatMapCompletable { update(dataAccessMessageItems, it) }
     }
 
     private fun updateLucaConnectItems(): Completable {
         return connectManager.getMessages()
             .map(MessageListItem::LucaConnectListItem)
             .toList()
-            .flatMapCompletable { items -> update(lucaConnectMessageItems, items) }
+            .flatMapCompletable { update(lucaConnectMessageItems, it) }
     }
 
     override fun keepDataUpdated(): Completable {
         return Completable.mergeArray(
             super.keepDataUpdated(),
+            keepHasNewsMessagesUpdated(),
             keepConnectEnrollmentStatusUpdated(),
             keepConnectEnrollmentSupportedUpdated()
         )
+    }
+
+    private fun keepHasNewsMessagesUpdated(): Completable {
+        return whatIsNewManager.getMessageUpdates()
+            .debounce(100, TimeUnit.MILLISECONDS)
+            .flatMapCompletable { updateNewsItems() }
     }
 
     private fun keepConnectEnrollmentStatusUpdated(): Completable {
@@ -97,8 +119,7 @@ class MessagesViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun shouldShowLucaConnectEnrollmentAutomatically(): Single<Boolean> {
-        return connectManager
-            .getEnrollmentSupportedButNotRecognizedStatusAndChanges()
+        return connectManager.getEnrollmentSupportedButNotRecognizedStatusAndChanges()
             .first(false)
     }
 }

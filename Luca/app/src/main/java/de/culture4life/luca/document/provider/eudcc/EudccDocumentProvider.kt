@@ -7,11 +7,11 @@ import com.nexenio.rxkeystore.provider.signature.RxSignatureException
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.R
-import de.culture4life.luca.crypto.decodeFromBase64
 import de.culture4life.luca.document.DocumentParsingException
 import de.culture4life.luca.document.DocumentVerificationException
 import de.culture4life.luca.document.DocumentVerificationException.Reason.INVALID_SIGNATURE
 import de.culture4life.luca.document.provider.DocumentProvider
+import de.culture4life.luca.util.decodeFromBase64
 import dgca.verifier.app.decoder.base45.Base45Decoder
 import dgca.verifier.app.decoder.base64ToX509Certificate
 import dgca.verifier.app.decoder.cose.VerificationCryptoService
@@ -28,7 +28,6 @@ import java.io.ByteArrayOutputStream
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
-import java.util.*
 
 /**
  * Provider for the EU Digital COVID Certificate (EUDCC)
@@ -153,7 +152,7 @@ open class EudccDocumentProvider(val context: Context) : DocumentProvider<EudccD
             Completable.defer {
                 val cryptoManager = (context as LucaApplication).cryptoManager
                 cryptoManager.initialize(context)
-                    .andThen(cryptoManager.signatureProvider.verify(data, signature, publicKey))
+                    .andThen(cryptoManager.verifyEcdsa(data, signature, publicKey))
             }
         }.onErrorResumeNext { Completable.error(RxSignatureException("Unable to verify signing key signature", it)) }
     }

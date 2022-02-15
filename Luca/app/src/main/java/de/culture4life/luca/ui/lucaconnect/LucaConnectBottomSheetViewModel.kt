@@ -5,6 +5,7 @@ import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
 import de.culture4life.luca.ui.lucaconnect.children.*
 import de.culture4life.luca.util.addTo
+import de.culture4life.luca.whatisnew.WhatIsNewManager.Companion.ID_LUCA_CONNECT_MESSAGE
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -24,6 +25,7 @@ class LucaConnectBottomSheetViewModel(app: Application) : BaseFlowViewModel(app)
                 add(ExplanationFragment.newInstance())
                 add(ProvideProofFragment.newInstance())
                 add(LucaConnectSharedDataFragment.newInstance())
+                add(KritisFragment.newInstance())
                 add(ConsentFragment.newInstance())
                 add(ConnectSuccessFragment.newInstance())
             }
@@ -49,10 +51,13 @@ class LucaConnectBottomSheetViewModel(app: Application) : BaseFlowViewModel(app)
 
     private fun updateEnrollmentSupportRecognized(): Completable {
         return Completable.fromAction {
-            application.connectManager.setEnrollmentSupportRecognized(true)
+            val whatIsNewManager = application.whatIsNewManager
+            whatIsNewManager.initialize(application)
+                .andThen(whatIsNewManager.markMessageAsSeen(ID_LUCA_CONNECT_MESSAGE))
                 .subscribeOn(Schedulers.io())
                 .subscribe()
                 .addTo(modelDisposable)
         }
     }
+
 }

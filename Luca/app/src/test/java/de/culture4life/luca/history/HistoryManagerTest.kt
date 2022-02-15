@@ -9,6 +9,7 @@ import de.culture4life.luca.genuinity.GenuinityManager
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.registration.RegistrationManager
+import de.culture4life.luca.util.TimeUtil
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -57,7 +58,7 @@ class HistoryManagerTest : LucaUnitTest() {
 
     @Test
     fun deleteOldItems_hasOldItems_removesOldItems() {
-        checkInData.timestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(29)
+        checkInData.timestamp = TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(29)
         historyManager.addCheckInItem(checkInData)
             .andThen(historyManager.deleteOldItems())
             .andThen(historyManager.items)
@@ -67,7 +68,7 @@ class HistoryManagerTest : LucaUnitTest() {
 
     @Test
     fun deleteOldItems_noOldItems_keepsCurrentItems() {
-        checkInData.timestamp = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(23)
+        checkInData.timestamp = TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(23)
         historyManager.addCheckInItem(checkInData)
             .andThen(historyManager.deleteOldItems())
             .andThen(historyManager.items)

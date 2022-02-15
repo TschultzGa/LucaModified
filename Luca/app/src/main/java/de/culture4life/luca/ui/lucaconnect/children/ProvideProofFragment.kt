@@ -43,7 +43,7 @@ class ProvideProofFragment : BaseFlowChildFragment<ProvideProofViewModel, LucaCo
             }
         }
 
-        observe(addCertificateViewModel.onViewDismissedDocumentAdded) {
+        observe(addCertificateViewModel.documentAddedOnViewDismissed) {
             if (!it.hasBeenHandled() && it.valueAndMarkAsHandled) {
                 viewModel.onCertificateAdded()
             }

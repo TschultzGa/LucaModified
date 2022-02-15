@@ -43,6 +43,7 @@
             tools:targetApi="o">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/childFirstNameTextInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textCapSentences"
@@ -64,6 +65,7 @@
             tools:targetApi="o">
 
             <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/childLastNameTextInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textCapSentences"

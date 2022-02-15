@@ -46,6 +46,8 @@ import timber.log.Timber;
 
 public class MyLucaViewModel extends BaseQrCodeViewModel {
 
+    public static final long DELAY_UPDATE_DOCUMENTS_LIST_AFTER_SOURCE_CHANGED = TimeUnit.SECONDS.toMillis(1);
+
     private final DocumentManager documentManager;
     private final RegistrationManager registrationManager;
     private final GenuinityManager genuinityManager;
@@ -218,7 +220,7 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
             }
         }).doOnSubscribe(disposable -> {
             removeError(importError);
-            updateAsSideEffect(getShowCameraPreview(), new CameraRequest(false, true));
+            updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(false, true)));
             updateAsSideEffect(isLoading, true);
         }).doFinally(() -> updateAsSideEffect(isLoading, false));
     }
@@ -243,7 +245,7 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
 
     private Completable keepDocumentsUpdated() {
         return preferencesManager.getChanges(DocumentManager.KEY_DOCUMENTS, Documents.class)
-                .delay(1, TimeUnit.SECONDS)
+                .delay(DELAY_UPDATE_DOCUMENTS_LIST_AFTER_SOURCE_CHANGED, TimeUnit.MILLISECONDS)
                 .flatMapCompletable(documents -> invokeListUpdate());
     }
 
@@ -254,7 +256,7 @@ public class MyLucaViewModel extends BaseQrCodeViewModel {
                 .flatMapCompletable(testResult -> update(parsedDocument, new ViewEvent<>(testResult)))
                 .doOnSubscribe(disposable -> {
                     removeError(importError);
-                    updateAsSideEffect(getShowCameraPreview(), new CameraRequest(false, true));
+                    updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(false, true)));
                     updateAsSideEffect(isLoading, true);
                 })
                 .doOnError(throwable -> {

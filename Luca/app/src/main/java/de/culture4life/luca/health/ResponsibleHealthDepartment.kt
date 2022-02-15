@@ -3,8 +3,9 @@ package de.culture4life.luca.health
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
 import de.culture4life.luca.crypto.AsymmetricCipherProvider
-import de.culture4life.luca.crypto.decodeFromBase64
 import de.culture4life.luca.network.pojo.HealthDepartment
+import de.culture4life.luca.util.TimeUtil
+import de.culture4life.luca.util.decodeFromBase64
 import de.culture4life.luca.util.parseJwt
 import java.security.interfaces.ECPublicKey
 
@@ -25,10 +26,6 @@ data class ResponsibleHealthDepartment(
     @Expose
     @SerializedName("publicHDSKP")
     val publicHDSKP: String,
-
-    @Expose
-    @SerializedName("reachableContactsEnabled")
-    val connectEnrollmentSupported: Boolean,
 
     @Expose
     @SerializedName("postalCode")
@@ -55,15 +52,13 @@ data class ResponsibleHealthDepartment(
         name = healthDepartment.name,
         publicHDEKP = getKeyFromJwt(healthDepartment.encryptionKeyJwt),
         publicHDSKP = getKeyFromJwt(healthDepartment.signingKeyJwt),
-        connectEnrollmentSupported = healthDepartment.connectEnrollmentSupported,
         postalCode = postalCode
     ) {
-        updateTimestamp = System.currentTimeMillis()
+        updateTimestamp = TimeUtil.getCurrentMillis()
     }
 
     companion object {
         private fun getKeyFromJwt(signedJwt: String): String {
-            // TODO: LUCA-4865
             val claims = signedJwt.parseJwt().body
             return claims["key"] as String
         }

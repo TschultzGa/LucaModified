@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="?dialogPreferredPadding"
+        android:paddingEnd="?dialogPreferredPadding"
+        android:paddingBottom="@dimen/spacing_large">
+
+        <TextView
+            android:id="@+id/kritisTitleTextView"
+            style="@style/MaterialAlertDialog.Luca.Title.Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:maxLines="3"
+            android:singleLine="false"
+            android:text="@string/luca_connect_kritis_title"
+            android:textAlignment="center"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/kritisDescriptionTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/luca_connect_kritis_description"
+            app:layout_constraintTop_toBottomOf="@id/kritisTitleTextView" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/criticalCheckBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:buttonTint="?attr/colorOnSurface"
+            android:contentDescription="@string/check_in_voluntary_info_checkbox"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/kritisDescriptionTextView" />
+
+        <TextView
+            android:id="@+id/criticalCheckBoxTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:labelFor="@id/criticalCheckBox"
+            android:text="@string/luca_connect_kritis_critical_checkbox"
+            app:layout_constraintBottom_toBottomOf="@id/criticalCheckBox"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/criticalCheckBox"
+            app:layout_constraintTop_toTopOf="@id/criticalCheckBox" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/vulnerableCheckBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:buttonTint="?attr/colorOnSurface"
+            android:contentDescription="@string/check_in_voluntary_info_checkbox"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/criticalCheckBox" />
+
+        <TextView
+            android:id="@+id/vulnerableCheckBoxTextView"
+            style="@style/MaterialAlertDialog.Luca.Body.Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:labelFor="@id/vulnerableCheckBox"
+            android:text="@string/luca_connect_kritis_vulnerable_checkbox"
+            app:layout_constraintBottom_toBottomOf="@id/vulnerableCheckBox"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/vulnerableCheckBox"
+            app:layout_constraintTop_toTopOf="@id/vulnerableCheckBox" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/industryTextInputLayout"
+            style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:hint="@string/luca_connect_kritis_industry_text_input_description"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/vulnerableCheckBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/industryTextInputEditText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:imeOptions="actionNext"
+                android:inputType="textCapSentences"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/companyTextInputLayout"
+            style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/luca_connect_kritis_company_text_input_description"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/industryTextInputLayout">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/companyTextInputEditText"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:imeOptions="actionNext"
+                android:inputType="textCapSentences"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionButton"
+            style="@style/Widget.Luca.Button.PrimaryActionButton"
+            android:layout_marginTop="@dimen/spacing_default"
+            android:text="@string/action_continue"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/companyTextInputLayout"
+            app:layout_constraintVertical_bias="1" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

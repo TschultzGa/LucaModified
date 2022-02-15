@@ -52,6 +52,10 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
             .flatMapCompletable { updateIfRequired(connectEnrollmentSupportedStatus, it) }
     }
 
+    fun openPostalCodeView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_postalCodeFragment)
+    }
+
     fun openLucaConnectView() {
         navigationController?.navigate(R.id.action_accountFragment_to_lucaConnectFragment)
     }
@@ -101,7 +105,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
     }
 
     /*
-        Data requests
+        Data reports
      */
 
     fun exportTracingDataRequest(uri: Single<Uri>) {

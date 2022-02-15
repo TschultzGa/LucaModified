@@ -6,8 +6,6 @@ import de.culture4life.luca.R
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.util.TimeUtil
 import de.culture4life.luca.util.getReadableDate
-import org.joda.time.DateTimeZone
-import org.joda.time.Instant
 
 /**
  * Item shown on UI for a vaccination certificate
@@ -50,7 +48,7 @@ open class VaccinationItem(context: Context, document: Document) :
                 color = ContextCompat.getColor(context, R.color.document_outcome_partially_vaccinated)
             }
             Document.OUTCOME_FULLY_IMMUNE -> {
-                val timeUntilValid = document.validityStartTimestamp - System.currentTimeMillis()
+                val timeUntilValid = document.validityStartTimestamp - TimeUtil.getCurrentMillis()
                 if (timeUntilValid <= 0) {
                     descriptionLabel = context.getString(
                         R.string.document_outcome_fully_vaccinated,
@@ -74,7 +72,7 @@ open class VaccinationItem(context: Context, document: Document) :
         }
         addTopContent(descriptionLabel, "")
 
-        if(!document.isValidVaccination) {
+        if (!document.isValidVaccination) {
             color = ContextCompat.getColor(context, R.color.document_outcome_expired)
         }
     }

@@ -5,39 +5,46 @@ import android.webkit.URLUtil
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.R
 import de.culture4life.luca.checkin.CheckInManager
+import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.document.*
 import de.culture4life.luca.meeting.MeetingManager
 import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
 import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 
 class AddCertificateFlowViewModel(app: Application) : BaseFlowViewModel(app) {
 
+    private val consentManager: ConsentManager = application.consentManager
     private var importError: ViewError? = null
-    private var hasDocumentAdded = true
+    private var hasAddedDocument = false
 
-    val parsedDocument = MutableLiveData<ViewEvent<Document>>()
     val addedDocument = MutableLiveData<ViewEvent<Document>>()
-    val onViewDismissedDocumentAdded = MutableLiveData<ViewEvent<Boolean>>()
+    val documentAddedOnViewDismissed = MutableLiveData<ViewEvent<Boolean>>()
 
     fun process(barcodeData: String): Completable {
         return parseAndValidateDocument(barcodeData)
+            .flatMapCompletable {
+                requestImportConsent()
+                    .observeOn(Schedulers.io())
+                    .andThen(addDocument(it))
+            }
+            .doOnSubscribe { updateAsSideEffect(isLoading, true) }
+            .doFinally { updateAsSideEffect(isLoading, false) }
     }
 
-    private fun parseAndValidateDocument(encodedDocument: String): Completable {
+    private fun parseAndValidateDocument(encodedDocument: String): Single<Document> {
         return application.documentManager.parseAndValidateEncodedDocument(encodedDocument)
-            .doOnSubscribe { Timber.d("Attempting to parse encoded document: %s", encodedDocument) }
-            .doOnSuccess { testResult: Document -> Timber.d("Parsed document: %s", testResult) }
-            .flatMapCompletable { testResult: Document -> update(parsedDocument, ViewEvent(testResult)) }
-            .doOnSubscribe {
+            .doOnSubscribe { Timber.d("Attempting to parse encoded document: $encodedDocument") }
+            .doOnSuccess {
+                Timber.d("Parsed document: $it")
                 removeError(importError)
-                updateAsSideEffect(isLoading, true)
             }
-            .doOnError { throwable: Throwable ->
-                Timber.w("Unable to parse document: %s", throwable.toString())
+            .doOnError { throwable ->
+                Timber.w("Unable to parse document: $throwable")
                 val errorBuilder: ViewError.Builder = createErrorBuilder(throwable)
                     .withTitle(R.string.document_import_error_title)
                 if (throwable is DocumentParsingException) {
@@ -67,23 +74,23 @@ class AddCertificateFlowViewModel(app: Application) : BaseFlowViewModel(app) {
                         DocumentVerificationException.Reason.TIMESTAMP_IN_FUTURE -> errorBuilder.withDescription(R.string.document_import_error_time_in_future_description)
                     }
                 }
-
                 importError = errorBuilder.build()
                 addError(importError)
             }
-            .doFinally { updateAsSideEffect(isLoading, false) }
-            .subscribeOn(Schedulers.io())
     }
 
-    fun addDocument(document: Document): Completable {
+    private fun requestImportConsent(): Completable {
+        return consentManager.initialize(application)
+            .andThen(consentManager.requestConsentAndGetResult(ConsentManager.ID_IMPORT_DOCUMENT))
+            .flatMapCompletable(consentManager::assertConsentApproved)
+    }
+
+    private fun addDocument(document: Document): Completable {
         return application.documentManager.redeemDocument(document)
             .andThen(application.documentManager.addDocument(document))
-            .doOnComplete { hasDocumentAdded = true }
+            .doOnComplete { hasAddedDocument = true }
             .andThen(update(addedDocument, ViewEvent(document)))
-            .doOnSubscribe {
-                removeError(importError)
-                updateAsSideEffect(isLoading, true)
-            }
+            .doOnSubscribe { removeError(importError) }
             .doOnError { throwable: Throwable? ->
                 val errorBuilder = createErrorBuilder(throwable!!)
                     .withTitle(R.string.document_import_error_title)
@@ -103,12 +110,12 @@ class AddCertificateFlowViewModel(app: Application) : BaseFlowViewModel(app) {
                 importError = errorBuilder.build()
                 addError(importError)
             }
-            .doFinally { updateAsSideEffect(isLoading, false) }
     }
 
-    fun onAddCertificateViewDismissed() = updateAsSideEffect(onViewDismissedDocumentAdded, ViewEvent(hasDocumentAdded))
+    fun onAddCertificateViewDismissed() = updateAsSideEffect(documentAddedOnViewDismissed, ViewEvent(hasAddedDocument))
 
     override fun onFinishFlow() {
         dismissBottomSheet()
     }
+
 }

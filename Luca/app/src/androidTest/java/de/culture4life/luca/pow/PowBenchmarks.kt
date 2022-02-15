@@ -1,6 +1,7 @@
 package de.culture4life.luca.pow
 
 import de.culture4life.luca.LucaInstrumentationTest
+import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import org.junit.Ignore
@@ -17,18 +18,18 @@ class PowBenchmarks : LucaInstrumentationTest() {
             "144380763259650206165998492155351388825945452939423498473280949282313289136159375661015977582124727973311826782287838157897769664221001485570865841509663731386087436449391953482279620327058756416748340645252983772240122199269269171151377875385220439442022824366535997821105787938297760058083260498515463996677",
             10
         ),
-        expirationTimestamp = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(1)
+        expirationTimestamp = TimeUtil.getCurrentMillis() + TimeUnit.MINUTES.toMillis(1)
     )
 
     @Ignore("Benchmark")
     @Test
     fun benchmark_fixedIterations() {
         val iterations = 10
-        val startTime = System.currentTimeMillis()
+        val startTime = TimeUtil.getCurrentMillis()
         for (i in 1..iterations) {
             challenge.calculateW()
         }
-        val duration = System.currentTimeMillis() - startTime
+        val duration = TimeUtil.getCurrentMillis() - startTime
         val calculationsPerMinute = iterations * TimeUnit.MINUTES.toMillis(1) / duration.toFloat()
         val averageDuration = duration / iterations.toFloat()
         println("Calculations per minute: $calculationsPerMinute")

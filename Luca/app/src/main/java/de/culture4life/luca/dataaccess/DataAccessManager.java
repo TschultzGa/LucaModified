@@ -24,6 +24,7 @@ import de.culture4life.luca.BuildConfig;
 import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.Manager;
 import de.culture4life.luca.R;
+import de.culture4life.luca.archive.Archiver;
 import de.culture4life.luca.checkin.CheckInData;
 import de.culture4life.luca.checkin.CheckInManager;
 import de.culture4life.luca.crypto.CryptoManager;
@@ -34,8 +35,7 @@ import de.culture4life.luca.network.endpoints.LucaEndpointsV4;
 import de.culture4life.luca.network.pojo.NotifyingHealthDepartment;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
-import de.culture4life.luca.ui.accesseddata.AccessedDataListItem;
-import de.culture4life.luca.ui.messages.MessageListItem;
+import de.culture4life.luca.util.SerializationUtil;
 import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
@@ -63,19 +63,19 @@ public class DataAccessManager extends Manager {
     public static final String LAST_UPDATE_TIMESTAMP_KEY = "last_accessed_data_update_timestamp";
     public static final String LAST_INFO_SHOWN_TIMESTAMP_KEY = "last_accessed_data_info_shown_timestamp";
     public static final String LAST_PREVIOUS_CHUNK_ID_KEY = "last_previous_chunk_id";
-    public static final String ACCESSED_DATA_KEY = "accessed_data";
+    public static final String KEY_ARCHIVED_ACCESSED_TRACE_DATA = "accessed_data";
 
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
     private final LucaNotificationManager notificationManager;
     private final CheckInManager checkInManager;
     private final HistoryManager historyManager;
-    private final CryptoManager cryptoManager;
+    private final CryptoManager cryptoManager; // initialization deferred to first use
 
     private WorkManager workManager;
 
-    @Nullable
-    private AccessedData accessedData;
+    private final Archiver<AccessedTraceData> archiver;
+
     private final BehaviorSubject<Boolean> hasNewNotifications = BehaviorSubject.create();
 
     @Nullable
@@ -88,6 +88,7 @@ public class DataAccessManager extends Manager {
         this.checkInManager = checkInManager;
         this.historyManager = historyManager;
         this.cryptoManager = cryptoManager;
+        archiver = new Archiver<>(preferencesManager, KEY_ARCHIVED_ACCESSED_TRACE_DATA, AccessedData.class, AccessedTraceData::getAccessTimestamp);
     }
 
     @Override
@@ -97,26 +98,27 @@ public class DataAccessManager extends Manager {
                 networkManager.initialize(context),
                 notificationManager.initialize(context),
                 checkInManager.initialize(context),
-                historyManager.initialize(context),
-                cryptoManager.initialize(context)
+                historyManager.initialize(context)
         ).andThen(Completable.fromAction(() -> {
-            this.context = context;
             if (!LucaApplication.isRunningUnitTests()) {
                 this.workManager = WorkManager.getInstance(context);
             }
-        })).andThen(initializeUpdates());
+        })).andThen(invokeStartUpdatingInRegularIntervals())
+                .andThen(Completable.fromAction(this::publishHasNewNotification));
+    }
+
+    @Override
+    public void dispose() {
+        archiver.clearCachedData();
+        super.dispose();
     }
 
     /*
         Updates
      */
 
-    private Completable initializeUpdates() {
-        return Completable.fromAction(() -> managerDisposable.add(startUpdatingInRegularIntervals()
-                .delaySubscription(UPDATE_INITIAL_DELAY, TimeUnit.MILLISECONDS, Schedulers.io())
-                .doOnError(throwable -> Timber.e("Unable to start updating in regular intervals: %s", throwable.toString()))
-                .onErrorComplete()
-                .subscribe()));
+    private Completable invokeStartUpdatingInRegularIntervals() {
+        return invokeDelayed(startUpdatingInRegularIntervals(), UPDATE_INITIAL_DELAY);
     }
 
     private Completable startUpdatingInRegularIntervals() {
@@ -161,7 +163,7 @@ public class DataAccessManager extends Manager {
                 .doOnNext(traceData -> traceData.setIsNew(true))
                 .toList()
                 .flatMapCompletable(this::processNewRecentlyAccessedTraceData)
-                .andThen(preferencesManager.persist(LAST_UPDATE_TIMESTAMP_KEY, System.currentTimeMillis()))
+                .andThen(preferencesManager.persist(LAST_UPDATE_TIMESTAMP_KEY, TimeUtil.getCurrentMillis()))
                 .doOnSubscribe(disposable -> Timber.d("Updating accessed data"))
                 .doOnComplete(() -> Timber.d("Accessed data update complete"))
                 .doOnError(throwable -> Timber.w("Accessed data update failed: %s", throwable.toString()));
@@ -169,7 +171,7 @@ public class DataAccessManager extends Manager {
 
     public Single<Long> getDurationSinceLastUpdate() {
         return preferencesManager.restoreOrDefault(LAST_UPDATE_TIMESTAMP_KEY, 0L)
-                .map(lastUpdateTimestamp -> System.currentTimeMillis() - lastUpdateTimestamp);
+                .map(lastUpdateTimestamp -> TimeUtil.getCurrentMillis() - lastUpdateTimestamp);
     }
 
     public Single<Long> getNextRecommendedUpdateDelay() {
@@ -353,9 +355,7 @@ public class DataAccessManager extends Manager {
      * updated.
      */
     public Observable<AccessedTraceData> getPreviouslyAccessedTraceData() {
-        return getOrRestoreAccessedData()
-                .map(AccessedData::getTraceData)
-                .flatMapObservable(Observable::fromIterable);
+        return archiver.getData();
     }
 
     /**
@@ -377,30 +377,14 @@ public class DataAccessManager extends Manager {
     }
 
     public Completable markAllAccessedTraceDataAsInformedAbout() {
-        return preferencesManager.persist(LAST_INFO_SHOWN_TIMESTAMP_KEY, System.currentTimeMillis());
+        return preferencesManager.persist(LAST_INFO_SHOWN_TIMESTAMP_KEY, TimeUtil.getCurrentMillis());
     }
 
     /*
         Accessed Data
      */
 
-    public Single<AccessedData> getOrRestoreAccessedData() {
-        return Maybe.fromCallable(() -> accessedData)
-                .switchIfEmpty(restoreAccessedData());
-    }
-
-    public Single<AccessedData> restoreAccessedData() {
-        return preferencesManager.restoreOrDefault(ACCESSED_DATA_KEY, new AccessedData())
-                .doOnSuccess(this::setAccessedDataAndPublish);
-    }
-
-    public Completable persistAccessedData(@NonNull AccessedData accessedData) {
-        return preferencesManager.persist(ACCESSED_DATA_KEY, accessedData)
-                .doOnSubscribe(disposable -> setAccessedDataAndPublish(accessedData));
-    }
-
-    private void setAccessedDataAndPublish(@NonNull AccessedData accessedData) {
-        this.accessedData = accessedData;
+    private void publishHasNewNotification() {
         hasNewNotifications.onNext(hasNewNotifications().blockingGet());
     }
 
@@ -423,10 +407,11 @@ public class DataAccessManager extends Manager {
      * #getPreviouslyAccessedTraceData()}.
      */
     public Completable addToAccessedData(@NonNull List<AccessedTraceData> accessedTraceData) {
-        return getOrRestoreAccessedData()
-                .doOnSuccess(accessedData -> accessedData.addData(accessedTraceData))
-                .flatMapCompletable(this::persistAccessedData)
-                .doOnComplete(() -> Timber.d("Added trace data to accessed data: %s", accessedTraceData));
+        return archiver.addData(accessedTraceData)
+                .doOnComplete(() -> {
+                    Timber.d("Added trace data to accessed data: %s", accessedTraceData);
+                    publishHasNewNotification();
+                });
     }
 
     /**
@@ -444,9 +429,15 @@ public class DataAccessManager extends Manager {
      * Mark accessedTraceData with the given traceId as not new.
      */
     public Completable markAsNotNew(@NonNull String traceId, int warningLevel) {
-        return getOrRestoreAccessedData()
-                .map(accessedData -> accessedData.markAsNotNew(traceId, warningLevel))
-                .flatMapCompletable(this::persistAccessedData);
+        return archiver.getData()
+                .map(accessedTraceData -> {
+                    boolean wasSeen = accessedTraceData.getTraceId().equals(traceId) && accessedTraceData.getWarningLevel() == warningLevel;
+                    accessedTraceData.setIsNew(!wasSeen);
+                    return accessedTraceData;
+                })
+                .toList()
+                .flatMapCompletable(accessTraceDataList -> archiver.addData(accessTraceDataList, (data) -> Archiver.OVERRIDE_ALL))
+                .doOnComplete(this::publishHasNewNotification);
     }
 
     /*
@@ -469,13 +460,14 @@ public class DataAccessManager extends Manager {
                 .flatMap(bytes -> CryptoManager.concatenate(bytes, new byte[]{(byte) warningLevel}));
 
         Single<SecretKey> getKey = Single.just(traceId)
-                .flatMap(CryptoManager::decodeFromString)
+                .flatMap(SerializationUtil::fromBase64)
                 .flatMap(CryptoManager::createKeyFromSecret);
 
-        return Single.zip(getMessage, getKey, (message, key) -> cryptoManager.getMacProvider().sign(message, key))
-                .flatMap(sign -> sign)
-                .flatMap(signature -> CryptoManager.trim(signature, hashLength))
-                .flatMap(CryptoManager::encodeToString);
+        return cryptoManager.initialize(context)
+                .andThen(Single.zip(getMessage, getKey, cryptoManager::hmac))
+                .flatMap(hmac -> hmac)
+                .flatMap(hmac -> CryptoManager.trim(hmac, hashLength))
+                .flatMap(SerializationUtil::toBase64);
     }
 
     /*
@@ -552,16 +544,6 @@ public class DataAccessManager extends Manager {
         return networkManager.getLucaEndpointsV4()
                 .flatMap(LucaEndpointsV4::getNotificationConfig)
                 .map(NotificationConfig::new);
-    }
-
-    public Single<AccessedDataListItem> createAccessDataListItem(@NonNull AccessedTraceData accessedTraceData) {
-        return getNotificationTexts(accessedTraceData)
-                .map(notificationTexts -> AccessedDataListItem.from(context, accessedTraceData, notificationTexts));
-    }
-
-    public Single<MessageListItem> createMessagesListItem(@NonNull AccessedTraceData accessedTraceData) {
-        return getNotificationTexts(accessedTraceData)
-                .map(notificationTexts -> new MessageListItem.AccessedDataListItem(accessedTraceData, notificationTexts));
     }
 
     /*

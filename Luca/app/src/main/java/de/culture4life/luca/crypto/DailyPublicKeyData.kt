@@ -2,6 +2,7 @@ package de.culture4life.luca.crypto
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
+import de.culture4life.luca.util.decodeFromBase64
 import java.security.interfaces.ECPublicKey
 
 data class DailyPublicKeyData(

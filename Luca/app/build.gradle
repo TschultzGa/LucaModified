@@ -3,17 +3,18 @@ apply plugin: 'com.github.triplet.play'
 apply plugin: 'kotlin-android'
 apply plugin: 'org.sonarqube'
 apply plugin: 'org.owasp.dependencycheck'
+apply plugin: 'com.mikepenz.aboutlibraries.plugin'
 apply from: 'dependencies.gradle'
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.2"
+    compileSdkVersion 31
+    buildToolsVersion "31.0.0"
     defaultConfig {
         applicationId "de.culture4life.luca"
         minSdkVersion 21
-        targetSdkVersion 30
-        versionCode 91
-        versionName "2.4.0"
+        targetSdkVersion 31
+        versionCode 92
+        versionName "2.4.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -138,6 +139,12 @@ android {
             jvmArgs '-noverify'
         }
     }
+    sourceSets {
+        test {
+            java.srcDirs += 'src/sharedTest/java'
+            resources.srcDirs += 'src/sharedTest/resources'
+        }
+    }
     packagingOptions {
         exclude 'META-INF/*'
         exclude 'draftv3/schema'
@@ -161,30 +168,43 @@ sonarqube {
     }
 }
 
+configurations {
+    sharedTestDependencies
+    sharedTestDependencies.exclude(group: 'com.github.chuckerteam.chucker', module: 'library')
+    testImplementation.extendsFrom(sharedTestDependencies)
+    androidTestImplementation.extendsFrom(sharedTestDependencies)
+}
+
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
     implementation project(':decoder')
 
-    implementation 'androidx.annotation:annotation:1.2.0'
-    implementation 'androidx.appcompat:appcompat:1.3.1'
-    implementation 'androidx.camera:camera-camera2:1.0.2'
-    implementation 'androidx.camera:camera-lifecycle:1.0.2'
-    implementation 'androidx.camera:camera-view:1.0.0-alpha28'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
-    implementation 'androidx.core:core-ktx:1.6.0'
+    implementation 'androidx.annotation:annotation:1.3.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.camera:camera-camera2:1.1.0-beta01'
+    implementation 'androidx.camera:camera-lifecycle:1.1.0-beta01'
+    implementation 'androidx.camera:camera-view:1.1.0-beta01'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+    implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
     implementation 'androidx.multidex:multidex:2.0.1'
+    // Updating navigation to 2.4.0 does crash when: My Luca Tab, activate camera, navigate to Check In Tab.
+    //  java.lang.IllegalArgumentException: saveBackStack("974a58df-2534-4590-b331-a0ebfe8a2aba") must not contain retained fragments.
+    //  Found retained child fragment RxPermissionsFragment{52ee8eb} (f9a7353a-3200-460c-ac49-c8c84ad51d04 tag=RxPermissions)
     implementation 'androidx.navigation:navigation-fragment-ktx:2.3.5'
     implementation 'androidx.navigation:navigation-ui-ktx:2.3.5'
     implementation 'androidx.security:security-crypto:1.1.0-alpha03'
-    implementation 'androidx.work:work-runtime:2.6.0'
-    implementation 'androidx.work:work-rxjava3:2.6.0'
+    implementation 'androidx.work:work-runtime:2.7.1'
+    implementation 'androidx.work:work-rxjava3:2.7.1'
 
     implementation bouncycastle
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.4'
     implementation 'com.github.akarnokd:rxjava3-extensions:3.0.1'
     implementation 'com.github.akarnokd:rxjava3-bridge:3.0.0'
+
+    implementation 'com.github.chuckerteam.chucker:library:3.5.2'
+
     implementation 'com.github.kenglxn.QRGen:android:2.6.0'
     implementation 'com.github.neXenio:RxKeyStore:0.6.4'
     implementation('com.github.neXenio:RxPreferences:1.2.1') {
@@ -192,17 +212,18 @@ dependencies {
     }
     implementation 'com.github.tbruyelle:rxpermissions:0.12'
     implementation 'com.github.numerative:Five-Star-Me:2.1.0'
-    implementation 'com.google.android.gms:play-services-location:18.0.0'
-    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'com.google.android.gms:play-services-location:19.0.1'
+    implementation 'com.google.android.material:material:1.5.0'
     implementation 'com.google.code.gson:gson:2.8.7'
     implementation 'com.google.guava:guava:27.0.1-jre'
-    implementation 'com.google.mlkit:barcode-scanning:17.0.0'
+    implementation 'com.google.mlkit:barcode-scanning:17.0.2'
     implementation 'com.googlecode.libphonenumber:libphonenumber:8.11.1'
 
     implementation 'com.jakewharton.timber:timber:4.7.1'
     implementation 'com.ncorti:slidetoact:0.9.0'
     implementation 'com.networknt:json-schema-validator:1.0.53'
-    implementation 'com.squareup.okhttp3:okhttp:4.9.0'
+    implementation 'com.mikepenz:aboutlibraries:8.9.4'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:adapter-rxjava3:2.9.0'
@@ -218,12 +239,11 @@ dependencies {
     implementation 'io.reactivex.rxjava3:rxjava:3.1.0'
     implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
     implementation jackson_dataformat_cbor
-    implementation 'joda-time:joda-time:2.10.10'
+    implementation 'joda-time:joda-time:2.10.13'
     implementation 'net.yslibrary.keyboardvisibilityevent:keyboardvisibilityevent:2.3.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     testImplementation 'androidx.test:core:1.4.0'
-    testImplementation 'com.android.support.test:rules:1.0.2'
     testImplementation 'com.android.support.test:runner:1.0.2'
     testImplementation junit
     testImplementation 'net.lachlanmckee:timber-junit-rule:1.0.1'
@@ -233,7 +253,6 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.5.1'
 
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.2.0'
     androidTestImplementation('com.android.support.test.espresso:espresso-core:3.0.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
@@ -242,4 +261,17 @@ dependencies {
     androidTestImplementation 'net.lachlanmckee:timber-junit-rule:1.0.1'
     androidTestImplementation 'org.mockito.kotlin:mockito-kotlin:4.0.0'
     androidTestImplementation 'org.mockito:mockito-android:2.24.5'
+
+    // fragment-testing has to be included in debug variant to make it work for androidTest target.
+    // https://developer.android.com/guide/fragments/test#declare-dependencies
+    debugImplementation 'androidx.fragment:fragment-testing:1.4.1'
+
+    sharedTestDependencies 'androidx.arch.core:core-testing:2.1.0'
+    sharedTestDependencies 'androidx.test.espresso:espresso-intents:3.4.0'
+    sharedTestDependencies 'androidx.test.ext:junit:1.1.3'
+    sharedTestDependencies 'com.android.support.test:rules:1.0.2'
+    sharedTestDependencies 'com.github.chuckerteam.chucker:library-no-op:3.5.2'
+    sharedTestDependencies 'com.squareup.okhttp3:mockwebserver:4.9.3'
+    sharedTestDependencies 'com.squareup.rx.idler:rx3-idler:0.11.0'
+    sharedTestDependencies 'io.github.kakaocup:kakao:3.0.6'
 }

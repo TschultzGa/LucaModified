@@ -2,8 +2,8 @@ import { openDeepLink, searchElementBuilder,sauceLabsImageInjection, getCheckinQ
 import { VALID_QR_LOCATION_IMAGE } from '../../helpers/Constants';
 
 class CheckIn {
-    get cameraEnable ():WebdriverIO.Element {return $(searchElementBuilder('requestCameraPermissionImageView'));}
-    get headerText():WebdriverIO.Element {return $(searchElementBuilder('headingTextView'));}
+    get cameraEnable ():WebdriverIO.Element {return $(searchElementBuilder('startCameraImageView'));}
+    get headerText():WebdriverIO.Element {return $(searchElementBuilder('actionBarTitleTextView'));}
     get showQrCodeButton():WebdriverIO.Element {return $(searchElementBuilder('showQrCodeButton'));}
     get createPrivateMeetingButton():WebdriverIO.Element {return $(searchElementBuilder('createMeetingButton'));}
     get historyButton():WebdriverIO.Element {return $(searchElementBuilder('historyTextView'));}
@@ -15,21 +15,30 @@ class CheckIn {
     get alertHeader():WebdriverIO.Element {return $(searchElementBuilder('alertTitle'));}
     get alertText():WebdriverIO.Element {return $('[id="android:id/message"]');}
     get cameraPermissionOld():WebdriverIO.Element {return $('[id="com.android.packageinstaller:id/permission_allow_button"]');}
-    get cameraPermissionNew():WebdriverIO.Element {return $('[id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]');}
+    get cameraPermissionNew():WebdriverIO.Element {return $('[id="com.android.permissioncontroller:id/permission_allow_button"]');}
+    get cameraPermission():WebdriverIO.Element {return $('[id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]');}
+    get checkinConfrimationHeaderText():WebdriverIO.Element {return $(searchElementBuilder('checkInHeaderTextView'));}
+    get checkinConfrimationDescriptionText():WebdriverIO.Element {return $(searchElementBuilder('checkInDescriptionTextView'));}
+    get actionButton():WebdriverIO.Element {return $(searchElementBuilder('actionButton'));}
     checkIn(){
         //For sauce Labs execution
         sauceLabsImageInjection(VALID_QR_LOCATION_IMAGE);
         this.cameraEnable.click();
         this.alertButtonOk.click();
+        driver.pause(2000);
         if ( this.cameraPermissionNew.isExisting() ){
             this.cameraPermissionNew.click();
-        } else {
+        }
+        if(this.cameraPermissionOld.isExisting()){
             this.cameraPermissionOld.click();
+        }
+        if(this.cameraPermission.isExisting()){
+            this.cameraPermission.click();
         }
         driver.pause(3000);
         openDeepLink(getCheckinQrDeepLinkByEnv());
-        this.alertButtonOk.waitForExist({ timeout: 10000 });
-        this.alertButtonOk.click();
+        this.actionButton.waitForExist({ timeout: 10000 });
+        this.actionButton.click();
     }
 }
 export default new CheckIn();

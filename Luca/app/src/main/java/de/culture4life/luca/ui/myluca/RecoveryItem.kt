@@ -18,7 +18,7 @@ class RecoveryItem(context: Context, document: Document) : VaccinationItem(conte
 
         topContent.clear()
         val createdBefore = TimeUtil.getReadableDurationWithPlural(
-            System.currentTimeMillis() - document.testingTimestamp,
+            TimeUtil.getCurrentMillis() - document.testingTimestamp,
             context
         ).blockingGet()
         addTopContent(context.getString(R.string.document_created_before), createdBefore)
@@ -50,7 +50,7 @@ class RecoveryItem(context: Context, document: Document) : VaccinationItem(conte
                     ContextCompat.getColor(context, R.color.document_outcome_partially_vaccinated)
             }
             Document.OUTCOME_FULLY_IMMUNE -> {
-                val timeUntilValid = document.validityStartTimestamp - System.currentTimeMillis()
+                val timeUntilValid = document.validityStartTimestamp - TimeUtil.getCurrentMillis()
                 if (timeUntilValid <= 0) {
                     title = context.getString(R.string.document_outcome_fully_recovered)
                     color =

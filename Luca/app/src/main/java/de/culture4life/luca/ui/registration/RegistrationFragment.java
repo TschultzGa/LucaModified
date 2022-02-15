@@ -296,7 +296,7 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
     private void showCurrentPhoneNumberVerificationStep() {
         if (viewModel.getShouldRequestNewVerificationTan().getValue()) {
             long nextPossibleVerificationTanRequestTimestamp = viewModel.getNextPossibleTanRequestTimestamp().getValue();
-            if (nextPossibleVerificationTanRequestTimestamp > System.currentTimeMillis()) {
+            if (nextPossibleVerificationTanRequestTimestamp > TimeUtil.getCurrentMillis()) {
                 showPhoneNumberRequestTimeoutDialog(nextPossibleVerificationTanRequestTimestamp);
             } else {
                 showPhoneNumberVerificationConfirmationDialog();
@@ -441,7 +441,7 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
     }
 
     private void showPhoneNumberRequestTimeoutDialog(long nextPossibleTanRequestTimestamp) {
-        long duration = nextPossibleTanRequestTimestamp - System.currentTimeMillis();
+        long duration = nextPossibleTanRequestTimestamp - TimeUtil.getCurrentMillis();
         String readableDuration = TimeUtil.getReadableDurationWithPlural(duration, getContext()).blockingGet();
         new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
                 .setTitle(R.string.verification_timeout_error_title)

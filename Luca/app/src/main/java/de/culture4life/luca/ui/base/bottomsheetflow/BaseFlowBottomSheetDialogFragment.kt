@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.databinding.BottomSheetFlowBinding
 import de.culture4life.luca.ui.base.BaseBottomSheetDialogFragment
 
@@ -13,6 +14,10 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
 
     lateinit var binding: BottomSheetFlowBinding
     lateinit var pagerAdapter: FlowPageAdapter
+    override var fixedHeight = true
+
+    // Disable animations for automatic tests to avoid flakiness. Espresso does not always wait until all animations are done.
+    private val useSmoothScrollAnimation = !LucaApplication.isRunningInstrumentationTests()
 
     abstract fun lastPageHasBackButton(): Boolean
 
@@ -23,11 +28,11 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
 
     override fun initializeViews() {
         super.initializeViews()
-        initViewPager()
-        initObservers()
+        initializeViewPager()
+        initializeObservers()
     }
 
-    private fun initViewPager() {
+    private fun initializeViewPager() {
         pagerAdapter = FlowPageAdapter(this)
 
         binding.confirmationStepViewPager.apply {
@@ -46,7 +51,7 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
         }
     }
 
-    private fun initObservers() {
+    private fun initializeObservers() {
         binding.backButton.setOnClickListener { navigateToPrevious() }
         binding.cancelButton.setOnClickListener { dismiss() }
 
@@ -66,11 +71,11 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
         })
     }
 
-    protected fun navigateToPrevious() {
+    private fun navigateToPrevious() {
         val current = binding.confirmationStepViewPager.currentItem
 
         if (current > 0) {
-            binding.confirmationStepViewPager.setCurrentItem(current - 1, true)
+            binding.confirmationStepViewPager.setCurrentItem(current - 1, useSmoothScrollAnimation)
         }
     }
 
@@ -79,7 +84,7 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
 
         when {
             pagerAdapter.hasItemAt(current + 1) ->
-                binding.confirmationStepViewPager.setCurrentItem(current + 1, true)
+                binding.confirmationStepViewPager.setCurrentItem(current + 1, useSmoothScrollAnimation)
 
             current == (pagerAdapter.itemCount - 1) -> viewModel.onFinishFlow()
         }
@@ -118,7 +123,6 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
                 clear()
                 addAll(pages)
             }
-
             notifyDataSetChanged()
         }
 
@@ -155,4 +159,5 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
         binding.confirmationStepViewPager.adapter = null
         super.onDismiss(dialog)
     }
+
 }

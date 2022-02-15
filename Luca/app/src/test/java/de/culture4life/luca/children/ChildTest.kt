@@ -18,14 +18,18 @@ class ChildTest {
 
     @Test
     fun createChildFrom_multipleFirstAndLastNames() {
-        assertEquals(Child("Erika Maria", "Mustermann Musterfrau"),
-            createChildFrom("Erika Maria Mustermann Musterfrau", "Mustermann Musterfrau"))
+        assertEquals(
+            Child("Erika Maria", "Mustermann Musterfrau"),
+            createChildFrom("Erika Maria Mustermann Musterfrau", "Mustermann Musterfrau")
+        )
     }
 
     @Test
     fun createChildFrom_multipleFirstAndLastNamesWithSpaces() {
-        assertEquals(Child("Erika Maria", "Mustermann Musterfrau"),
-            createChildFrom("Erika Maria   Mustermann Musterfrau ", "Mustermann Musterfrau"))
+        assertEquals(
+            Child("Erika Maria", "Mustermann Musterfrau"),
+            createChildFrom("Erika Maria   Mustermann Musterfrau ", "Mustermann Musterfrau")
+        )
     }
 
     @Test

@@ -14,8 +14,8 @@ public class TestResultItem extends MyLucaListItem {
 
     public static class TestProcedure {
 
-        private String name;
-        private String date;
+        private final String name;
+        private final String date;
 
         public TestProcedure(@NonNull String name, @NonNull String date) {
             this.name = name;
@@ -42,11 +42,12 @@ public class TestResultItem extends MyLucaListItem {
         }
         this.color = getColor(context, document);
         this.deleteButtonText = context.getString(R.string.delete_test_action);
-        this.imageResource = document.isVerified() ? R.drawable.ic_verified : 0;
+        this.imageResource = document.isVerified() ? R.drawable.ic_verified : R.drawable.ic_warning_triangle_orange;
 
-        String duration = TimeUtil.getReadableDurationWithPlural(System.currentTimeMillis() - document.getResultTimestamp(), context).blockingGet();
         String time = context.getString(R.string.document_result_time, TimeUtil.getReadableTime(context, document.getResultTimestamp()));
         addTopContent(context.getString(R.string.document_issued), time);
+
+        String duration = TimeUtil.getReadableDurationWithPlural(TimeUtil.getCurrentMillis() - document.getResultTimestamp(), context).blockingGet();
         addTopContent(context.getString(R.string.document_created_before), duration);
 
         addCollapsedContent(context.getString(R.string.document_lab_issuer), document.getLabName());

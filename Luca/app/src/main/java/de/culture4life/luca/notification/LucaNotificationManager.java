@@ -30,20 +30,22 @@ import java.util.Random;
 
 import de.culture4life.luca.Manager;
 import de.culture4life.luca.R;
+import de.culture4life.luca.connect.ConnectMessage;
 import de.culture4life.luca.service.LucaService;
 import de.culture4life.luca.ui.MainActivity;
+import de.culture4life.luca.whatisnew.WhatIsNewMessage;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Maybe;
 import timber.log.Timber;
 
 public class LucaNotificationManager extends Manager {
 
     public static final int NOTIFICATION_ID_STATUS = 1;
-    public static final int NOTIFICATION_ID_DATA_ACCESS = 2000; // dynamically incremented by warning level
     public static final int NOTIFICATION_ID_EVENT = 3;
     public static final int NOTIFICATION_ID_CHECKOUT_REMINDER = 4;
-    public static final int NOTIFICATION_ID_CONNECT_ENROLLMENT_SUPPORTED = 5;
-    public static final int NOTIFICATION_ID_CONNECT_MESSAGE = 3000; // dynamically incremented by message ID
+    public static final int NOTIFICATION_ID_CHECKOUT_TRIGGERED = 5;
+    public static final int NOTIFICATION_ID_NEWS_MESSAGE = 1000; // incremented by news message ID
+    public static final int NOTIFICATION_ID_DATA_ACCESS = 2000; // incremented by warning level
+    public static final int NOTIFICATION_ID_CONNECT_MESSAGE = 3000; // incremented by connect message ID
     private static final String NOTIFICATION_CHANNEL_ID_PREFIX = "channel_";
     private static final String NOTIFICATION_CHANNEL_ID_STATUS = NOTIFICATION_CHANNEL_ID_PREFIX + NOTIFICATION_ID_STATUS;
     private static final String NOTIFICATION_CHANNEL_ID_DATA_ACCESS = NOTIFICATION_CHANNEL_ID_PREFIX + NOTIFICATION_ID_DATA_ACCESS;
@@ -51,14 +53,14 @@ public class LucaNotificationManager extends Manager {
     public static final String NOTIFICATION_CHANNEL_ID_EVENT = NOTIFICATION_CHANNEL_ID_PREFIX + NOTIFICATION_ID_EVENT;
     private static final String NOTIFICATION_CHANNEL_ID_CHECKOUT_REMINDER = NOTIFICATION_CHANNEL_ID_PREFIX + NOTIFICATION_ID_CHECKOUT_REMINDER;
 
-    private static final String BUNDLE_KEY = "notification_bundle";
-    private static final String ACTION_KEY = "notification_action";
+    private static final String KEY_BUNDLE = "notification_bundle";
+    private static final String KEY_ACTION = "notification_action";
+    private static final String KEY_DESTINATION = "notification_destination";
 
-    public static final int ACTION_STOP = 1;
-    public static final int ACTION_CHECKOUT = 2;
-    public static final int ACTION_END_MEETING = 3;
-    public static final int ACTION_SHOW_MESSAGES = 4;
-    public static final int ACTION_SHOW_CHECKIN_TAB = 5;
+    public static final int ACTION_NAVIGATE = 1;
+    public static final int ACTION_STOP = 2;
+    public static final int ACTION_CHECKOUT = 3;
+    public static final int ACTION_END_MEETING = 4;
 
     private static final long VIBRATION_DURATION = 200;
 
@@ -107,6 +109,10 @@ public class LucaNotificationManager extends Manager {
             }
         });
     }
+
+    /*
+        Notification channels
+     */
 
     /**
      * Creates all notification channels that might be used by the app, if targeting Android O or
@@ -175,78 +181,30 @@ public class LucaNotificationManager extends Manager {
         notificationManager.createNotificationChannel(channel);
     }
 
-    @SuppressWarnings("rawtypes")
-    public NotificationCompat.Builder createCheckedInNotificationBuilder(Class activityClass) {
-        Bundle notificationBundle = new Bundle();
-        notificationBundle.putInt(ACTION_KEY, ACTION_SHOW_CHECKIN_TAB);
-        return createStatusNotificationBuilder(activityClass, notificationBundle, R.string.notification_service_title, R.string.notification_service_description)
-                .addAction(createCheckoutAction());
-    }
-
-    @SuppressWarnings("rawtypes")
-    public NotificationCompat.Builder createMeetingHostNotificationBuilder(Class activityClass) {
-        return createStatusNotificationBuilder(activityClass, null, R.string.notification_meeting_host_title, R.string.notification_meeting_host_description)
-                .addAction(createEndMeetingAction());
-    }
-
-    @SuppressWarnings("rawtypes")
-    public NotificationCompat.Builder createCheckOutReminderNotificationBuilder(Class activityClass) {
-        Bundle notificationBundle = new Bundle();
-        notificationBundle.putInt(ACTION_KEY, ACTION_SHOW_CHECKIN_TAB);
-        return createCheckOutReminderNotificationBuilder(activityClass, notificationBundle, R.string.notification_check_out_reminder_title, R.string.notification_check_out_reminder_description)
-                .addAction(createCheckoutAction());
-    }
-
-    /**
-     * Creates the default data access notification builder, intended to inform the user that an
-     * health department has accessed data related to the user.
+    /*
+        Status notifications
      */
-    public NotificationCompat.Builder createDataAccessedNotificationBuilder() {
-        Bundle notificationBundle = new Bundle();
-        notificationBundle.putInt(ACTION_KEY, ACTION_SHOW_MESSAGES);
 
-        return createBaseNotificationBuilder(MainActivity.class, NOTIFICATION_CHANNEL_ID_DATA_ACCESS, R.string.notification_data_accessed_title, R.string.notification_data_accessed_description, notificationBundle)
-                .setSmallIcon(R.drawable.ic_information_outline)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(Notification.CATEGORY_MESSAGE);
+    public NotificationCompat.Builder createCheckedInNotificationBuilder() {
+        return createStatusNotificationBuilder(createNavigationIntent(R.id.checkInFragment), R.string.notification_service_title, R.string.notification_service_description)
+                .addAction(createCheckoutAction());
     }
 
-    public NotificationCompat.Builder createConnectEnrollmentSupportedNotificationBuilder() {
-        Bundle notificationBundle = new Bundle();
-        notificationBundle.putInt(ACTION_KEY, ACTION_SHOW_MESSAGES);
-
-        return createBaseNotificationBuilder(MainActivity.class, NOTIFICATION_CHANNEL_ID_CONNECT, R.string.notification_luca_connect_supported_title, R.string.notification_luca_connect_supported_description, notificationBundle)
-                .setSmallIcon(R.drawable.ic_information_outline)
-                .setOnlyAlertOnce(true)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setCategory(Notification.CATEGORY_RECOMMENDATION);
-    }
-
-    public NotificationCompat.Builder createConnectMessageNotificationBuilder(@NonNull String title, @NonNull String description) {
-        Bundle notificationBundle = new Bundle();
-        notificationBundle.putInt(ACTION_KEY, ACTION_SHOW_MESSAGES);
-
-        return createBaseNotificationBuilder(MainActivity.class, NOTIFICATION_CHANNEL_ID_CONNECT, title, description, notificationBundle)
-                .setSmallIcon(R.drawable.ic_information_outline)
-                .setOnlyAlertOnce(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(Notification.CATEGORY_MESSAGE);
+    public NotificationCompat.Builder createMeetingHostNotificationBuilder() {
+        return createStatusNotificationBuilder(createNavigationIntent(R.id.checkInFragment), R.string.notification_meeting_host_title, R.string.notification_meeting_host_description)
+                .addAction(createEndMeetingAction());
     }
 
     /**
      * Creates the default status notification builder, intended to serve the ongoing foreground
      * service notification.
      */
-    @SuppressWarnings("rawtypes")
     public NotificationCompat.Builder createStatusNotificationBuilder(
-            Class activityClass,
-            @Nullable Bundle notificationBundle,
+            PendingIntent intent,
             @StringRes int titleResourceId,
             @StringRes int descriptionResourceId
     ) {
-        return createBaseNotificationBuilder(activityClass, NOTIFICATION_CHANNEL_ID_STATUS, titleResourceId, descriptionResourceId, notificationBundle)
+        return createBaseNotificationBuilder(intent, NOTIFICATION_CHANNEL_ID_STATUS, titleResourceId, descriptionResourceId)
                 .setSmallIcon(R.drawable.ic_person_pin)
                 .setAutoCancel(false)
                 .setOngoing(true)
@@ -254,74 +212,103 @@ public class LucaNotificationManager extends Manager {
                 .setCategory(Notification.CATEGORY_STATUS);
     }
 
-    @SuppressWarnings("rawtypes")
-    public NotificationCompat.Builder createEventNotificationBuilder(Class activityClass, @StringRes int titleResourceId, @NonNull String description) {
-        return createBaseNotificationBuilder(activityClass, NOTIFICATION_CHANNEL_ID_EVENT, titleResourceId, description)
+    /*
+        Event notifications
+     */
+
+    @SuppressWarnings("ConstantConditions")
+    public Completable showNewsMessageNotification(WhatIsNewMessage message) {
+        return Completable.defer(() -> {
+            int id = getNotificationId(NOTIFICATION_ID_NEWS_MESSAGE, message.getId());
+            Notification notification = createNewsMessageNotificationBuilder(
+                    message.getDestination(), message.getTitle(), message.getContent()
+            ).build();
+            return showNotification(id, notification);
+        });
+    }
+
+    public NotificationCompat.Builder createNewsMessageNotificationBuilder(int destination, String title, String description) {
+        return createEventNotificationBuilder(createNavigationIntent(destination), title, description);
+    }
+
+    public NotificationCompat.Builder createErrorNotificationBuilder(@NonNull String title, @NonNull String description) {
+        return createEventNotificationBuilder(createOpenAppIntent(), title, description)
+                .setCategory(Notification.CATEGORY_ERROR);
+    }
+
+    public NotificationCompat.Builder createEventNotificationBuilder(
+            PendingIntent intent,
+            String title,
+            String description
+    ) {
+        return createBaseNotificationBuilder(intent, NOTIFICATION_CHANNEL_ID_EVENT, title, description)
                 .setSmallIcon(R.drawable.ic_information_outline)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setCategory(Notification.CATEGORY_EVENT);
     }
 
-    @SuppressWarnings("rawtypes")
-    private NotificationCompat.Builder createCheckOutReminderNotificationBuilder(
-            Class activityClass,
-            @Nullable Bundle notificationBundle,
-            @StringRes int titleResourceId,
-            @StringRes int descriptionResourceId
-    ) {
-        return createBaseNotificationBuilder(activityClass, NOTIFICATION_CHANNEL_ID_CHECKOUT_REMINDER, titleResourceId, descriptionResourceId, notificationBundle)
+    /*
+        Other notifications
+     */
+
+    public Completable showConnectMessageNotification(ConnectMessage message) {
+        return Completable.defer(() -> {
+            int id = getNotificationId(NOTIFICATION_ID_CONNECT_MESSAGE, message.getId());
+            Notification notification = createConnectMessageNotificationBuilder(
+                    message.getTitle(), message.getContent()
+            ).build();
+            return showNotification(id, notification);
+        });
+    }
+
+    private NotificationCompat.Builder createConnectMessageNotificationBuilder(@NonNull String title, @NonNull String description) {
+        return createBaseNotificationBuilder(createNavigationIntent(R.id.messagesFragment), NOTIFICATION_CHANNEL_ID_CONNECT, title, description)
+                .setSmallIcon(R.drawable.ic_information_outline)
+                .setOnlyAlertOnce(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(Notification.CATEGORY_MESSAGE);
+    }
+
+    /**
+     * Creates the default data access notification builder, intended to inform the user that an
+     * health department has accessed data related to the user.
+     */
+    public NotificationCompat.Builder createDataAccessedNotificationBuilder() {
+        return createBaseNotificationBuilder(createNavigationIntent(R.id.messagesFragment), NOTIFICATION_CHANNEL_ID_DATA_ACCESS, R.string.notification_data_accessed_title, R.string.notification_data_accessed_description)
+                .setSmallIcon(R.drawable.ic_information_outline)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(Notification.CATEGORY_MESSAGE);
+    }
+
+    public NotificationCompat.Builder createCheckOutReminderNotificationBuilder() {
+        String title = context.getString(R.string.notification_check_out_reminder_title);
+        String description = context.getString(R.string.notification_check_out_reminder_description);
+        return createBaseNotificationBuilder(createNavigationIntent(R.id.checkInFragment), NOTIFICATION_CHANNEL_ID_CHECKOUT_REMINDER, title, description)
                 .setSmallIcon(R.drawable.ic_hourglass_time_over)
                 .setAutoCancel(false)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setCategory(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? Notification.CATEGORY_REMINDER : Notification.CATEGORY_EVENT);
+                .setCategory(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? Notification.CATEGORY_REMINDER : Notification.CATEGORY_EVENT)
+                .addAction(createCheckoutAction());
     }
 
-    @SuppressWarnings("rawtypes")
-    public NotificationCompat.Builder createErrorNotificationBuilder(Class activityClass, @NonNull String title, @NonNull String description) {
-        return createBaseNotificationBuilder(activityClass, NOTIFICATION_CHANNEL_ID_EVENT, R.string.notification_error_title, description)
-                .setContentTitle(title)
-                .setSmallIcon(R.drawable.ic_error_outline)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setCategory(Notification.CATEGORY_ERROR);
-    }
-
-    @SuppressWarnings("rawtypes")
     private NotificationCompat.Builder createBaseNotificationBuilder(
-            Class activityClass,
+            PendingIntent intent,
             String notificationChannelId,
-            @StringRes int titleResourceId,
-            @StringRes int descriptionResourceId
+            @StringRes int titleResource,
+            @StringRes int descriptionResource
     ) {
-        return createBaseNotificationBuilder(activityClass, notificationChannelId, context.getText(titleResourceId).toString(), context.getText(descriptionResourceId).toString(), null);
+        String title = context.getString(titleResource);
+        String description = context.getString(descriptionResource);
+        return createBaseNotificationBuilder(intent, notificationChannelId, title, description);
     }
 
-    @SuppressWarnings("rawtypes")
     private NotificationCompat.Builder createBaseNotificationBuilder(
-            Class activityClass, String notificationChannelId,
-            @StringRes int titleResourceId,
-            @StringRes int descriptionResourceId,
-            @Nullable Bundle notificationBundle
-    ) {
-        return createBaseNotificationBuilder(activityClass, notificationChannelId, context.getText(titleResourceId).toString(), context.getText(descriptionResourceId).toString(), notificationBundle);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private NotificationCompat.Builder createBaseNotificationBuilder(
-            Class activityClass,
-            String notificationChannelId,
-            @StringRes int titleResourceId,
-            String description
-    ) {
-        return createBaseNotificationBuilder(activityClass, notificationChannelId, context.getText(titleResourceId).toString(), description, null);
-    }
-
-    @SuppressWarnings("rawtypes")
-    private NotificationCompat.Builder createBaseNotificationBuilder(
-            Class activityClass,
+            PendingIntent intent,
             String notificationChannelId,
             String title,
-            String description,
-            @Nullable Bundle notificationBundle
+            String description
     ) {
         return new NotificationCompat.Builder(context, notificationChannelId)
                 .setContentTitle(title)
@@ -330,9 +317,24 @@ public class LucaNotificationManager extends Manager {
                 .setOngoing(false)
                 .setOnlyAlertOnce(true)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                .setContentIntent(createActivityIntent(activityClass, notificationBundle))
+                .setContentIntent(intent)
                 .setStyle(new NotificationCompat.BigTextStyle()
                         .bigText(description));
+    }
+
+    /*
+        Intent creation
+     */
+
+    public PendingIntent createNavigationIntent(int destination) {
+        Bundle notificationBundle = new Bundle();
+        notificationBundle.putInt(KEY_ACTION, ACTION_NAVIGATE);
+        notificationBundle.putInt(KEY_DESTINATION, destination);
+        return createActivityIntent(MainActivity.class, notificationBundle);
+    }
+
+    public PendingIntent createOpenAppIntent() {
+        return createActivityIntent(MainActivity.class, null);
     }
 
     /**
@@ -342,7 +344,7 @@ public class LucaNotificationManager extends Manager {
     public PendingIntent createActivityIntent(Class intentClass, @Nullable Bundle notificationBundle) {
         Intent contentIntent = new Intent(context, intentClass);
         if (notificationBundle != null) {
-            contentIntent.putExtra(BUNDLE_KEY, notificationBundle);
+            contentIntent.putExtra(KEY_BUNDLE, notificationBundle);
         }
         contentIntent.setFlags(FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
@@ -356,12 +358,12 @@ public class LucaNotificationManager extends Manager {
     }
 
     /**
-     * Creates a pending intent that will start the specified service when invoked.
+     * Creates a pending intent that will start the luca service when invoked.
      */
     public PendingIntent createServiceIntent(@Nullable Bundle notificationBundle) {
         Intent contentIntent = new Intent(context, LucaService.class);
         if (notificationBundle != null) {
-            contentIntent.putExtra(BUNDLE_KEY, notificationBundle);
+            contentIntent.putExtra(KEY_BUNDLE, notificationBundle);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             return PendingIntent.getForegroundService(context, 0, contentIntent, FLAG_IMMUTABLE | FLAG_UPDATE_CURRENT);
@@ -372,9 +374,13 @@ public class LucaNotificationManager extends Manager {
         }
     }
 
+    /*
+        Actions
+     */
+
     private NotificationCompat.Action createCheckoutAction() {
         Bundle bundle = new Bundle();
-        bundle.putInt(ACTION_KEY, ACTION_CHECKOUT);
+        bundle.putInt(KEY_ACTION, ACTION_CHECKOUT);
         PendingIntent pendingIntent = createServiceIntent(bundle);
 
         return new NotificationCompat.Action.Builder(
@@ -386,7 +392,7 @@ public class LucaNotificationManager extends Manager {
 
     private NotificationCompat.Action createEndMeetingAction() {
         Bundle bundle = new Bundle();
-        bundle.putInt(ACTION_KEY, ACTION_END_MEETING);
+        bundle.putInt(KEY_ACTION, ACTION_END_MEETING);
         PendingIntent pendingIntent = createServiceIntent(bundle);
 
         return new NotificationCompat.Action.Builder(
@@ -396,29 +402,48 @@ public class LucaNotificationManager extends Manager {
         ).build();
     }
 
+    /*
+        Utilities
+     */
+
     /**
      * Attempts to retrieve the bundle that has been added when using {@link
      * #createServiceIntent(Bundle)}.
      */
-    public static Maybe<Bundle> getBundleFromIntent(@Nullable Intent intent) {
-        return Maybe.defer(() -> {
-            if (intent != null && intent.getExtras() != null) {
-                Bundle extras = intent.getExtras();
-                if (extras.containsKey(BUNDLE_KEY)) {
-                    return Maybe.fromCallable(() -> extras.getBundle(BUNDLE_KEY));
-                }
-            }
-            return Maybe.empty();
-        });
+    @Nullable
+    public static Bundle getBundleFromIntentIfAvailable(@Nullable Intent intent) {
+        Bundle bundle = intent != null ? intent.getExtras() : null;
+        Object value = getObjectFromBundle(bundle, KEY_BUNDLE);
+        return value != null ? (Bundle) value : null;
     }
 
-    public static Maybe<Integer> getActionFromBundle(@Nullable Bundle bundle) {
-        return Maybe.defer(() -> {
-            if (bundle != null && bundle.containsKey(ACTION_KEY)) {
-                return Maybe.fromCallable(() -> bundle.getInt(ACTION_KEY));
-            }
-            return Maybe.empty();
-        });
+    @Nullable
+    public static Integer getActionFromBundleIfAvailable(@Nullable Bundle bundle) {
+        Object value = getObjectFromBundle(bundle, KEY_ACTION);
+        return value != null ? (Integer) value : null;
+    }
+
+    @Nullable
+    public static Integer getDestinationFromBundleIfAvailable(@Nullable Bundle bundle) {
+        Object value = getObjectFromBundle(bundle, KEY_DESTINATION);
+        return value != null ? (Integer) value : null;
+    }
+
+    @Nullable
+    public static Object getObjectFromBundle(@Nullable Bundle bundle, String key) {
+        if (bundle == null || !bundle.containsKey(key)) {
+            return null;
+        }
+        return bundle.get(key);
+    }
+
+    /**
+     * Returns a value in range [baseNotificationId, baseNotificationId + 999] that
+     * should be used as notification ID in cases where there may be more than one
+     * notification for a given base ID.
+     */
+    public static int getNotificationId(int baseNotificationId, Object subject) {
+        return baseNotificationId + (subject.hashCode() % 1000);
     }
 
     private boolean areNotificationsEnabled() {
@@ -429,7 +454,6 @@ public class LucaNotificationManager extends Manager {
         if (!areNotificationsEnabled()) {
             return false;
         }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = NotificationManagerCompat.from(context).getNotificationChannel(notificationChannelId);
             Objects.requireNonNull(channel);
@@ -485,4 +509,5 @@ public class LucaNotificationManager extends Manager {
         Timber.d("Request to open notification channel settings: %s", notificationChannelId);
         context.startActivity(intent);
     }
+
 }

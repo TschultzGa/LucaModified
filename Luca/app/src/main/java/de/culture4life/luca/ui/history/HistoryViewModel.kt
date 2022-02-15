@@ -321,15 +321,17 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
         if (filteredData.isNotEmpty()) {
             val firstItem = filteredData[0]
             if (filteredData.size == 1) {
-                modelDisposable.add(dataAccessManager.createAccessDataListItem(filteredData[0])
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeOn(Schedulers.io())
-                    .subscribe { dataListItem: AccessedDataListItem? ->
-                        if (isCurrentDestinationId(R.id.historyFragment)) {
-                            bundle.putSerializable(AccessedDataDetailFragment.KEY_ACCESSED_DATA_LIST_ITEM, dataListItem)
-                            navigationController!!.navigate(R.id.action_historyFragment_to_accessedDataDetailFragment, bundle)
-                        }
-                    })
+                modelDisposable.add(
+                    dataAccessManager.getNotificationTexts(firstItem)
+                        .map { AccessedDataListItem.from(getApplication(), firstItem, it) }
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.io())
+                        .subscribe { dataListItem: AccessedDataListItem ->
+                            if (isCurrentDestinationId(R.id.historyFragment)) {
+                                bundle.putSerializable(AccessedDataDetailFragment.KEY_ACCESSED_DATA_LIST_ITEM, dataListItem)
+                                navigationController!!.navigate(R.id.action_historyFragment_to_accessedDataDetailFragment, bundle)
+                            }
+                        })
             } else {
                 bundle.putString(AccessedDataFragment.KEY_TRACE_ID, firstItem.traceId)
                 bundle.putInt(HistoryFragment.KEY_WARNING_LEVEL_FILTER, warningLevelFilter)

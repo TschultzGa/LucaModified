@@ -1,7 +1,7 @@
 package de.culture4life.luca.ui.accesseddata
 
-import android.os.Bundle
 import android.view.View
+import androidx.core.os.bundleOf
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentAccessedDataBinding
@@ -38,9 +38,7 @@ class AccessedDataFragment : BaseFragment<AccessedDataViewModel>() {
             accessedDataListView.adapter = accessedDataListAdapter
             accessedDataListView.setOnItemClickListener { _, _, position, _ ->
                 val item = accessedDataListAdapter.getItem(position - accessedDataListView.headerViewsCount)
-                val bundle = Bundle().apply {
-                    putSerializable(KEY_ACCESSED_DATA_LIST_ITEM, item)
-                }
+                val bundle = bundleOf(Pair(KEY_ACCESSED_DATA_LIST_ITEM, item))
                 safeNavigateFromNavController(R.id.action_accessedDataFragment_to_accessedDataDetailFragment, bundle)
             }
             observe(viewModel.accessedDataItems) { allItems ->

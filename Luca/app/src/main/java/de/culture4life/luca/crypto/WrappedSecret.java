@@ -28,13 +28,13 @@ public class WrappedSecret {
     }
 
     public WrappedSecret(@NonNull byte[] encryptedSecret) {
-        this.encryptedSecret = SerializationUtil.serializeToBase64(encryptedSecret).blockingGet();
+        this.encryptedSecret = SerializationUtil.toBase64(encryptedSecret).blockingGet();
     }
 
     public WrappedSecret(@NonNull Pair<byte[], byte[]> encryptedSecretAndIv) {
-        this.encryptedSecret = SerializationUtil.serializeToBase64(encryptedSecretAndIv.first).blockingGet();
+        this.encryptedSecret = SerializationUtil.toBase64(encryptedSecretAndIv.first).blockingGet();
         if (encryptedSecretAndIv.second != null) {
-            this.iv = SerializationUtil.serializeToBase64(encryptedSecretAndIv.second).blockingGet();
+            this.iv = SerializationUtil.toBase64(encryptedSecretAndIv.second).blockingGet();
         }
     }
 
@@ -43,7 +43,7 @@ public class WrappedSecret {
     }
 
     public byte[] getDeserializedEncryptedSecret() {
-        return SerializationUtil.deserializeFromBase64(encryptedSecret).blockingGet();
+        return SerializationUtil.fromBase64(encryptedSecret).blockingGet();
     }
 
     public void setEncryptedSecret(String encryptedSecret) {
@@ -60,7 +60,7 @@ public class WrappedSecret {
         if (iv == null) {
             return null;
         }
-        return SerializationUtil.deserializeFromBase64(iv).blockingGet();
+        return SerializationUtil.fromBase64(iv).blockingGet();
     }
 
     public void setIv(@Nullable String iv) {

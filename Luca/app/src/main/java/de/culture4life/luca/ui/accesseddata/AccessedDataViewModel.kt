@@ -37,9 +37,11 @@ class AccessedDataViewModel(application: Application) : BaseViewModel(applicatio
     }
 
     private fun updateAccessedDataItems(): Completable {
-        return dataAccessManager.getOrRestoreAccessedData()
-            .flattenAsObservable { it.traceData }
-            .flatMapSingle { dataAccessManager.createAccessDataListItem(it) }
+        return dataAccessManager.previouslyAccessedTraceData
+            .flatMapSingle { accessedTraceData ->
+                dataAccessManager.getNotificationTexts(accessedTraceData)
+                    .map { AccessedDataListItem.from(getApplication(), accessedTraceData, it) }
+            }
             .toList()
             .map { it.sortedByDescending { item -> item.accessTimestamp } }
             .flatMapCompletable { items -> update(accessedDataItems, items) }

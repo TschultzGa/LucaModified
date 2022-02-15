@@ -1,5 +1,14 @@
 package de.culture4life.luca.document;
 
+import static de.culture4life.luca.document.Document.OUTCOME_POSITIVE;
+import static de.culture4life.luca.document.Document.TYPE_FAST;
+import static de.culture4life.luca.document.Document.TYPE_PCR;
+import static de.culture4life.luca.document.Document.TYPE_RECOVERY;
+import static de.culture4life.luca.document.Document.TYPE_VACCINATION;
+import static de.culture4life.luca.document.DocumentManager.HasDocumentCheckResult.INVALID_DOCUMENT;
+import static de.culture4life.luca.document.DocumentManager.HasDocumentCheckResult.NO_DOCUMENT;
+import static de.culture4life.luca.document.DocumentManager.HasDocumentCheckResult.VALID_DOCUMENT;
+
 import android.content.Context;
 import android.util.Base64;
 
@@ -11,9 +20,13 @@ import com.nexenio.rxkeystore.util.RxBase64;
 
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import de.culture4life.luca.BuildConfig;
+import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.Manager;
 import de.culture4life.luca.children.Children;
 import de.culture4life.luca.children.ChildrenManager;
@@ -36,6 +49,7 @@ import de.culture4life.luca.preference.PreferencesManager;
 import de.culture4life.luca.registration.Person;
 import de.culture4life.luca.registration.RegistrationData;
 import de.culture4life.luca.registration.RegistrationManager;
+import de.culture4life.luca.util.TimeUtil;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
@@ -60,7 +74,7 @@ public class DocumentManager extends Manager {
     private final PreferencesManager preferencesManager;
     private final NetworkManager networkManager;
     private final HistoryManager historyManager;
-    private final CryptoManager cryptoManager;
+    private final CryptoManager cryptoManager; // initialization deferred to first use
     private final RegistrationManager registrationManager;
     private final ChildrenManager childrenManager;
 
@@ -93,40 +107,79 @@ public class DocumentManager extends Manager {
                 networkManager.initialize(context),
                 historyManager.initialize(context),
                 registrationManager.initialize(context),
-                childrenManager.initialize(context),
-                cryptoManager.initialize(context)
+                childrenManager.initialize(context)
         ).andThen(Completable.fromAction(() -> {
             this.eudccDocumentProvider = new EudccDocumentProvider(context);
             this.baercodeDocumentProvider = new BaercodeDocumentProvider(context);
-        }))
-                .andThen(Completable.mergeArray(
-                        deleteExpiredDocuments(),
-                        reVerifyDocumentsIfRequired(),
-                        migrateIsEudccPropertyIfRequired()
-                ));
+        })).andThen(Completable.mergeArray(
+                invokeDeleteExpiredDocuments(),
+                invokeMigrateIsEudccPropertyIfRequired(),
+                invokeReVerifyDocumentsIfRequired()
+        ));
     }
 
-    public Single<Boolean> hasMatchingDocument(@NonNull Predicate<Document> filterFunction) {
+    public enum HasDocumentCheckResult {
+        VALID_DOCUMENT, INVALID_DOCUMENT, NO_DOCUMENT
+    }
+
+    /**
+     * @param filterFunction     Filter to check if any documents exist that should be validated. If none exist, NO_DOCUMENT will be returned
+     * @param validationFunction Function that validates all filtered documents and returns VALID_DOCUMENT if any document is validated correctly
+     */
+    public Single<HasDocumentCheckResult> hasMatchingDocument(
+            @NonNull Predicate<Document> filterFunction,
+            @NonNull java.util.function.Predicate<Document> validationFunction
+    ) {
         return getOrRestoreDocuments()
                 .filter(filterFunction)
-                .isEmpty()
-                .map(isEmpty -> !isEmpty);
+                .toList()
+                .map((documents) -> {
+                    if (documents.isEmpty()) return NO_DOCUMENT;
+                    if (documents.stream().anyMatch(validationFunction)) return VALID_DOCUMENT;
+                    return INVALID_DOCUMENT;
+                });
     }
 
-    public Single<Boolean> hasVaccinationDocument() {
-        return hasMatchingDocument(document -> document.isValidVaccination() && document.isVerified());
+    public Single<HasDocumentCheckResult> hasBoosterDocument() {
+        return getOrRestoreDocuments()
+                .toList()
+                .map((documents) -> {
+                    List<Document> vaccinations = documents
+                            .stream()
+                            .filter(document -> document.getType() == TYPE_VACCINATION)
+                            .collect(Collectors.toList());
+                    List<Document> validVaccinations = vaccinations
+                            .stream()
+                            .filter(document -> document.isValidVaccination() && document.isVerified())
+                            .collect(Collectors.toList());
+                    List<Document> validRecoveries = vaccinations
+                            .stream()
+                            .filter(Document::isValidRecovery)
+                            .collect(Collectors.toList());
+
+                    if (vaccinations.isEmpty()) return NO_DOCUMENT;
+                    if (validVaccinations.isEmpty()) return INVALID_DOCUMENT;
+                    return DocumentUtils.isBoostered(validVaccinations, validRecoveries) ? VALID_DOCUMENT : NO_DOCUMENT;
+                });
     }
 
-    public Single<Boolean> hasRecoveryDocument() {
-        return hasMatchingDocument(document -> document.isValidRecovery() && document.isVerified());
+    public Single<HasDocumentCheckResult> hasVaccinationDocument() {
+        return hasMatchingDocument(document -> document.getType() == TYPE_VACCINATION, document -> document.isValidVaccination() && document.isVerified());
     }
 
-    public Single<Boolean> hasPcrTestDocument() {
-        return hasMatchingDocument(document -> document.isValidNegativeTestResult() && document.getType() == Document.TYPE_PCR);
+    public Single<HasDocumentCheckResult> hasRecoveryDocument() {
+        return hasMatchingDocument(
+                document -> document.getType() == TYPE_RECOVERY || (document.getType() == TYPE_PCR && document.getOutcome() == OUTCOME_POSITIVE),
+                document -> document.isValid() && document.isVerified()
+        );
     }
 
-    public Single<Boolean> hasQuickTestDocument() {
-        return hasMatchingDocument(document -> document.isValidNegativeTestResult() && document.getType() == Document.TYPE_FAST);
+    public Single<HasDocumentCheckResult> hasPcrTestDocument() {
+        return hasMatchingDocument(document -> document.getType() == TYPE_PCR, Document::isValidNegativeTestResult);
+    }
+
+    public Single<HasDocumentCheckResult> hasQuickTestDocument() {
+        return hasMatchingDocument(document -> document.getType() == TYPE_FAST, Document::isValidNegativeTestResult);
     }
 
     public Single<Document> parseAndValidateEncodedDocument(@NonNull String encodedDocument) {
@@ -178,10 +231,10 @@ public class DocumentManager extends Manager {
                     if (!isNewDocument) {
                         return Completable.error(new DocumentAlreadyImportedException());
                     }
-                    if (document.getExpirationTimestamp() < System.currentTimeMillis() && !BuildConfig.DEBUG) {
+                    if (document.getExpirationTimestamp() < TimeUtil.getCurrentMillis() && !BuildConfig.DEBUG) {
                         return Completable.error(new DocumentExpiredException());
                     }
-                    if (document.getOutcome() == Document.OUTCOME_POSITIVE
+                    if (document.getOutcome() == OUTCOME_POSITIVE
                             && document.getType() != Document.TYPE_GREEN_PASS) {
                         if (!document.isValidRecovery()) {
                             return Completable.error(new TestResultPositiveException());
@@ -271,7 +324,7 @@ public class DocumentManager extends Manager {
      * given that a currently valid vaccination or recovery certificate is available.
      */
     public Completable adjustValidityStartTimestampIfRequired(@NonNull Document document) {
-        if (document.getType() != Document.TYPE_VACCINATION
+        if (document.getType() != TYPE_VACCINATION
                 || document.getOutcome() != Document.OUTCOME_FULLY_IMMUNE
                 || document.isValid()) {
             return Completable.complete();
@@ -296,15 +349,16 @@ public class DocumentManager extends Manager {
     protected Single<String> generateEncodedDocumentHash(@NonNull Document document) {
         return Single.fromCallable(document::getHashableEncodedData)
                 .map(hashableEncodedData -> hashableEncodedData.getBytes(StandardCharsets.UTF_8))
-                .flatMap(bytes -> CryptoManager.createKeyFromSecret(DOCUMENT_REDEEM_HASH_SUFFIX)
-                        .flatMap(secretKey -> cryptoManager.getMacProvider().sign(bytes, secretKey)))
+                .flatMap(bytes -> cryptoManager.initialize(context)
+                        .andThen(cryptoManager.hmac(bytes, DOCUMENT_REDEEM_HASH_SUFFIX)))
                 .flatMap(bytes -> RxBase64.encode(bytes, Base64.NO_WRAP));
     }
 
     private Single<String> generateOrRestoreDocumentTag(@NonNull Document document) {
         return Single.just(KEY_DOCUMENT_TAG + document.getId())
                 .flatMap(key -> preferencesManager.restoreIfAvailable(key, String.class)
-                        .switchIfEmpty(cryptoManager.generateSecureRandomData(HashProvider.TRIMMED_HASH_LENGTH)
+                        .switchIfEmpty(cryptoManager.initialize(context)
+                                .andThen(cryptoManager.generateSecureRandomData(HashProvider.TRIMMED_HASH_LENGTH))
                                 .flatMap(data -> RxBase64.encode(data, Base64.NO_WRAP))
                                 .doOnSuccess(tag -> Timber.d("Generated new tag for test: %s: %s", document, tag))
                                 .flatMap(tag -> preferencesManager.persist(key, tag)
@@ -361,6 +415,10 @@ public class DocumentManager extends Manager {
                                         .onErrorComplete())));
     }
 
+    private Completable invokeReVerifyDocumentsIfRequired() {
+        return invokeDelayed(reVerifyDocumentsIfRequired(), TimeUnit.SECONDS.toMillis(3));
+    }
+
     private Completable reVerifyDocumentsIfRequired() {
         return preferencesManager.restoreOrDefault(KEY_LAST_RE_VERIFICATION_TIMESTAMP, 0L)
                 .filter(timestamp -> timestamp < MINIMUM_RE_VERIFICATION_TIMESTAMP)
@@ -381,7 +439,17 @@ public class DocumentManager extends Manager {
 
         return Completable.mergeDelayError(updateVerificationStatus)
                 .andThen(persistDocuments())
-                .andThen(preferencesManager.persist(KEY_LAST_RE_VERIFICATION_TIMESTAMP, System.currentTimeMillis()));
+                .andThen(preferencesManager.persist(KEY_LAST_RE_VERIFICATION_TIMESTAMP, TimeUtil.getCurrentMillis()));
+    }
+
+    private Completable invokeMigrateIsEudccPropertyIfRequired() {
+        return Completable.defer(() -> {
+            if (LucaApplication.isRunningUnitTests()) {
+                return Completable.complete();
+            } else {
+                return invokeDelayed(migrateIsEudccPropertyIfRequired(), TimeUnit.SECONDS.toMillis(2));
+            }
+        });
     }
 
     private Completable migrateIsEudccPropertyIfRequired() {
@@ -401,7 +469,7 @@ public class DocumentManager extends Manager {
 
         return Completable.mergeDelayError(updateIsEudccProperty)
                 .andThen(persistDocuments())
-                .andThen(preferencesManager.persist(KEY_LAST_EUDCC_MIGRATION_TIMESTAMP, System.currentTimeMillis()));
+                .andThen(preferencesManager.persist(KEY_LAST_EUDCC_MIGRATION_TIMESTAMP, TimeUtil.getCurrentMillis()));
     }
 
     public Completable clearDocuments() {
@@ -409,8 +477,18 @@ public class DocumentManager extends Manager {
                 .doOnComplete(() -> documents = null);
     }
 
+    private Completable invokeDeleteExpiredDocuments() {
+        return Completable.defer(() -> {
+            if (LucaApplication.isRunningUnitTests()) {
+                return Completable.complete();
+            } else {
+                return invokeDelayed(deleteExpiredDocuments(), TimeUnit.SECONDS.toMillis(1));
+            }
+        });
+    }
+
     public Completable deleteExpiredDocuments() {
-        return Single.fromCallable(System::currentTimeMillis)
+        return Single.fromCallable(TimeUtil::getCurrentMillis)
                 .flatMapCompletable(this::deleteDocumentsExpiredBefore);
     }
 
@@ -484,4 +562,9 @@ public class DocumentManager extends Manager {
         this.eudccDocumentProvider = eudccDocumentProvider;
     }
 
+    @Override
+    public void dispose() {
+        super.dispose();
+        documents = null;
+    }
 }

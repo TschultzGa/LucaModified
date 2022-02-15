@@ -18,6 +18,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.document.DocumentParsingException;
+import de.culture4life.luca.util.TimeUtil;
 
 /**
  * Baercode bundle data model
@@ -71,7 +72,7 @@ class BaercodeBundle {
      * @return true if the bundle is already expired and should be updated
      */
     public boolean isExpired() {
-        return System.currentTimeMillis() > date + HOURS_BEFORE_REFRESH;
+        return TimeUtil.getCurrentMillis() > date + HOURS_BEFORE_REFRESH;
     }
 
     /**

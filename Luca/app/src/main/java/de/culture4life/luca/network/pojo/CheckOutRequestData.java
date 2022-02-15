@@ -24,7 +24,7 @@ public class CheckOutRequestData {
     }
 
     public CheckOutRequestData(byte[] traceId) {
-        this.traceId = SerializationUtil.serializeToBase64(traceId).blockingGet();
+        this.traceId = SerializationUtil.toBase64(traceId).blockingGet();
         this.roundedUnixTimestamp = TimeUtil.getCurrentUnixTimestamp()
                 .flatMap(TimeUtil::roundUnixTimestampDownToMinute)
                 .blockingGet();

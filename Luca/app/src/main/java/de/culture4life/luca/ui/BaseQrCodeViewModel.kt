@@ -2,13 +2,14 @@ package de.culture4life.luca.ui
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.media.Image
 import androidx.annotation.CallSuper
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.google.mlkit.vision.barcode.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import de.culture4life.luca.notification.LucaNotificationManager
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -27,7 +28,7 @@ abstract class BaseQrCodeViewModel(application: Application) :
 
     private val scanner by lazy { BarcodeScanning.getClient() }
     private var imageProcessingDisposable: Disposable? = null
-    protected val showCameraPreview = MutableLiveData(CameraRequest(false))
+    protected val showCameraPreview = MutableLiveData(ViewEvent(CameraRequest(false)))
     var pauseCameraImageProcessing = false
 
     /*
@@ -40,7 +41,7 @@ abstract class BaseQrCodeViewModel(application: Application) :
 
     private fun setCameraConsentGiven(cameraConsentGiven: Boolean) {
         preferencesManager.persist(KEY_CAMERA_CONSENT_GIVEN, cameraConsentGiven)
-            .andThen(update(showCameraPreview, CameraRequest(cameraConsentGiven, false)))
+            .andThen(update(showCameraPreview, ViewEvent(CameraRequest(cameraConsentGiven, false))))
             .subscribeOn(Schedulers.io())
             .subscribe()
     }
@@ -66,11 +67,11 @@ abstract class BaseQrCodeViewModel(application: Application) :
     }
 
     open fun onCameraPermissionGiven() {
-        updateAsSideEffect(showCameraPreview, CameraRequest(true))
+        updateAsSideEffect(showCameraPreview, ViewEvent(CameraRequest(true)))
     }
 
     open fun onCameraPermissionDenied() {
-        updateAsSideEffect(showCameraPreview, CameraRequest(false))
+        updateAsSideEffect(showCameraPreview, ViewEvent(CameraRequest(false)))
     }
 
     /*
@@ -113,10 +114,10 @@ abstract class BaseQrCodeViewModel(application: Application) :
 
     @SuppressLint("UnsafeOptInUsageError")
     private fun processCameraImage(imageProxy: ImageProxy): Completable {
-        return Maybe.fromCallable { imageProxy.image }
-            .map { image -> InputImage.fromMediaImage(image!!, imageProxy.imageInfo.rotationDegrees) }
+        return Maybe.fromCallable<Image> { imageProxy.image }
+            .map { image -> InputImage.fromMediaImage(image, imageProxy.imageInfo.rotationDegrees) }
             .flatMapObservable { image -> detectBarcodes(image) }
-            .flatMapMaybe { barcode -> Maybe.fromCallable { barcode.rawValue } }
+            .flatMapMaybe { barcode -> Maybe.fromCallable<String> { barcode.rawValue } }
             .flatMapCompletable { barcodeData -> processBarcode(barcodeData) }
     }
 
@@ -135,7 +136,7 @@ abstract class BaseQrCodeViewModel(application: Application) :
 
     protected abstract fun processBarcode(barcodeData: String): Completable
 
-    open fun shouldShowCameraPreview(): LiveData<CameraRequest> {
+    open fun shouldShowCameraPreview(): LiveData<ViewEvent<CameraRequest>> {
         return showCameraPreview
     }
 

@@ -1,10 +1,9 @@
 package de.culture4life.luca.network.pojo
 
 import com.google.gson.annotations.SerializedName
-import de.culture4life.luca.crypto.DliesResult
-import de.culture4life.luca.crypto.encodeToBase64
+import de.culture4life.luca.crypto.EciesResult
 import de.culture4life.luca.crypto.toCompressedBase64String
-import java.security.interfaces.ECPublicKey
+import de.culture4life.luca.util.encodeToBase64
 
 data class ConnectEnrollmentRequestData(
 
@@ -21,10 +20,10 @@ data class ConnectEnrollmentRequestData(
     var phonePrefix: String,
 
     @SerializedName("reference")
-    var referenceData: DliesData,
+    var referenceData: EciesData,
 
     @SerializedName("data")
-    var fullData: DliesData,
+    var fullData: EciesData,
 
     @SerializedName("signature")
     var signature: String? = null,
@@ -34,7 +33,7 @@ data class ConnectEnrollmentRequestData(
 
     )
 
-data class DliesData(
+data class EciesData(
 
     @SerializedName("data")
     var encryptedData: String,
@@ -50,11 +49,11 @@ data class DliesData(
 
     ) {
 
-    constructor(dliesResult: DliesResult) : this(
-        encryptedData = dliesResult.encryptedData.encodeToBase64(),
-        ephemeralPublicKey = (dliesResult.ephemeralPublicKey as ECPublicKey).toCompressedBase64String(),
-        iv = dliesResult.iv.encodeToBase64(),
-        mac = dliesResult.mac.encodeToBase64()
+    constructor(eciesResult: EciesResult) : this(
+        encryptedData = eciesResult.encryptedData.encodeToBase64(),
+        ephemeralPublicKey = eciesResult.ephemeralPublicKey.toCompressedBase64String(),
+        iv = eciesResult.iv.encodeToBase64(),
+        mac = eciesResult.mac.encodeToBase64()
     )
 
 }
@@ -78,6 +77,18 @@ data class ConnectContactData(
 
     @SerializedName("dt")
     var deviceType: Int = 0,
+
+    @SerializedName("ci")
+    var criticalInfrastructure: Boolean? = null,
+
+    @SerializedName("vg")
+    var vulnerableGroup: Boolean? = null,
+
+    @SerializedName("jb")
+    var industry: String? = null,
+
+    @SerializedName("em")
+    var company: String? = null,
 
     @SerializedName("v")
     var version: Int = 1,

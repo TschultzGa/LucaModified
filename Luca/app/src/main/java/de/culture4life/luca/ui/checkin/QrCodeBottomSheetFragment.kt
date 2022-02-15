@@ -17,7 +17,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.BuildConfig
+import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.R
+import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.databinding.DialogQrCodeBinding
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -103,15 +105,21 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
                 sharedViewModel.onIncludeEntryPolicyToggled(false)
             }
         }
-        sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner, { binding.includeEntryPolicySwitch.isChecked = it })
+        sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner) { binding.includeEntryPolicySwitch.isChecked = it }
 
-        sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner, {
+        sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner) {
             if (!it.hasBeenHandled()) {
                 it.setHandled(true)
                 showDocumentsUnavailableError()
             }
-        })
+        }
 
+        sharedViewModel.onOnlyInvalidDocumentsAvailable.observe(viewLifecycleOwner) {
+            if (!it.hasBeenHandled()) {
+                it.setHandled(true)
+                showDocumentsInvalidError()
+            }
+        }
 
         if (BuildConfig.DEBUG) {
             // simulate check in when clicking on the QR code in debug builds
@@ -149,16 +157,27 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun showIncludeEntryPolicyConsentDialog() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.check_in_include_entry_policy_consent_title)
-            .setMessage(R.string.check_in_include_entry_policy_consent_description)
-            .setPositiveButton(R.string.action_accept) { _, _ -> sharedViewModel.onIncludeEntryPolicyToggled(true) }
-            .setNegativeButton(R.string.action_cancel) { dialog, _ ->
-                binding.includeEntryPolicySwitch.isChecked = false
-                dialog.dismiss()
+        val application = requireActivity().application as LucaApplication
+        val consentManager = application.consentManager
+        consentManager.initialize(application)
+            .andThen(consentManager.requestConsentAndGetResult(ConsentManager.ID_INCLUDE_ENTRY_POLICY))
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { consent, _ ->
+                if (consent.approved) {
+                    sharedViewModel.onIncludeEntryPolicyToggled(true)
+                } else {
+                    binding.includeEntryPolicySwitch.isChecked = false
+                }
             }
+    }
+
+    private fun showDocumentsInvalidError() {
+        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.check_in_documents_invalid_title)
+            .setMessage(R.string.check_in_documents_invalid_description)
+            .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
         ).apply {
-            isCancelable = false
+            setOnDismissListener { binding.includeEntryPolicySwitch.isChecked = false }
             show()
         }
     }

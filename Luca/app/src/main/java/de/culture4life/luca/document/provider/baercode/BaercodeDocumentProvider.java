@@ -57,7 +57,7 @@ public class BaercodeDocumentProvider extends DocumentProvider<BaercodeDocument>
      */
     @Override
     public Single<Boolean> canParse(@NonNull String encodedData) {
-        return SerializationUtil.deserializeFromBase64(encodedData)
+        return SerializationUtil.fromBase64(encodedData)
                 .map(data -> {
                     int version = CoseMessage.MAPPER.readValue(data, Integer.class);
                     if (version != BaercodeDocument.PROTOCOL_VERSION) {
@@ -71,7 +71,7 @@ public class BaercodeDocumentProvider extends DocumentProvider<BaercodeDocument>
 
     @Override
     public Single<BaercodeDocument> parse(@NonNull String encodedData) {
-        return SerializationUtil.deserializeFromBase64(encodedData)
+        return SerializationUtil.fromBase64(encodedData)
                 .map(bytes -> {
                     BaercodeDocument document = new BaercodeDocument(bytes);
                     decryptPersonalData(document);

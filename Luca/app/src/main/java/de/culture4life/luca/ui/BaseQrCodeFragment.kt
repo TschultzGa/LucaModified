@@ -1,6 +1,7 @@
 package de.culture4life.luca.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.util.Size
 import android.view.MotionEvent
 import androidx.annotation.CallSuper
@@ -10,9 +11,8 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
-import de.culture4life.luca.ui.dialog.BaseDialogFragment
+import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
@@ -39,12 +39,17 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
     @CallSuper
     protected open fun initializeCameraPreview() {
         observe(viewModel!!.shouldShowCameraPreview()) {
-            if (it.showCamera) {
-                val requestMissingStuff = !it.onlyIfPossible
-                showCameraPreview(requestMissingStuff, requestMissingStuff)
-            } else {
-                hideCameraPreview()
+            if (!it.hasBeenHandled()) {
+                with(it.valueAndMarkAsHandled) {
+                    if (showCamera) {
+                        val requestMissingStuff = !onlyIfPossible
+                        showCameraPreview(requestMissingStuff, requestMissingStuff)
+                    } else {
+                        hideCameraPreview()
+                    }
+                }
             }
+
         }
     }
 
@@ -134,7 +139,7 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
                     } catch (e: Exception) {
                         emitter.onError(e)
                     }
-                }, ContextCompat.getMainExecutor(context))
+                }, ContextCompat.getMainExecutor(requireContext()))
             })
             .flatMapCompletable { cameraProvider ->
                 Completable.create { emitter ->
@@ -182,6 +187,7 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
         setTorchEnabled(false)
     }
 
+    @SuppressLint("RestrictedApi")
     protected fun autoFocus(focusPoint: MeteringPoint) {
         try {
             Timber.d("Attempting to auto focus (%f, %f)", focusPoint.x, focusPoint.y)
@@ -226,22 +232,21 @@ abstract class BaseQrCodeFragment<ViewModelType : BaseQrCodeViewModel?> : BaseFr
     }
 
     private fun showCameraConsentDialog(directToSettings: Boolean) {
-        val builder = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.check_in_enable_camera_access_title)
-            .setMessage(R.string.check_in_enable_camera_access_description)
-            .setNegativeButton(R.string.action_cancel) { _, _ ->
-                viewModel!!.onCameraConsentDenied()
+        val consentManager = application.consentManager
+        consentManager.initialize(application)
+            .andThen(consentManager.requestConsentAndGetResult(ConsentManager.ID_ENABLE_CAMERA))
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe { consent, _ ->
+                if (consent.approved) {
+                    if (directToSettings) {
+                        application.openAppSettings()
+                    } else {
+                        viewModel!!.onCameraConsentGiven()
+                    }
+                } else {
+                    viewModel!!.onCameraConsentDenied()
+                }
             }
-        if (directToSettings) {
-            builder.setPositiveButton(R.string.action_settings) { _, _ ->
-                application.openAppSettings()
-            }
-        } else {
-            builder.setPositiveButton(R.string.action_enable) { _, _ ->
-                viewModel!!.onCameraConsentGiven()
-            }
-        }
-        BaseDialogFragment(builder).show()
     }
 
     protected fun showCameraPermissionPermanentlyDeniedError() {
