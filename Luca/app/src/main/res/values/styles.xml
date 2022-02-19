@@ -362,7 +362,7 @@
     <style name="OnboardingContentScrollView">
         <item name="android:accessibilityHeading" tools:ignore="NewApi">true</item>
         <item name="android:requiresFadingEdge">vertical</item>
-        <item name="android:fadingEdgeLength">@dimen/spacing_large</item>
+        <item name="android:fadingEdgeLength">@dimen/spacing_default</item>
         <item name="android:orientation">vertical</item>
         <item name="android:fillViewport">true</item>
         <item name="android:layout_width">match_parent</item>

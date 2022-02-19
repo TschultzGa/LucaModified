@@ -111,7 +111,10 @@
     <string name="welcome_terms_description"><a href="https://www.luca-app.de/app-terms-and-conditions-2/">Nutzungsbedingungen</a> zustimmen</string>
     <string name="welcome_terms_checkbox_content_description">Nutzungsbedingungen</string>
     <string name="welcome_privacy_description">Unter diesem Link kannst du unsere <a href="https://www.luca-app.de/app-privacy-policy/">Datenschutzerklärung</a> einsehen.</string>
+    <string name="welcome_country_description">Bitte wähle aus, in welchem Land du dich gerade aufhältst.</string>
     <string name="welcome_action">Los geht\'s!</string>
+    <string name="welcome_country_unavailable_title">Oh nein!</string>
+    <string name="welcome_country_unavailable_description">luca steht in diesem Land aktuell leider noch nicht zur Verfügung. Wir hoffen, dass wir luca bald Standorten und Gästen in deinem Land anbieten können. Du möchtest informiert werden, welche Neuerungen es bei luca gibt? Dann melde dich jetzt für unseren <a href="https://www.luca-app.de/newsletter-en/">Newsletter</a> an!</string>
 
     <!-- Pre-Registration -->
     <string name="pre_registration_heading">Deine Daten</string>

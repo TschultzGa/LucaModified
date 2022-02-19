@@ -20,7 +20,7 @@
 
     <ScrollView
         style="@style/OnboardingContentScrollView"
-        app:layout_constraintBottom_toTopOf="@id/termsLayout"
+        app:layout_constraintBottom_toTopOf="@id/countryTextView"
         tools:ignore="MissingConstraints">
 
         <LinearLayout
@@ -43,11 +43,46 @@
 
     </ScrollView>
 
+    <TextView
+        android:id="@+id/countryTextView"
+        style="@style/TextAppearance.Luca.Body2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/spacing_default"
+        android:text="@string/welcome_country_description"
+        app:layout_constraintBottom_toTopOf="@id/countryTextInputLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/countryTextInputLayout"
+        style="@style/Widget.Luca.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginBottom="@dimen/spacing_small"
+        android:labelFor="@id/countryAutoCompleteTextView"
+        app:boxStrokeColor="@color/text_input_layout_stroke_color"
+        app:layout_constraintBottom_toTopOf="@id/termsLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <AutoCompleteTextView
+            android:id="@+id/countryAutoCompleteTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:inputType="none"
+            android:padding="@dimen/spacing_default"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="@dimen/font_size_small" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
     <LinearLayout
         android:id="@+id/termsLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/spacing_large"
+        android:layout_marginBottom="@dimen/spacing_small"
         android:gravity="center_vertical"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintStart_toStartOf="parent">
