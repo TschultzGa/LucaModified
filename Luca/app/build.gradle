@@ -13,7 +13,7 @@ android {
         applicationId "de.culture4life.luca"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 93
+        versionCode 94
         versionName "2.4.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

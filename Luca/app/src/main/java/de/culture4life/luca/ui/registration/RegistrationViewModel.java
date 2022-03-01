@@ -641,10 +641,10 @@ public class RegistrationViewModel extends BaseViewModel {
     }
 
     public boolean isUsingTestingCredentials() {
-        return Objects.equals(firstName.getValue(), "John")
-                && Objects.equals(lastName.getValue(), "Doe")
+        return Objects.equals(firstName.getValue(), "Mickey")
+                && Objects.equals(lastName.getValue(), "Mouse")
                 && Objects.equals(phoneNumber.getValue(), "+4900000000000")
-                && Objects.equals(email.getValue(), "john.doe@gmail.com");
+                && Objects.equals(email.getValue(), "mickey.mouse@gmail.com");
     }
 
     boolean isSamePhoneNumber(String firstNumber, String secondNumber) {
