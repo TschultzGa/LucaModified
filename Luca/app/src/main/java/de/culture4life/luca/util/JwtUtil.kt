@@ -28,7 +28,6 @@ object JwtUtil {
             .build()
             .parseClaimsJws(signedJwt)
     }
-
 }
 
 fun String.parseJwt(): Jwt<Header<*>, Claims> {

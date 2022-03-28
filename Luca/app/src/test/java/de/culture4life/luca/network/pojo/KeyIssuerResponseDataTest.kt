@@ -56,5 +56,4 @@ class KeyIssuerResponseDataTest : LucaUnitTest() {
         assertEquals(signingKeyData, parsedData)
         assertEquals(keyIssuerResponseData.signingKeyJwt, parsedData.signedJwt)
     }
-
 }

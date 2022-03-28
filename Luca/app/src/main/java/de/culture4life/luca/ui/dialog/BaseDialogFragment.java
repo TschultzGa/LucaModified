@@ -29,6 +29,22 @@ public class BaseDialogFragment extends DialogFragment {
         this.builder = builder;
     }
 
+    public BaseDialogFragment(Context context, BaseDialogContent content) {
+        builder = new MaterialAlertDialogBuilder(context)
+                .setTitle(content.getTitle())
+                .setMessage(content.getMessage());
+
+        if (content.getPositiveText() != null) {
+            builder.setPositiveButton(content.getPositiveText(), content.getPositiveCallback());
+        }
+        if (content.getNeutralText() != null) {
+            builder.setNeutralButton(content.getNeutralText(), content.getNeutralCallback());
+        }
+        if (content.getNegativeText() != null) {
+            builder.setNegativeButton(content.getNegativeText(), content.getNegativeCallback());
+        }
+    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -36,8 +52,9 @@ public class BaseDialogFragment extends DialogFragment {
         messageTextView.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
+    @NonNull
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         return builder.create();
     }
 

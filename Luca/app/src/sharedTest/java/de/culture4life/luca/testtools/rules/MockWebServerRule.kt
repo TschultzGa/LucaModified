@@ -6,7 +6,9 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import org.assertj.core.api.Assertions.assertThat
 import java.net.HttpURLConnection
+import java.util.concurrent.TimeUnit
 
 /**
  * Provides and configures usage of a mock server.
@@ -33,6 +35,24 @@ class MockWebServerRule : BaseHookingTestRule() {
         ApplicationProvider.getApplicationContext<LucaApplication>().networkManager
             .overrideServerAddress(mockServer.url("/"))
     }
+
+    fun assertPostRequest(path: String) {
+        val lastRequest = requireNextRequest()
+        assertThat(lastRequest.path).isEqualTo(path)
+        assertThat(lastRequest.method).isEqualTo("POST")
+    }
+
+    fun assertGetRequest(vararg paths: String) {
+        val lastRequest = requireNextRequest()
+        assert(paths.contains(lastRequest.path))
+        assertThat(lastRequest.method).isEqualTo("GET")
+    }
+
+    // TODO Very flaky approach because it just give the next queued request.
+    //  Instead we should iterate through the collection for matching requests.
+    //  Just how WireMock does it, but integrating WireMock is much more effort than MockWebServer.
+    private fun requireNextRequest() = mockServer.takeRequest(50, TimeUnit.MILLISECONDS)
+        ?: throw IllegalStateException("No more requests recorded.")
 }
 
 /**

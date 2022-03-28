@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.R;
@@ -33,6 +34,7 @@ import de.culture4life.luca.document.DocumentManager;
 import de.culture4life.luca.meeting.MeetingManager;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
+import de.culture4life.luca.ui.dialog.BaseDialogContent;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
@@ -55,6 +57,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
     protected final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     protected final MutableLiveData<Set<ViewError>> errors = new MutableLiveData<>(new HashSet<>());
     protected final MutableLiveData<ViewEvent<? extends Set<String>>> requiredPermissions = new MutableLiveData<>();
+    protected final MutableLiveData<ViewEvent<BaseDialogContent>> dialogRequest = new MutableLiveData<>();
 
 
     @Nullable
@@ -142,12 +145,12 @@ public abstract class BaseViewModel extends AndroidViewModel {
         });
     }
 
-    protected ViewError.Builder createErrorBuilder(@NonNull Throwable throwable) {
+    public ViewError.Builder createErrorBuilder(@NonNull Throwable throwable) {
         return new ViewError.Builder(application)
                 .withCause(throwable);
     }
 
-    protected final void addError(@Nullable ViewError viewError) {
+    public final void addError(@Nullable ViewError viewError) {
         modelDisposable.add(Completable.fromAction(
                 () -> {
                     if (viewError == null) {
@@ -238,6 +241,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
                         return Maybe.empty();
                     }
                 })
+                .observeOn(AndroidSchedulers.mainThread())
                 .flatMapCompletable(destinationId -> Completable.fromAction(() -> {
                     if (navigationController != null && !isCurrentDestinationId(destinationId)) {
                         navigationController.navigate(destinationId);
@@ -274,6 +278,10 @@ public abstract class BaseViewModel extends AndroidViewModel {
         return requiredPermissions;
     }
 
+    public final LiveData<ViewEvent<BaseDialogContent>> getDialogRequestViewEvent() {
+        return dialogRequest;
+    }
+
     public void setNavigationController(@Nullable NavController navigationController) {
         this.navigationController = navigationController;
     }
@@ -308,7 +316,26 @@ public abstract class BaseViewModel extends AndroidViewModel {
         return this.getClass().getSimpleName();
     }
 
+    @NonNull
     public LiveData<Boolean> getIsInitialized() {
         return isInitialized;
+    }
+
+    @NonNull
+    public Completable invoke(@NonNull Completable completable) {
+        return invokeDelayed(completable, 0);
+    }
+
+    @NonNull
+    public Completable invokeDelayed(@NonNull Completable completable, long delay) {
+        return Completable.fromAction(() -> modelDisposable.add(completable
+                .doOnError(throwable -> Timber.w("Invoked completable emitted an error: %s", throwable.toString()))
+                .onErrorComplete()
+                .delaySubscription(delay, TimeUnit.MILLISECONDS, Schedulers.io())
+                .subscribe()));
+    }
+
+    public void showDialog(@NonNull BaseDialogContent content) {
+        updateAsSideEffect(dialogRequest, new ViewEvent<>(content));
     }
 }

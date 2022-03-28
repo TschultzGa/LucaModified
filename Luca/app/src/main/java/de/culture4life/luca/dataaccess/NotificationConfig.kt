@@ -99,5 +99,4 @@ class NotificationConfig(private val config: JsonObject) {
         }
         return original.replace(placeholder, value)
     }
-
 }

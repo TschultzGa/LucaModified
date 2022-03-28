@@ -36,5 +36,4 @@ class AccessedDataDetailViewModel(application: Application) : BaseViewModel(appl
             .andThen(Maybe.fromCallable { arguments?.getSerializable(KEY_ACCESSED_DATA_LIST_ITEM) as AccessedDataListItem? })
             .flatMapCompletable { updateIfRequired(accessedDataItem, it) }
     }
-
 }

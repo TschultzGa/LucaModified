@@ -12,6 +12,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
@@ -55,7 +56,7 @@ public class LucaNotificationManager extends Manager {
 
     private static final String KEY_BUNDLE = "notification_bundle";
     private static final String KEY_ACTION = "notification_action";
-    private static final String KEY_DESTINATION = "notification_destination";
+    private static final String KEY_DEEPLINK = "notification_deeplink";
 
     public static final int ACTION_NAVIGATE = 1;
     public static final int ACTION_STOP = 2;
@@ -186,12 +187,12 @@ public class LucaNotificationManager extends Manager {
      */
 
     public NotificationCompat.Builder createCheckedInNotificationBuilder() {
-        return createStatusNotificationBuilder(createNavigationIntent(R.id.checkInFragment), R.string.notification_service_title, R.string.notification_service_description)
+        return createStatusNotificationBuilder(createNavigationDeepLinkIntent(Uri.parse(context.getString(R.string.deeplink_check_in))), R.string.notification_service_title, R.string.notification_service_description)
                 .addAction(createCheckoutAction());
     }
 
     public NotificationCompat.Builder createMeetingHostNotificationBuilder() {
-        return createStatusNotificationBuilder(createNavigationIntent(R.id.checkInFragment), R.string.notification_meeting_host_title, R.string.notification_meeting_host_description)
+        return createStatusNotificationBuilder(createNavigationDeepLinkIntent(Uri.parse(context.getString(R.string.deeplink_check_in))), R.string.notification_meeting_host_title, R.string.notification_meeting_host_description)
                 .addAction(createEndMeetingAction());
     }
 
@@ -227,8 +228,8 @@ public class LucaNotificationManager extends Manager {
         });
     }
 
-    public NotificationCompat.Builder createNewsMessageNotificationBuilder(int destination, String title, String description) {
-        return createEventNotificationBuilder(createNavigationIntent(destination), title, description);
+    public NotificationCompat.Builder createNewsMessageNotificationBuilder(Uri destination, String title, String description) {
+        return createEventNotificationBuilder(createNavigationDeepLinkIntent(destination), title, description);
     }
 
     public NotificationCompat.Builder createErrorNotificationBuilder(@NonNull String title, @NonNull String description) {
@@ -262,7 +263,7 @@ public class LucaNotificationManager extends Manager {
     }
 
     private NotificationCompat.Builder createConnectMessageNotificationBuilder(@NonNull String title, @NonNull String description) {
-        return createBaseNotificationBuilder(createNavigationIntent(R.id.messagesFragment), NOTIFICATION_CHANNEL_ID_CONNECT, title, description)
+        return createBaseNotificationBuilder(createNavigationDeepLinkIntent(Uri.parse(context.getString(R.string.deeplink_connect))), NOTIFICATION_CHANNEL_ID_CONNECT, title, description)
                 .setSmallIcon(R.drawable.ic_information_outline)
                 .setOnlyAlertOnce(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -273,9 +274,12 @@ public class LucaNotificationManager extends Manager {
      * Creates the default data access notification builder, intended to inform the user that an
      * health department has accessed data related to the user.
      */
-    public NotificationCompat.Builder createDataAccessedNotificationBuilder() {
-        return createBaseNotificationBuilder(createNavigationIntent(R.id.messagesFragment), NOTIFICATION_CHANNEL_ID_DATA_ACCESS, R.string.notification_data_accessed_title, R.string.notification_data_accessed_description)
-                .setSmallIcon(R.drawable.ic_information_outline)
+    public NotificationCompat.Builder createDataAccessedNotificationBuilder(String traceId) {
+        return createBaseNotificationBuilder(
+                createNavigationDeepLinkIntent(Uri.parse(context.getString(R.string.deeplink_messages) + "/" + traceId)),
+                NOTIFICATION_CHANNEL_ID_DATA_ACCESS,
+                R.string.notification_data_accessed_title,
+                R.string.notification_data_accessed_description).setSmallIcon(R.drawable.ic_information_outline)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -285,7 +289,7 @@ public class LucaNotificationManager extends Manager {
     public NotificationCompat.Builder createCheckOutReminderNotificationBuilder() {
         String title = context.getString(R.string.notification_check_out_reminder_title);
         String description = context.getString(R.string.notification_check_out_reminder_description);
-        return createBaseNotificationBuilder(createNavigationIntent(R.id.checkInFragment), NOTIFICATION_CHANNEL_ID_CHECKOUT_REMINDER, title, description)
+        return createBaseNotificationBuilder(createNavigationDeepLinkIntent(Uri.parse(context.getString(R.string.deeplink_check_in))), NOTIFICATION_CHANNEL_ID_CHECKOUT_REMINDER, title, description)
                 .setSmallIcon(R.drawable.ic_hourglass_time_over)
                 .setAutoCancel(false)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -326,10 +330,11 @@ public class LucaNotificationManager extends Manager {
         Intent creation
      */
 
-    public PendingIntent createNavigationIntent(int destination) {
+    @NonNull
+    public PendingIntent createNavigationDeepLinkIntent(@NonNull Uri deepLink) {
         Bundle notificationBundle = new Bundle();
         notificationBundle.putInt(KEY_ACTION, ACTION_NAVIGATE);
-        notificationBundle.putInt(KEY_DESTINATION, destination);
+        notificationBundle.putParcelable(KEY_DEEPLINK, deepLink);
         return createActivityIntent(MainActivity.class, notificationBundle);
     }
 
@@ -424,9 +429,9 @@ public class LucaNotificationManager extends Manager {
     }
 
     @Nullable
-    public static Integer getDestinationFromBundleIfAvailable(@Nullable Bundle bundle) {
-        Object value = getObjectFromBundle(bundle, KEY_DESTINATION);
-        return value != null ? (Integer) value : null;
+    public static Uri getDeepLinkFromBundleIfAvailable(@Nullable Bundle bundle) {
+        Object value = getObjectFromBundle(bundle, KEY_DEEPLINK);
+        return value != null ? (Uri) value : null;
     }
 
     @Nullable
@@ -463,7 +468,7 @@ public class LucaNotificationManager extends Manager {
         }
     }
 
-    public void openNotificationSettings(String notificationChannelId) {
+    public void openNotificationSettings(@NonNull String notificationChannelId) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // If notifications are not enabled for the app, the channel can not be enabled.
             if (areNotificationsEnabled()) {

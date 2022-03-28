@@ -8,6 +8,7 @@ import de.culture4life.luca.ui.BaseViewModel
 import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.util.addTo
 import de.culture4life.luca.whatisnew.WhatIsNewManager.Companion.ID_POSTAL_CODE_MESSAGE
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
@@ -28,12 +29,12 @@ class PostalCodeViewModel(application: Application) : BaseViewModel(application)
                     whatIsNewManager.initialize(application)
                 )
             )
-            .andThen(Completable.fromAction {
-                whatIsNewManager.markMessageAsSeen(ID_POSTAL_CODE_MESSAGE)
-                    .onErrorComplete()
-                    .subscribeOn(Schedulers.io())
-                    .subscribe()
-            })
+            .andThen(
+                Completable.mergeArray(
+                    updatePostalCodeMatchingImmediately(),
+                    invoke(whatIsNewManager.markMessageAsSeen(ID_POSTAL_CODE_MESSAGE))
+                )
+            )
     }
 
     override fun keepDataUpdated(): Completable {
@@ -47,6 +48,14 @@ class PostalCodeViewModel(application: Application) : BaseViewModel(application)
         return consentManager.getConsentAndChanges(ID_POSTAL_CODE_MATCHING)
             .map { it.approved }
             .flatMapCompletable { update(postalCodeMatchingStatus, it) }
+    }
+
+    private fun updatePostalCodeMatchingImmediately(): Completable {
+        return consentManager.getConsentAndChanges(ID_POSTAL_CODE_MATCHING)
+            .firstOrError()
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSuccess { postalCodeMatchingStatus.value = it.approved }
+            .ignoreElement()
     }
 
     fun onPostalCodeMatchingToggled(enable: Boolean) {
@@ -81,5 +90,4 @@ class PostalCodeViewModel(application: Application) : BaseViewModel(application)
             )
             .addTo(modelDisposable)
     }
-
 }

@@ -135,10 +135,9 @@ class ConsentManagerTest : LucaUnitTest() {
         advanceScheduler(3, TimeUnit.SECONDS)
 
         requestObserver.assertValue {
-            it.id == consent.id
-                    && it.approved == consent.approved
-                    && it.lastDisplayTimestamp > consent.lastDisplayTimestamp
+            it.id == consent.id &&
+                it.approved == consent.approved &&
+                it.lastDisplayTimestamp > consent.lastDisplayTimestamp
         }
     }
-
 }

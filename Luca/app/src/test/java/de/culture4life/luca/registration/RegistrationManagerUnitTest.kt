@@ -150,7 +150,6 @@ class RegistrationManagerUnitTest : LucaUnitTest() {
     private fun storedActivityReportTimestamp() =
         preferencesManager.restoreOrDefault(RegistrationManager.LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY, 0L).blockingGet()
 
-
     private fun assertActivityReportTimestampNotStoredYet() {
         assertThat(storedActivityReportTimestamp()).isEqualTo(0L)
     }

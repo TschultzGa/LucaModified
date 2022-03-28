@@ -30,5 +30,4 @@ class PowChallengeTest {
         )
         assertEquals(expectedW, powChallenge.calculateW())
     }
-
 }

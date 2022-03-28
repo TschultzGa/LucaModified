@@ -10,5 +10,4 @@ class MultipleMyLucaItemViewHolder(itemView: ViewGroup) : RecyclerView.ViewHolde
 
     val viewPager: ViewPager2 = itemView.findViewById(R.id.myLucaItemsViewPager)
     val pageIndicator: SpringDotsIndicator = itemView.findViewById(R.id.myLucaItemsViewPagerIndicator)
-
 }

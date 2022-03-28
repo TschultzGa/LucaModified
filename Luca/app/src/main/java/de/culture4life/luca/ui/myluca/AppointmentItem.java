@@ -21,11 +21,11 @@ public class AppointmentItem extends TestResultItem {
         String time = context.getString(R.string.document_result_time, TimeUtil.getReadableTime(context, document.getResultTimestamp()));
 
         topContent.clear();
-        addTopContent(document.getLabName(), null);
-        addTopContent(context.getString(R.string.document_issued_at), time);
+        addTopContent(new DynamicContent(document.getLabName(), null, null));
+        addTopContent(new DynamicContent(context.getString(R.string.document_issued_at), time, null));
 
         collapsedContent.clear();
-        addCollapsedContent(context.getString(R.string.appointment_address), document.getLastName());
+        addCollapsedContent(new DynamicContent(context.getString(R.string.appointment_address), document.getLastName(), null));
     }
 
 }

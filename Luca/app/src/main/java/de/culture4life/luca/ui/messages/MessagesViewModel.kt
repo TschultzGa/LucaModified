@@ -47,7 +47,6 @@ class MessagesViewModel(application: Application) : BaseViewModel(application) {
                 )
             )
             .andThen(invokeMessagesUpdate())
-
     }
 
     private fun invokeMessagesUpdate(): Completable {

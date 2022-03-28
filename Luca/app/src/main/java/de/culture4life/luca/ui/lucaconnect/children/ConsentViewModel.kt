@@ -30,12 +30,13 @@ class ConsentViewModel(app: Application) : BaseFlowChildViewModel(app) {
                 .withTitle(R.string.notification_setting_activation_title)
                 .withDescription(R.string.notification_setting_activation_description)
                 .withResolveLabel(R.string.action_settings)
-                .withResolveAction(Completable.fromAction {
-                    notificationManager.openNotificationSettings(LucaNotificationManager.NOTIFICATION_CHANNEL_ID_CONNECT)
-                })
+                .withResolveAction(
+                    Completable.fromAction {
+                        notificationManager.openNotificationSettings(LucaNotificationManager.NOTIFICATION_CHANNEL_ID_CONNECT)
+                    }
+                )
                 .build()
             addError(notificationsDisabledError)
         }
     }
-
 }

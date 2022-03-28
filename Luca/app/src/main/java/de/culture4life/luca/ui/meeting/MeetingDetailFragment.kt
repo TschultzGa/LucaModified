@@ -46,5 +46,4 @@ class MeetingDetailFragment : BaseFragment<MeetingViewModel>() {
     private fun getCheckedInGuestsCount(guests: List<Guest>?): Int {
         return guests?.filter { it.isCheckedIn }?.size ?: 0
     }
-
 }

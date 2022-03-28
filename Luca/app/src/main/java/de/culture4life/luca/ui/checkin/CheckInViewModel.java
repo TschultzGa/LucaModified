@@ -17,6 +17,7 @@ import android.webkit.URLUtil;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LiveData;
@@ -52,7 +53,8 @@ import de.culture4life.luca.meeting.MeetingManager;
 import de.culture4life.luca.network.NetworkManager;
 import de.culture4life.luca.network.pojo.LocationResponseData;
 import de.culture4life.luca.registration.RegistrationManager;
-import de.culture4life.luca.ui.BaseQrCodeViewModel;
+import de.culture4life.luca.ui.BaseQrCodeCallback;
+import de.culture4life.luca.ui.BaseViewModel;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.ViewEvent;
 import de.culture4life.luca.ui.checkin.flow.ConfirmCheckInViewModel;
@@ -70,7 +72,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import timber.log.Timber;
 
-public class CheckInViewModel extends BaseQrCodeViewModel {
+public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallback {
 
     private static final UUID DEBUGGING_SCANNER_ID = UUID.fromString("1444c1a2-1922-4c11-813d-710d9f901227");
     private static final long CHECK_IN_POLLING_INTERVAL = TimeUnit.SECONDS.toMillis(3);
@@ -90,9 +92,9 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     private final MutableLiveData<ViewEvent<CheckInData>> checkInData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> networkAvailable = new MutableLiveData<>();
     private final MutableLiveData<Boolean> contactDataMissing = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> updateRequired = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<String>> privateMeetingUrl = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<Pair<String, LocationResponseData>>> checkInMultiConfirm = new MutableLiveData<>();
+    private final MutableLiveData<ViewEvent<Boolean>> showCameraPreview = new MutableLiveData<>();
 
     private MyLucaViewModel myLucaViewModel;
 
@@ -132,17 +134,13 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .andThen(registrationManager.getUserIdIfAvailable()
                         .doOnSuccess(uuid -> this.userId = uuid)
                         .ignoreElement())
-                .andThen(Completable.mergeArray(
-                        invokeShowCameraPreviewInitialization(),
-                        invokeHandleDeepLinkIfAvailable()
-                ));
+                .andThen(invokeHandleDeepLinkIfAvailable())
+                .andThen(invokeShowCameraPreviewInitialization());
     }
 
+    @NonNull
     private Completable invokeShowCameraPreviewInitialization() {
-        return Completable.fromAction(() -> modelDisposable.add(getCameraConsentGiven()
-                .flatMapCompletable(cameraConsentGiven -> update(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(cameraConsentGiven, true))))
-                .delaySubscription(100, TimeUnit.MILLISECONDS, Schedulers.io())
-                .subscribe()));
+        return invokeDelayed(update(showCameraPreview, new ViewEvent<>(true)), 100);
     }
 
     @Override
@@ -197,17 +195,6 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .subscribe());
     }
 
-    public void checkIfUpdateIsRequired() {
-        modelDisposable.add(application.isUpdateRequired()
-                .doOnSubscribe(disposable -> Timber.d("Checking if update is required"))
-                .doOnSuccess(isUpdateRequired -> Timber.v("Update required: %b", isUpdateRequired))
-                .doOnError(throwable -> Timber.w("Unable to check if update is required: %s", throwable.toString()))
-                .flatMapCompletable(isUpdateRequired -> update(updateRequired, isUpdateRequired))
-                .retryWhen(throwable -> throwable.delay(5, TimeUnit.SECONDS))
-                .subscribeOn(Schedulers.io())
-                .subscribe());
-    }
-
     public void checkIfHostingMeeting() {
         modelDisposable.add(meetingManager.isCurrentlyHostingMeeting()
                 .subscribeOn(Schedulers.io())
@@ -249,7 +236,8 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .flatMap(includeEntryPolicy -> generateQrCodeData(false, includeEntryPolicy));
     }
 
-    private Single<QrCodeData> generateQrCodeData(boolean isAnonymous, boolean shareEntryPolicy) {
+    @VisibleForTesting
+    protected Single<QrCodeData> generateQrCodeData(boolean isAnonymous, boolean shareEntryPolicy) {
         return cryptoManager.initialize(application)
                 .andThen(Single.just(new QrCodeData()))
                 .flatMap(qrCodeData -> checkInManager.getTraceIdWrapper(userId)
@@ -391,11 +379,6 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
                 .bitmap());
     }
 
-    @Override
-    protected boolean isCurrentDestinationId(int destinationId) {
-        return super.isCurrentDestinationId(destinationId);
-    }
-
     /*
         QR code scanning
     */
@@ -406,7 +389,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
 
     @Override
     @NonNull
-    protected Completable processBarcode(@NonNull String barcodeData) {
+    public Completable processBarcode(@NonNull String barcodeData) {
         return Completable.defer(() -> {
             if (myLucaViewModel.canProcessBarcode(barcodeData)) {
                 ViewEvent<String> barcodeDataEvent = new ViewEvent<>(barcodeData);
@@ -416,15 +399,16 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
             }
         }).doOnSubscribe(disposable -> {
             removeError(deepLinkError);
-            updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(false, true)));
+            updateAsSideEffect(showCameraPreview, new ViewEvent<>(false));
             updateAsSideEffect(isLoading, true);
-        }).doFinally(() -> updateAsSideEffect(isLoading, false));
+        }).doFinally(() -> {
+            updateAsSideEffect(isLoading, false);
+        });
     }
 
     public Completable process(@NonNull String barcodeData) {
         return Single.just(barcodeData)
                 .doOnSuccess(value -> Timber.d("Processing barcode: %s", value))
-                .doOnSuccess(deepLink -> getNotificationManager().vibrate().subscribe())
                 .flatMapCompletable(this::handleDeepLink);
     }
 
@@ -433,16 +417,8 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
      */
 
     private Completable invokeHandleDeepLinkIfAvailable() {
-        return Completable.fromAction(() -> {
-            modelDisposable.add(application.getDeepLink()
-                    .flatMapCompletable(url -> handleDeepLink(url)
-                            .doOnComplete(() -> application.onDeepLinkHandled(url)))
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                            () -> Timber.d("Handled application deep link"),
-                            throwable -> Timber.w("Unable handle application deep link: %s", throwable.toString())
-                    ));
-        });
+        return invoke(application.getDeepLink()
+                .flatMapCompletable(url -> handleDeepLink(url).doFinally(() -> application.onDeepLinkHandled(url))));
     }
 
     private Completable handleDeepLink(@NonNull String url) {
@@ -456,7 +432,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
             }
         }).doOnSubscribe(disposable -> {
             removeError(deepLinkError);
-            updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(false, true)));
+            updateAsSideEffect(showCameraPreview, new ViewEvent<>(false));
             updateAsSideEffect(isLoading, true);
         }).doOnError(throwable -> {
             ViewError.Builder errorBuilder = createErrorBuilder(throwable)
@@ -643,11 +619,11 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     public void onCheckInMultiConfirmDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
+        updateAsSideEffect(showCameraPreview, new ViewEvent<>(true));
     }
 
     public void onImportDocumentConfirmationDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
+        updateAsSideEffect(showCameraPreview, new ViewEvent<>(true));
     }
 
     public void onPrivateMeetingJoinApproved(@NonNull String url) {
@@ -678,7 +654,7 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     public void onPrivateMeetingJoinDismissed(@NonNull String url) {
-        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
+        updateAsSideEffect(showCameraPreview, new ViewEvent<>(true));
     }
 
     public void onPrivateMeetingCreationRequested() {
@@ -697,15 +673,11 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
     }
 
     public void onPrivateMeetingCreationDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
+        updateAsSideEffect(showCameraPreview, new ViewEvent<>(true));
     }
 
     public void onContactDataMissingDialogDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
-    }
-
-    public void onUpdateRequiredDialogDismissed() {
-        updateAsSideEffect(getShowCameraPreview(), new ViewEvent<>(new CameraRequest(true, true)));
+        updateAsSideEffect(showCameraPreview, new ViewEvent<>(true));
     }
 
     private Completable createPrivateMeeting() {
@@ -774,10 +746,6 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         return networkAvailable;
     }
 
-    public LiveData<Boolean> isUpdateRequired() {
-        return updateRequired;
-    }
-
     public LiveData<Boolean> isContactDataMissing() {
         return contactDataMissing;
     }
@@ -790,8 +758,13 @@ public class CheckInViewModel extends BaseQrCodeViewModel {
         return checkInMultiConfirm;
     }
 
+    @NonNull
     public LiveData<ViewEvent<String>> getConfirmPrivateMeeting() {
         return privateMeetingUrl;
     }
 
+    @NonNull
+    public LiveData<ViewEvent<Boolean>> getShowCameraPreview() {
+        return showCameraPreview;
+    }
 }

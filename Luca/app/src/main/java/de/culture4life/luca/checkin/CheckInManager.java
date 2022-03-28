@@ -674,8 +674,8 @@ public class CheckInManager extends Manager {
 
     private Single<Geofence.Builder> createGeofenceBuilder(@NonNull CheckInData checkInData) {
         return Single.defer(() -> {
-            if (!checkInData.hasLocation()) {
-                return Single.error(new GeofenceException("No location available for check-in data"));
+            if (!checkInData.hasLocationRestriction()) {
+                return Single.error(new GeofenceException("Location restriction not available for check-in data"));
             }
 
             long radius = checkInData.getRadius();

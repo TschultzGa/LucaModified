@@ -10,7 +10,6 @@ import dgca.verifier.app.decoder.JSON_SCHEMA_V1
 import dgca.verifier.app.decoder.cwt.CwtHeaderKeys
 import timber.log.Timber
 
-
 /**
  * Schema validator for EU Digital COVID Certificate (EUDCC)
  */
@@ -41,5 +40,4 @@ class EudccSchemaValidator {
 
         return isValid
     }
-
 }

@@ -98,9 +98,13 @@ open class GenuinityManager(
             }
     }
 
+    override fun dispose() {
+        super.dispose()
+        timestampOffset = null
+    }
+
     companion object {
         const val KEY_SERVER_TIME_OFFSET = "server_time_offset"
         val MAXIMUM_SERVER_TIME_OFFSET = TimeUnit.MINUTES.toMillis(5)
     }
-
 }

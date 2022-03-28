@@ -83,7 +83,6 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             holder.show(item);
             holder.setListeners(expandClickListener, deleteClickListener, iconClickListener);
-            setLeftPaddingForChild(holder.getBinding().getRoot(), itemsWrapper.isChildSection());
         } else if (viewHolder.getItemViewType() == MULTIPLE_ITEM_VIEW_HOLDER) {
             Integer hashCode = items.hashCode();
             MyLucaItemViewPager viewPagerAdapter = new MyLucaItemViewPager(this.fragment, items);
@@ -113,18 +112,11 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 }
             }
             multipleHolder.getViewPager().setCurrentItem(viewPagerStartPosition, false);
-
-            setLeftPaddingForChild(multipleHolder.getViewPager(), itemsWrapper.isChildSection());
         } else if (viewHolder.getItemViewType() == SECTION_HEADER_ITEM_VIEW_HOLDER) {
             ItemMyLucaSectionHeaderBinding binding = ((SectionHeaderViewHolder) viewHolder).getBinding();
             binding.personNameTextView.setText(itemsWrapper.getSectionHeader());
             binding.personNameTextView.setCompoundDrawablesWithIntrinsicBounds(itemsWrapper.sectionDrawable(), 0, 0, 0);
         }
-    }
-
-    private void setLeftPaddingForChild(View view, boolean isChild) {
-        int margin = (int) view.getContext().getResources().getDimension(R.dimen.spacing_default);
-        view.setPadding(isChild ? margin : 0, 0, 0, 0);
     }
 
     private MyLucaListItemsWrapper getItem(int position) {
@@ -178,7 +170,9 @@ public class MyLucaListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         List<MyLucaListItemsWrapper> myLucaItems = new ArrayList<>();
         int visibleDocuments = 0;
         for (Person person : persons) {
-            myLucaItems.add(new MyLucaListItemsWrapper(person.getFullName(), person instanceof Child));
+            if(person instanceof Child) {
+                myLucaItems.add(new MyLucaListItemsWrapper(person.getFullName(), true));
+            }
             List<MyLucaListItemsWrapper> items = sortedAndPairedItemsFor(list, person);
             myLucaItems.addAll(items);
             visibleDocuments += items.size();

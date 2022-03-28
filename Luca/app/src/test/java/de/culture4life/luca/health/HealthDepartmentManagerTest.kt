@@ -228,5 +228,4 @@ class HealthDepartmentManagerTest : LucaUnitTest() {
         restoring.await().assertComplete()
         verify(preferencesManager, times(1)).restoreIfAvailable("responsible_health_department", ResponsibleHealthDepartment::class.java)
     }
-
 }

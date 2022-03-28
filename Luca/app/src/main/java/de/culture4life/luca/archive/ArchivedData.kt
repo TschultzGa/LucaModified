@@ -5,5 +5,4 @@ interface ArchivedData<T> {
     fun getData(): List<T>
 
     fun setData(data: List<T>)
-
 }

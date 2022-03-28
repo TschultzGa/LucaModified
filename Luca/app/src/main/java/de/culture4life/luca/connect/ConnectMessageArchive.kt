@@ -18,5 +18,4 @@ data class ConnectMessageArchive(
     override fun setData(data: List<ConnectMessage>) {
         entries = data
     }
-
 }

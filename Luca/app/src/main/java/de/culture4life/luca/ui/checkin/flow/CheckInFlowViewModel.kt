@@ -17,7 +17,7 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
     var locationResponseData: LocationResponseData? = null
 
     var shareEntryPolicyState: Boolean = false
-    var checkInVoluntary: Boolean = false
+    var checkInAnonymously: Boolean = true
 
     val onCheckInRequested: MutableLiveData<ViewEvent<CheckInRequest>> = MutableLiveData()
 
@@ -51,8 +51,8 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
 
     private fun initializeUserSetting(): Completable {
         return Single.mergeArray(
-            preferencesManager.restoreOrDefault(VoluntaryCheckInViewModel.KEY_ALWAYS_CHECK_IN_VOLUNTARY, false)
-                .doOnSuccess { checkInVoluntary = it },
+            preferencesManager.restoreOrDefault(VoluntaryCheckInViewModel.KEY_ALWAYS_CHECK_IN_ANONYMOUSLY, true)
+                .doOnSuccess { checkInAnonymously = it },
             preferencesManager.restoreOrDefault(EntryPolicyViewModel.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS, false)
                 .doOnSuccess { shareEntryPolicyState = it }
         ).ignoreElements()
@@ -75,8 +75,8 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
         return preferencesManager.restoreOrDefault(VoluntaryCheckInViewModel.KEY_ALWAYS_CHECK_IN_VOLUNTARY, false)
             .flatMapMaybe { alwaysCheckInVoluntary ->
                 Maybe.fromCallable {
-                    if ((locationResponseData?.isContactDataMandatory == false && !alwaysCheckInVoluntary)
-                        && !CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED
+                    if ((locationResponseData?.isContactDataMandatory == false && !alwaysCheckInVoluntary) &&
+                        !CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED
                     ) {
                         VoluntaryCheckInFragment.newInstance()
                     } else {
@@ -90,8 +90,8 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
         return preferencesManager.restoreOrDefault(EntryPolicyViewModel.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS, false)
             .flatMapMaybe { alwaysShareEntryPolicyStatus ->
                 Maybe.fromCallable {
-                    if ((locationResponseData?.entryPolicy != null && !alwaysShareEntryPolicyStatus)
-                        && !CheckInViewModel.FEATURE_ENTRY_POLICY_CHECKIN_DISABLED
+                    if ((locationResponseData?.entryPolicy != null && !alwaysShareEntryPolicyStatus) &&
+                        !CheckInViewModel.FEATURE_ENTRY_POLICY_CHECKIN_DISABLED
                     ) {
                         EntryPolicyFragment.newInstance()
                     } else {
@@ -104,7 +104,7 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
     fun requestCheckIn() {
         val checkInRequest = CheckInRequest(
             url = url!!,
-            isAnonymous = !checkInVoluntary && !CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED,
+            isAnonymous = checkInAnonymously && !CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED,
             shareEntryPolicyStatus = shareEntryPolicyState && !CheckInViewModel.FEATURE_ENTRY_POLICY_CHECKIN_DISABLED
         )
 

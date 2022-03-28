@@ -65,8 +65,5 @@ open class Person(
             return name.uppercase(Locale.getDefault())
                 .replace("[^\\x41-\\x5A]".toRegex(), "")
         }
-
     }
-
 }
-

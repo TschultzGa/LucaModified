@@ -59,5 +59,4 @@ class PowBenchmarks : LucaInstrumentationTest() {
         println("Calculations per minute: $calculationsPerMinute")
         println("Average calculation duration: $averageDuration milliseconds")
     }
-
 }

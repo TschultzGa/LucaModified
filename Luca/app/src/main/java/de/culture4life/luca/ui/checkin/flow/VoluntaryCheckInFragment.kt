@@ -22,7 +22,10 @@ class VoluntaryCheckInFragment : BaseCheckInFlowFragment<VoluntaryCheckInViewMod
 
     private fun initializeActionButton() {
         binding.actionButton.setOnClickListener {
-            viewModel.onActionButtonClicked(binding.shareContactDataSwitch.isChecked(), binding.dontAskAgainCheckBox.isChecked)
+            viewModel.onActionButtonClicked(
+                checkInAnonymously = !binding.shareContactDataSwitch.isChecked(),
+                alwaysVoluntary = binding.dontAskAgainCheckBox.isChecked
+            )
         }
     }
 

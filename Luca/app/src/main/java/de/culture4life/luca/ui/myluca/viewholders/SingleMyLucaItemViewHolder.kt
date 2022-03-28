@@ -1,10 +1,10 @@
 package de.culture4life.luca.ui.myluca.viewholders
 
 import android.text.TextUtils
-import android.util.Pair
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -12,6 +12,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ItemMyLucaBinding
+import de.culture4life.luca.ui.myluca.DynamicContent
 import de.culture4life.luca.ui.myluca.MyLucaListItem
 import kotlin.math.max
 
@@ -37,22 +38,15 @@ class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.
         deleteClickListener: View.OnClickListener? = null,
         iconClickListener: View.OnClickListener? = null
     ) {
-        deleteClickListener?.let {
-            binding.deleteItemButton.setOnClickListener(it)
-        }
-        expandClickListener?.let {
-            binding.root.setOnClickListener(it)
-        }
-        iconClickListener?.let {
-            binding.itemTitleImageView.setOnClickListener(it)
-        }
+        deleteClickListener?.let { binding.deleteItemButton.setOnClickListener(it) }
+        expandClickListener?.let { binding.root.setOnClickListener(it) }
+        iconClickListener?.let { binding.itemTitleImageView.setOnClickListener(it) }
     }
 
     private fun addLabelAndText(
         container: ViewGroup,
         labelTextView: ConstraintLayout?,
-        label: String?,
-        text: String?,
+        dynamicContent: DynamicContent
     ) {
         var labelAndTextView: ConstraintLayout? = labelTextView
         if (labelAndTextView == null) {
@@ -66,9 +60,20 @@ class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.
         }
         val labelView = labelAndTextView.findViewById<TextView>(R.id.labelTextView)
         val textView = labelAndTextView.findViewById<TextView>(R.id.valueTextView)
-        labelView.text = label
-        textView.text = text
-        setConstrainWidth(labelAndTextView, R.id.labelTextView, !TextUtils.isEmpty(text))
+        val imageView = labelAndTextView.findViewById<ImageView>(R.id.iconImageView)
+        labelView.text = dynamicContent.label
+        textView.text = dynamicContent.content
+        if (dynamicContent.endIconDrawable != null) {
+            imageView.isVisible = true
+            imageView.setImageResource(dynamicContent.endIconDrawable)
+        } else {
+            imageView.isVisible = false
+            imageView.setImageDrawable(null)
+        }
+        setConstrainWidth(labelAndTextView, R.id.labelTextView, !TextUtils.isEmpty(dynamicContent.content))
+        if (dynamicContent.content.isNullOrBlank()) {
+            labelView.setTextAppearance(labelView.context, R.style.TextAppearance_Luca_Body2_Bold)
+        }
     }
 
     private fun setConstrainWidth(
@@ -82,7 +87,7 @@ class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.
         set.applyTo(constraintLayout)
     }
 
-    private fun setupDynamicContent(content: List<Pair<String, String>>, topContent: ViewGroup) {
+    private fun setupDynamicContent(content: List<DynamicContent>, topContent: ViewGroup) {
         for (i in 0 until max(topContent.childCount, content.size)) {
             val labelAndTextView = if (topContent.getChildAt(i) != null) {
                 topContent.getChildAt(i) as ConstraintLayout
@@ -90,17 +95,10 @@ class SingleMyLucaItemViewHolder(val binding: ItemMyLucaBinding) : RecyclerView.
                 null
             }
             if (content.size > i) {
-                val labelAndText = content[i]
-                addLabelAndText(
-                    topContent,
-                    labelAndTextView,
-                    labelAndText.first,
-                    labelAndText.second
-                )
+                addLabelAndText(topContent, labelAndTextView, content[i])
             } else {
                 topContent.removeView(labelAndTextView)
             }
         }
     }
 }
-

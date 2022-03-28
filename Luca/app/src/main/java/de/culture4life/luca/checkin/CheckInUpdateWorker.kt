@@ -25,19 +25,20 @@ class CheckInUpdateWorker(
                         Completable.error(IllegalStateException("Foreground updates are required"))
                     } else {
                         checkInManager.updateCheckInDataIfNecessary(true)
-                            .andThen(checkInManager.isCheckedIn
-                                .flatMapCompletable { isCheckedIn: Boolean ->
-                                    if (isCheckedIn) {
-                                        Completable.complete()
-                                    } else {
-                                        checkInManager.deleteUnusedTraceData()
+                            .andThen(
+                                checkInManager.isCheckedIn
+                                    .flatMapCompletable { isCheckedIn: Boolean ->
+                                        if (isCheckedIn) {
+                                            Completable.complete()
+                                        } else {
+                                            checkInManager.deleteUnusedTraceData()
+                                        }
                                     }
-                                })
+                            )
                     }
                 }
                 .subscribeOn(Schedulers.io())
         }.andThen(Single.just(Result.success()))
             .onErrorReturnItem(Result.failure())
     }
-
 }

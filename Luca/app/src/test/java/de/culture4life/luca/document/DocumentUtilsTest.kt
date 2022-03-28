@@ -213,5 +213,4 @@ class DocumentUtilsTest {
         whenever(it.testingTimestamp).thenReturn(timestamp)
         whenever(it.procedures).thenReturn(arrayListOf<Procedure>(Procedure(VACCINATION_COMIRNATY, timestamp, 1, 1)))
     }
-
 }

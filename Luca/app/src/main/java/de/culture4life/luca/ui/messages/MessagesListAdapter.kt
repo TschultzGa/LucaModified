@@ -14,7 +14,7 @@ class MessagesListAdapter(context: Context, resource: Int) :
     ArrayAdapter<MessageListItem>(context, resource) {
 
     private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)
-            as LayoutInflater
+        as LayoutInflater
 
     fun setMessageItems(items: List<MessageListItem>) {
         if (shouldUpdateDataSet(items)) {
@@ -53,5 +53,4 @@ class MessagesListAdapter(context: Context, resource: Int) :
         }
         return view
     }
-
 }

@@ -51,13 +51,15 @@ class DailyKeyViewModel(app: Application) : BaseViewModel(app) {
                     updateAsSideEffectIfRequired(dailyPublicKeyLiveData, dailyPublicKeyData)
                 }
                 .ignoreElement()
-                .andThen(application.cryptoManager.restoreDailyPublicKeyIssuerData()
-                    .filter { it.id == dailyPublicKeyData!!.issuerId }
-                    .doOnSuccess {
-                        this.keyIssuerData = it
-                        updateAsSideEffectIfRequired(keyIssuerLiveData, keyIssuerData)
-                        updateAsSideEffectIfRequired(hasVerifiedDailyPublicKey, true)
-                    })
+                .andThen(
+                    application.cryptoManager.restoreDailyPublicKeyIssuerData()
+                        .filter { it.id == dailyPublicKeyData!!.issuerId }
+                        .doOnSuccess {
+                            this.keyIssuerData = it
+                            updateAsSideEffectIfRequired(keyIssuerLiveData, keyIssuerData)
+                            updateAsSideEffectIfRequired(hasVerifiedDailyPublicKey, true)
+                        }
+                )
                 .ignoreElement()
                 .doOnSubscribe {
                     removeError(verificationError)
@@ -95,5 +97,4 @@ class DailyKeyViewModel(app: Application) : BaseViewModel(app) {
         }
         export(uri, content)
     }
-
 }

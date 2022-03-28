@@ -5,7 +5,6 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.text.TextUtils;
-import android.util.Pair;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
@@ -45,8 +44,8 @@ public abstract class MyLucaListItem implements Serializable {
 
     protected final Document document;
 
-    protected final List<Pair<String, String>> topContent = new ArrayList<>();
-    protected final List<Pair<String, String>> collapsedContent = new ArrayList<>();
+    protected final List<DynamicContent> topContent = new ArrayList<>();
+    protected final List<DynamicContent> collapsedContent = new ArrayList<>();
 
     protected String sectionHeader;
     protected String title;
@@ -125,20 +124,20 @@ public abstract class MyLucaListItem implements Serializable {
         return deleteButtonText;
     }
 
-    public List<Pair<String, String>> getTopContent() {
+    public List<DynamicContent> getTopContent() {
         return topContent;
     }
 
-    public List<Pair<String, String>> getCollapsedContent() {
+    public List<DynamicContent> getCollapsedContent() {
         return collapsedContent;
     }
 
-    protected void addTopContent(@NonNull String label, @Nullable String text) {
-        topContent.add(new Pair(label, text));
+    protected void addTopContent(@NonNull DynamicContent dynamicContent) {
+        topContent.add(dynamicContent);
     }
 
-    protected void addCollapsedContent(@NonNull String label, @Nullable String text) {
-        collapsedContent.add(new Pair(label, text));
+    protected void addCollapsedContent(@NonNull DynamicContent dynamicContent) {
+        collapsedContent.add(dynamicContent);
     }
 
     @ColorInt

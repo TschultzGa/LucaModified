@@ -32,5 +32,4 @@ class AccessedDataDetailFragment : BaseFragment<AccessedDataDetailViewModel>() {
     companion object {
         const val KEY_ACCESSED_DATA_LIST_ITEM = "AccessedDataListItem"
     }
-
 }

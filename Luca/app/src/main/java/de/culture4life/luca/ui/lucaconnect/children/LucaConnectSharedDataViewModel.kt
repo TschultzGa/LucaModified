@@ -73,5 +73,4 @@ class LucaConnectSharedDataViewModel(app: Application) : BaseFlowChildViewModel(
     fun onActionButtonClicked() {
         sharedViewModel?.navigateToNext()
     }
-
 }

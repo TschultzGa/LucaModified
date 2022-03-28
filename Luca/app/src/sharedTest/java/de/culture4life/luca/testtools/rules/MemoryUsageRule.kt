@@ -36,12 +36,14 @@ class MemoryUsageRule : BaseHookingTestRule() {
     }
 
     private fun printMemoryUsage(marker: String) {
-        println(with(Runtime.getRuntime()) {
-            "${MemoryUsageRule::class.simpleName} $marker -" +
+        println(
+            with(Runtime.getRuntime()) {
+                "${MemoryUsageRule::class.simpleName} $marker -" +
                     " used: ${unify((totalMemory() - freeMemory()))}" +
                     " total: ${unify(totalMemory())}" +
                     " max: ${unify(maxMemory())}"
-        })
+            }
+        )
     }
 
     private fun unify(number: Long) = (number / 1024 / 1024).toString().padStart(4, ' ').plus(" (MB)")

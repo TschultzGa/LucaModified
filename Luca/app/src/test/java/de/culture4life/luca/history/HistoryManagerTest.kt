@@ -86,5 +86,4 @@ class HistoryManagerTest : LucaUnitTest() {
         val listString = HistoryManager.createUnorderedList(listOf("A", "B"))
         assertEquals("- A\n- B", listString)
     }
-
 }

@@ -22,9 +22,9 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
 
     val hasNewMessages = MediatorLiveData<Boolean>().apply {
         fun combine() {
-            value = (hasNewsMessages.value == true)
-                    || (hasDataAccessMessages.value == true)
-                    || (hasLucaConnectMessages.value == true)
+            value = (hasNewsMessages.value == true) ||
+                (hasDataAccessMessages.value == true) ||
+                (hasLucaConnectMessages.value == true)
         }
         addSource(hasNewsMessages) { combine() }
         addSource(hasDataAccessMessages) { combine() }
@@ -83,12 +83,9 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
         with(LucaNotificationManager.getBundleFromIntentIfAvailable(intent)) {
             val action = LucaNotificationManager.getActionFromBundleIfAvailable(this)
             if (action == LucaNotificationManager.ACTION_NAVIGATE) {
-                val destination = LucaNotificationManager.getDestinationFromBundleIfAvailable(this)!!
-                if (!isCurrentDestinationId(destination)) {
-                    navigationController!!.navigate(destination)
-                }
+                val deepLink = LucaNotificationManager.getDeepLinkFromBundleIfAvailable(this) ?: return
+                navigationController?.navigate(deepLink)
             }
         }
     }
-
 }

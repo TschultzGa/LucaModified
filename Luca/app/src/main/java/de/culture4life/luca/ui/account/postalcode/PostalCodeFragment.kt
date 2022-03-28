@@ -3,6 +3,7 @@ package de.culture4life.luca.ui.account.postalcode
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.databinding.FragmentPostalCodeBinding
 import de.culture4life.luca.ui.BaseFragment
+import de.culture4life.luca.util.setCheckedImmediately
 
 class PostalCodeFragment : BaseFragment<PostalCodeViewModel>() {
 
@@ -19,10 +20,8 @@ class PostalCodeFragment : BaseFragment<PostalCodeViewModel>() {
 
     override fun initializeViews() {
         super.initializeViews()
-        observe(viewModel.postalCodeMatchingStatus) {
-            binding.postalCodeToggle.isChecked = it
-        }
+        binding.postalCodeToggle.setCheckedImmediately(viewModel.postalCodeMatchingStatus.value == true)
+        observe(viewModel.postalCodeMatchingStatus) { binding.postalCodeToggle.isChecked = it }
         binding.postalCodeToggle.setOnClickListener { viewModel.onPostalCodeMatchingToggled(binding.postalCodeToggle.isChecked) }
     }
-
 }

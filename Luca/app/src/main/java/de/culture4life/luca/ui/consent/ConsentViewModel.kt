@@ -77,5 +77,4 @@ class ConsentViewModel(app: Application) : BaseBottomSheetViewModel(app) {
     companion object {
         const val KEY_CONSENT_ID = "consent_id"
     }
-
 }

@@ -17,7 +17,6 @@ data class TransferData(
 
     @SerializedName("v")
     val version: Int = 4
-
 }
 
 data class UserDataWrapper(

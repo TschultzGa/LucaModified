@@ -74,5 +74,4 @@ class ConsentBottomSheetFragment : BaseBottomSheetDialogFragment<ConsentViewMode
             }
         }
     }
-
 }

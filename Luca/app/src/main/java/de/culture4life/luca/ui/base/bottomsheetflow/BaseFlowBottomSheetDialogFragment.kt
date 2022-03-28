@@ -159,5 +159,4 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
         binding.confirmationStepViewPager.adapter = null
         super.onDismiss(dialog)
     }
-
 }

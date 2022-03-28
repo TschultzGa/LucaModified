@@ -18,6 +18,4 @@ class SingleLucaItemView @JvmOverloads constructor(
         val params = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
         this.layoutParams = params
     }
-
 }
-

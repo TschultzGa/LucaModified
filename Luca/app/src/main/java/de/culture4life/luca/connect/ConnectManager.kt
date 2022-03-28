@@ -78,11 +78,13 @@ open class ConnectManager(
             documentManager.initialize(context),
             healthDepartmentManager.initialize(context),
             whatIsNewManager.initialize(context)
-        ).andThen(Completable.fromAction {
-            if (!LucaApplication.isRunningUnitTests()) {
-                this.workManager = WorkManager.getInstance(context)
+        ).andThen(
+            Completable.fromAction {
+                if (!LucaApplication.isRunningUnitTests()) {
+                    this.workManager = WorkManager.getInstance(context)
+                }
             }
-        }).andThen(
+        ).andThen(
             Completable.mergeArray(
                 invokeRemovalOfOldDataFromContactArchive(),
                 invokeStatusInitialization(),
@@ -172,14 +174,16 @@ open class ConnectManager(
             .doOnNext { Timber.d("Responsible health department updated. Available: $it") }
             .flatMapCompletable {
                 initializeEnrollmentSupportedStatus()
-                    .andThen(cleanUpAfterUnEnroll())
-                    .andThen(whatIsNewManager.updateMessage(ID_LUCA_CONNECT_MESSAGE) {
-                        copy(
-                            seen = false,
-                            notified = false,
-                            timestamp = TimeUtil.getCurrentMillis()
-                        )
-                    })
+                    .andThen(unEnroll())
+                    .andThen(
+                        whatIsNewManager.updateMessage(ID_LUCA_CONNECT_MESSAGE) {
+                            copy(
+                                seen = false,
+                                notified = false,
+                                timestamp = TimeUtil.getCurrentMillis()
+                            )
+                        }
+                    )
             }
     }
 
@@ -193,8 +197,10 @@ open class ConnectManager(
             whatIsNewManager.getMessage(ID_LUCA_CONNECT_MESSAGE)
                 .map { it.seen }
                 .toObservable()
-                .mergeWith(whatIsNewManager.getMessageUpdates(ID_LUCA_CONNECT_MESSAGE)
-                    .map { it.seen })
+                .mergeWith(
+                    whatIsNewManager.getMessageUpdates(ID_LUCA_CONNECT_MESSAGE)
+                        .map { it.seen }
+                )
                 .distinctUntilChanged()
         }
     }
@@ -239,25 +245,27 @@ open class ConnectManager(
 
     fun generateEnrollmentRequestData(): Single<ConnectEnrollmentRequestData> {
         return cryptoManager.deleteKeyPair(AUTHENTICATION_KEY_PAIR_ALIAS)
-            .andThen(Single.fromCallable {
-                val departmentPublicKey = getHealthDepartmentPublicKey().blockingGet()
-                val registrationData = getRegistrationData().blockingGet()
-                val connectKritisData = getConnectKritisData().blockingGet()
-                val simplifiedNameHash = generateSimplifiedNameHash(registrationData.person).blockingGet()
-                val phoneNumberHash = generatePhoneNumberHash(registrationData.phoneNumber!!).blockingGet()
-                ConnectEnrollmentRequestData(
-                    authPublicKey = getCompressedPublicKey(AUTHENTICATION_KEY_PAIR_ALIAS).blockingGet(),
-                    departmentId = getHealthDepartmentId().blockingGet(),
-                    namePrefix = generateHashPrefix(simplifiedNameHash).blockingGet().encodeToBase64(),
-                    phonePrefix = generateHashPrefix(phoneNumberHash).blockingGet().encodeToBase64(),
-                    referenceData = generateReferenceData(simplifiedNameHash, phoneNumberHash, departmentPublicKey).blockingGet(),
-                    fullData = generateFullData(registrationData, connectKritisData, departmentPublicKey).blockingGet(),
-                    pow = getPowChallenge().flatMap(powManager::getSolvedChallenge).map(::PowSolutionRequestData)
-                        .onErrorResumeNext { clearPowChallenge().andThen(Single.error(it)) }.blockingGet()
-                ).apply {
-                    signature = generateEnrollmentRequestSignature(this).map(ByteArray::encodeToBase64).blockingGet()
-                }
-            }.doOnSuccess { Timber.d("Generated enrollment request data: %s", it) })
+            .andThen(
+                Single.fromCallable {
+                    val departmentPublicKey = getHealthDepartmentPublicKey().blockingGet()
+                    val registrationData = getRegistrationData().blockingGet()
+                    val connectKritisData = getConnectKritisData().blockingGet()
+                    val simplifiedNameHash = generateSimplifiedNameHash(registrationData.person).blockingGet()
+                    val phoneNumberHash = generatePhoneNumberHash(registrationData.phoneNumber!!).blockingGet()
+                    ConnectEnrollmentRequestData(
+                        authPublicKey = getCompressedPublicKey(AUTHENTICATION_KEY_PAIR_ALIAS).blockingGet(),
+                        departmentId = getHealthDepartmentId().blockingGet(),
+                        namePrefix = generateHashPrefix(simplifiedNameHash).blockingGet().encodeToBase64(),
+                        phonePrefix = generateHashPrefix(phoneNumberHash).blockingGet().encodeToBase64(),
+                        referenceData = generateReferenceData(simplifiedNameHash, phoneNumberHash, departmentPublicKey).blockingGet(),
+                        fullData = generateFullData(registrationData, connectKritisData, departmentPublicKey).blockingGet(),
+                        pow = getPowChallenge().flatMap(powManager::getSolvedChallenge).map(::PowSolutionRequestData)
+                            .onErrorResumeNext { clearPowChallenge().andThen(Single.error(it)) }.blockingGet()
+                    ).apply {
+                        signature = generateEnrollmentRequestSignature(this).map(ByteArray::encodeToBase64).blockingGet()
+                    }
+                }.doOnSuccess { Timber.d("Generated enrollment request data: %s", it) }
+            )
     }
 
     private fun generateReferenceData(nameHash: ByteArray, phoneNumberHash: ByteArray, healthDepartmentPublicKey: ECPublicKey): Single<EciesData> {
@@ -468,8 +476,10 @@ open class ConnectManager(
 
     fun getPowChallenge(): Single<PowChallenge> {
         return Maybe.fromCallable<PowChallenge> { this.powChallenge }
-            .switchIfEmpty(powManager.getChallenge(POW_TYPE_ENROLL)
-                .doOnSuccess { this.powChallenge = it })
+            .switchIfEmpty(
+                powManager.getChallenge(POW_TYPE_ENROLL)
+                    .doOnSuccess { this.powChallenge = it }
+            )
     }
 
     fun invokePowChallengeSolving(): Completable {
@@ -531,7 +541,7 @@ open class ConnectManager(
             .lastElement()
     }
 
-    private fun getArchivedKeyPairAlias(contactId: String, aliasPrefix: String) = "${aliasPrefix}_${contactId}"
+    private fun getArchivedKeyPairAlias(contactId: String, aliasPrefix: String) = "${aliasPrefix}_$contactId"
 
     private fun addCurrentKeysToArchive(contactId: String): Completable {
         return Observable.just(AUTHENTICATION_KEY_PAIR_ALIAS)
@@ -677,22 +687,24 @@ open class ConnectManager(
 
     fun markMessageAsRead(message: ConnectMessage): Completable {
         return cryptoManager.initialize(context)
-            .andThen(Single.fromCallable {
-                val unixTimestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet()
-                val signatureData = cryptoManager.concatenateHashes(
-                    Observable.just(
-                        "READ_MESSAGE".toByteArray(),
-                        message.id.decodeFromBase64(),
-                        TimeUtil.encodeUnixTimestamp(unixTimestamp).blockingGet()
+            .andThen(
+                Single.fromCallable {
+                    val unixTimestamp = TimeUtil.getCurrentUnixTimestamp().blockingGet()
+                    val signatureData = cryptoManager.concatenateHashes(
+                        Observable.just(
+                            "READ_MESSAGE".toByteArray(),
+                            message.id.decodeFromBase64(),
+                            TimeUtil.encodeUnixTimestamp(unixTimestamp).blockingGet()
+                        )
+                    ).blockingGet()
+                    val signature = cryptoManager.ecdsa(signatureData, MESSAGE_SIGNING_KEY_PAIR_ALIAS).blockingGet()
+                    ConnectMessageReadRequestData(
+                        id = message.id,
+                        timestamp = unixTimestamp,
+                        signature = signature.encodeToBase64()
                     )
-                ).blockingGet()
-                val signature = cryptoManager.ecdsa(signatureData, MESSAGE_SIGNING_KEY_PAIR_ALIAS).blockingGet()
-                ConnectMessageReadRequestData(
-                    id = message.id,
-                    timestamp = unixTimestamp,
-                    signature = signature.encodeToBase64()
-                )
-            })
+                }
+            )
             .flatMapCompletable { requestData ->
                 networkManager.lucaEndpointsV4
                     .flatMapCompletable { it.markMessageAsRead(requestData) }
@@ -945,5 +957,4 @@ open class ConnectManager(
         private val UPDATE_FLEX_PERIOD = if (BuildConfig.DEBUG) PeriodicWorkRequest.MIN_PERIODIC_FLEX_MILLIS else TimeUnit.HOURS.toMillis(2)
         private val UPDATE_INITIAL_DELAY = TimeUnit.SECONDS.toMillis(10)
     }
-
 }

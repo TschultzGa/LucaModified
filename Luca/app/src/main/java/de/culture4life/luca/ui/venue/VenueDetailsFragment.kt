@@ -58,7 +58,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         }
         observe(viewModel.title) { value -> binding.actionBarTitleTextView.text = value }
         observe(viewModel.checkInTime) { value ->
-            binding.checkInTimeTextView.text = String.format(getString(R.string.venue_checked_in_time), value)
+            binding.checkInTimeTextView.text = getFormattedString(R.string.venue_checked_in_time, value)
         }
         observe(viewModel.additionalDataTitle) { binding.additionalDataTitleTextView.text = it }
         observe(viewModel.additionalDataValue) { binding.additionalDataValueTextView.text = it }
@@ -74,6 +74,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         }
         binding.childrenActionBarMenuImageView.setOnClickListener { viewModel.openChildrenView() }
         observe(viewModel.checkInDuration) { binding.checkInDurationTextView.text = it }
+        observe(viewModel.askUrlConsent) { urlType -> showOpenUrlConsentBottomSheet(urlType) }
         initializeUrlViews()
         initializeAutomaticCheckoutViews()
         initializeSlideToActView()
@@ -82,12 +83,6 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
 
     override fun onResume() {
         super.onResume()
-        if (viewModel.isCheckedIn.value != true) {
-            // navigation can be skipped if app is not open and user gets checked out by server or
-            // via the notification
-            safeNavigateFromNavController(R.id.action_venueDetailFragment_to_checkInFragment, viewModel.bundle.value)
-            AccessibilityServiceUtil.speak(requireContext(), getString(R.string.venue_checked_out))
-        }
         val arguments = arguments
         if (arguments != null) {
             viewModel.setBundle(arguments)
@@ -183,6 +178,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
             )
             binding.checkInDurationTextView.isVisible = isCheckedIn
             if (!isCheckedIn) {
+                // navigation can be skipped if app is not open and user gets checked out by server or via the notification
                 safeNavigateFromNavController(R.id.action_venueDetailFragment_to_checkInFragment, viewModel.bundle.value)
                 AccessibilityServiceUtil.speak(requireContext(), getString(R.string.venue_checked_out))
                 FiveStarMe.showRateDialogIfMeetsConditions(requireActivity())
@@ -368,7 +364,7 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         )
         urlTypeToButtonMap.forEach { (type, itemView) ->
             with(itemView) {
-                setOnClickListener { showOpenUrlConsentDialog(type) }
+                setOnClickListener { viewModel.openProvidedUrlOrAskConsent(type) }
                 setOnLongClickListener {
                     copyUrlToClipboard(type)
                     true
@@ -396,24 +392,15 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
         Toast.makeText(requireContext(), R.string.venue_url_clipboard_toast, Toast.LENGTH_SHORT).show()
     }
 
-    private fun showOpenUrlConsentDialog(urlType: UrlType) {
+    private fun showOpenUrlConsentBottomSheet(urlType: UrlType) {
         val locationName = viewModel.checkInData.value?.locationDisplayName
         val readableUrlType = urlTypeToButtonMap[urlType]?.text
         val url = viewModel.getProvidedUrl(urlType)
-        val message = getString(R.string.venue_url_consent_description, locationName, readableUrlType, url)
-
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.venue_url_consent_title)
-            .setMessage(message)
-            .setPositiveButton(R.string.action_open) { _, _ ->
-                viewModel.openProvidedUrl(urlType)
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
-            .show()
+        VenueUrlConsentBottomSheetFragment.newInstance(locationName, readableUrlType?.toString(), url)
+            .show(parentFragmentManager, VenueUrlConsentBottomSheetFragment.TAG)
     }
 
     companion object {
         private const val REQUEST_ENABLE_LOCATION_SERVICES = 2
     }
-
 }

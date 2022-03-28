@@ -6,8 +6,6 @@ import de.culture4life.luca.R
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.ui.BaseViewModel
 import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Observable
-
 
 class ChildrenViewModel(application: Application) : BaseViewModel(application) {
 
@@ -20,7 +18,6 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
         return super.initialize()
             .andThen(childrenManager.initialize(application))
             .andThen(registrationManager.initialize(application))
-            .andThen(restoreChildren())
     }
 
     fun navigateBack() {
@@ -63,7 +60,7 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
             }
     }
 
-    private fun updateList(): Completable {
+    fun updateList(): Completable {
         return childrenManager.getChildren()
             .map { children ->
                 ChildListItemContainer().apply {
@@ -79,16 +76,15 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
     fun restoreChildren(): Completable {
         return childrenManager.getChildren()
             .map { children ->
-                Observable.fromIterable(children)
-                    .map { child ->
+                ChildListItemContainer(
+                    children.map { child ->
                         ChildListItem(
                             child,
                             childrenManager.isCheckedIn(child).blockingGet()
                         )
                     }
-                    .toList()
+                )
             }
-            .map { listSingle -> ChildListItemContainer(listSingle.blockingGet()) }
             .flatMapCompletable { update(children, it) }
     }
 
@@ -102,5 +98,4 @@ class ChildrenViewModel(application: Application) : BaseViewModel(application) {
             }
         }
     }
-
 }

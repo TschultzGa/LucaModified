@@ -15,9 +15,11 @@ class EntryPolicyViewModel(app: Application) : BaseFlowChildViewModel(app) {
 
     fun onActionButtonClicked(shareEntryPolicyStatus: Boolean, alwaysShare: Boolean) {
         persistAlwaysShareEntryPolicyStatus(alwaysShare)
-            .andThen(Completable.fromAction {
-                (sharedViewModel as CheckInFlowViewModel?)?.shareEntryPolicyState = shareEntryPolicyStatus
-            })
+            .andThen(
+                Completable.fromAction {
+                    (sharedViewModel as CheckInFlowViewModel?)?.shareEntryPolicyState = shareEntryPolicyStatus
+                }
+            )
             .onErrorComplete()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -42,5 +44,4 @@ class EntryPolicyViewModel(app: Application) : BaseFlowChildViewModel(app) {
     companion object {
         const val KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS = "always_share_entry_policy_status"
     }
-
 }

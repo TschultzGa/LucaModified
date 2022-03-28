@@ -28,5 +28,4 @@ class WhatIsNewViewPagerAdapter(
         pageFragment.arguments = bundle
         return pageFragment
     }
-
 }

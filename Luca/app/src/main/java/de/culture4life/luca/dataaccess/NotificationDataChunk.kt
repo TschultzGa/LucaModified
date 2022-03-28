@@ -32,7 +32,7 @@ data class NotificationDataChunk(
             val creationTimestamp = byteBuffer.long
             val isValidTimestamp =
                 creationTimestamp > TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(30) &&
-                        creationTimestamp < TimeUtil.getCurrentMillis()
+                    creationTimestamp < TimeUtil.getCurrentMillis()
             require(isValidTimestamp) { "Invalid creation timestamp: $creationTimestamp" }
 
             byteBuffer.position(16)
@@ -56,11 +56,9 @@ data class NotificationDataChunk(
                 hashedTraceIds
             )
         }
-
     }
 
     override fun toString(): String {
         return "Chunk(version=$version, algorithm=$algorithm, hashLength=$hashLength, creationTimestamp=$creationTimestamp, previousChunkId='$previousChunkId', hashedTraceIds=${hashedTraceIds.size})"
     }
-
 }

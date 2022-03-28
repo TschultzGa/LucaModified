@@ -41,5 +41,4 @@ class ProvideProofViewModel(app: Application) : BaseFlowChildViewModel(app) {
     fun onActionButtonClicked() {
         sharedViewModel?.navigateToNext()
     }
-
 }

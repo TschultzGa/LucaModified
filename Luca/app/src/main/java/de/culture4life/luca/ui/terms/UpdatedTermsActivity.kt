@@ -35,10 +35,12 @@ class UpdatedTermsActivity : BaseActivity() {
         })
 
         binding.primaryActionButton.setOnClickListener {
-            activityDisposable.add(UpdatedTermsUtil.markTermsAsAccepted(application).subscribe {
-                startActivity(Intent(this, MainActivity::class.java))
-                finish()
-            })
+            activityDisposable.add(
+                UpdatedTermsUtil.markTermsAsAccepted(application).subscribe {
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finish()
+                }
+            )
         }
         binding.updatedTermsDescription.movementMethod = LinkMovementMethod.getInstance()
         binding.menuImageView.setOnClickListener {
@@ -60,11 +62,13 @@ class UpdatedTermsActivity : BaseActivity() {
     }
 
     private fun showDeleteAccountDialog() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.delete_account_dialog_title)
-            .setMessage(R.string.delete_account_dialog_message)
-            .setPositiveButton(R.string.delete_account_dialog_action) { _, _ -> viewModel.deleteAccount() }
-            .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() })
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.delete_account_dialog_title)
+                .setMessage(R.string.delete_account_dialog_message)
+                .setPositiveButton(R.string.delete_account_dialog_action) { _, _ -> viewModel.deleteAccount() }
+                .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() }
+        )
             .show()
     }
 
@@ -80,5 +84,4 @@ class UpdatedTermsActivity : BaseActivity() {
         }
         viewModel.onErrorShown(error)
     }
-
 }

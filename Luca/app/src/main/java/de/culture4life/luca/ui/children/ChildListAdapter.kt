@@ -171,5 +171,4 @@ class ChildListAdapter(
         currentKeyboardFocus = KeyboardFocus(position, field)
         notifyDataSetChanged()
     }
-
 }

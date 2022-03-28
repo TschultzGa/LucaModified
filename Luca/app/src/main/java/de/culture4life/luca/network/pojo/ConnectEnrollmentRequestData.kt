@@ -31,7 +31,7 @@ data class ConnectEnrollmentRequestData(
     @SerializedName("pow")
     var pow: PowSolutionRequestData,
 
-    )
+)
 
 data class EciesData(
 
@@ -47,7 +47,7 @@ data class EciesData(
     @SerializedName("mac")
     var mac: String,
 
-    ) {
+) {
 
     constructor(eciesResult: EciesResult) : this(
         encryptedData = eciesResult.encryptedData.encodeToBase64(),
@@ -55,7 +55,6 @@ data class EciesData(
         iv = eciesResult.iv.encodeToBase64(),
         mac = eciesResult.mac.encodeToBase64()
     )
-
 }
 
 data class ConnectContactData(
@@ -93,4 +92,4 @@ data class ConnectContactData(
     @SerializedName("v")
     var version: Int = 1,
 
-    )
+)

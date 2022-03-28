@@ -17,7 +17,6 @@ import de.culture4life.luca.children.Child
 import de.culture4life.luca.children.ChildrenManager
 import de.culture4life.luca.databinding.DialogAddChildBinding
 
-
 class AddChildDialogFragment : BottomSheetDialogFragment() {
 
     interface AddChildListener {
@@ -85,7 +84,6 @@ class AddChildDialogFragment : BottomSheetDialogFragment() {
             }
         }
     }
-
 }
 
 fun TextInputLayout.setErrorStateFor(name: String) {

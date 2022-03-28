@@ -71,32 +71,6 @@ object TimeUtil {
     }
 
     @JvmStatic
-    fun getReadableDurationWithPlural(duration: Long, context: Context): Single<String> {
-        return Single.fromCallable {
-            val timeUnit: TimeUnit
-            val unitStringResource: Int
-            if (duration < TimeUnit.MINUTES.toMillis(1)) {
-                timeUnit = TimeUnit.SECONDS
-                unitStringResource = R.plurals.time_plural_seconds
-            } else if (duration < TimeUnit.HOURS.toMillis(1)) {
-                timeUnit = TimeUnit.MINUTES
-                unitStringResource = R.plurals.time_plural_minutes
-            } else if (duration < TimeUnit.DAYS.toMillis(1)) {
-                timeUnit = TimeUnit.HOURS
-                unitStringResource = R.plurals.time_plural_hours
-            } else {
-                timeUnit = TimeUnit.DAYS
-                unitStringResource = R.plurals.time_plural_days
-            }
-            var amount = timeUnit.convert(duration, TimeUnit.MILLISECONDS).toInt()
-            if (duration - timeUnit.toMillis(amount.toLong()) > 0) {
-                amount++
-            }
-            context.resources.getQuantityString(unitStringResource, amount, amount)
-        }
-    }
-
-    @JvmStatic
     fun getStartOfCurrentDayTimestamp(): Single<Long> {
         return Single.fromCallable { TimeUtil.getCurrentMillis() }
             .flatMap { getStartOfDayTimestamp(it) }
@@ -131,12 +105,42 @@ object TimeUtil {
 
     fun zonedDateTimeFromTimestamp(timestamp: Long) = DateTime.now(DateTimeZone.getDefault()).withMillis(timestamp)
 
-    val GERMAN_TIMEZONE = DateTimeZone.forID("Europe/Berlin")
+    @JvmStatic
+    fun getReadableDateTimeDifference(context: Context, start: DateTime, end: DateTime = DateTime.now(DateTimeZone.getDefault())): String {
+        val seconds = Seconds.secondsBetween(start, end).seconds
+        val minutes = Minutes.minutesBetween(start, end).minutes
+        val hours = Hours.hoursBetween(start, end).hours
+        val days = Days.daysBetween(start, end).days
+        val weeks = Weeks.weeksBetween(start, end).weeks
+        val months = Months.monthsBetween(start, end).months
+
+        val before = when {
+            months >= 1 -> months to R.plurals.time_plural_months
+            weeks >= 1 -> weeks to R.plurals.time_plural_weeks
+            days >= 1 -> days to R.plurals.time_plural_days
+            hours >= 1 -> hours to R.plurals.time_plural_hours
+            minutes >= 1 -> minutes to R.plurals.time_plural_minutes
+            else -> seconds to R.plurals.time_plural_seconds
+        }
+
+        return context.resources.getQuantityString(before.second, before.first, before.first)
+    }
+
+    @JvmStatic
+    fun getReadableDurationWithPlural(duration: Long, context: Context): Single<String> {
+        return Single.just(getReadableDateTimeDifference(context, DateTime.now(), DateTime.now().plus(duration)))
+    }
+
+    val GERMAN_TIMEZONE: DateTimeZone = DateTimeZone.forID("Europe/Berlin")
 }
 
 fun DateTime.isAfterNowMinusPeriod(period: ReadablePeriod): Boolean {
     val now = DateTime.now(DateTimeZone.getDefault())
     return isAfter(now.minus(period))
+}
+
+fun Long.toDateTime(timeZone: DateTimeZone = DateTimeZone.getDefault()): DateTime {
+    return Instant.ofEpochMilli(this).toDateTime(timeZone)
 }
 
 fun Long.toUnixTimestamp(): Long {
@@ -148,9 +152,9 @@ fun Long.fromUnixTimestamp(): Long {
 }
 
 fun Context.getReadableTime(timestamp: Long, timeZone: DateTimeZone = GERMAN_TIMEZONE): String {
-    return DateTimeFormat.forPattern(getString(R.string.time_format)).print(Instant.ofEpochMilli(timestamp).toDateTime(timeZone))
+    return DateTimeFormat.forPattern(getString(R.string.time_format)).print(timestamp.toDateTime(timeZone))
 }
 
 fun Context.getReadableDate(timestamp: Long, timeZone: DateTimeZone = GERMAN_TIMEZONE): String {
-    return DateTimeFormat.forPattern(getString(R.string.date_format)).print(Instant.ofEpochMilli(timestamp).toDateTime(timeZone))
+    return DateTimeFormat.forPattern(getString(R.string.date_format)).print(timestamp.toDateTime(timeZone))
 }

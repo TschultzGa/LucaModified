@@ -41,6 +41,7 @@ data class CheckInData(
     @Expose
     var longitude: Double = 0.0,
 
+    // available when location supports auto-checkout
     @SerializedName("radius")
     @Expose
     var radius: Long = 0,
@@ -78,6 +79,9 @@ data class CheckInData(
         return latitude != 0.0 && longitude != 0.0
     }
 
+    /**
+     * @return true if the location supports auto-checkout
+     */
     fun hasLocationRestriction(): Boolean {
         return hasLocation() && radius > 0
     }
@@ -85,5 +89,4 @@ data class CheckInData(
     fun hasDurationRestriction(): Boolean {
         return minimumDuration > 0
     }
-
 }

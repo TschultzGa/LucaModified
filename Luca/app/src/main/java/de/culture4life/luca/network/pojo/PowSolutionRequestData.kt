@@ -14,5 +14,4 @@ data class PowSolutionRequestData(
 ) {
 
     constructor(powChallenge: PowChallenge) : this(powChallenge.id, powChallenge.w.toString(10))
-
 }

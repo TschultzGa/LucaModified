@@ -66,5 +66,4 @@ class DailyKeyFragment : BaseFragment<DailyKeyViewModel>() {
             }
         }
     }
-
 }

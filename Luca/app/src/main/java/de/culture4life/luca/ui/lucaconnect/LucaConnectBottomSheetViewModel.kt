@@ -59,5 +59,4 @@ class LucaConnectBottomSheetViewModel(app: Application) : BaseFlowViewModel(app)
                 .addTo(modelDisposable)
         }
     }
-
 }

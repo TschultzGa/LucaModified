@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginStart="@dimen/spacing_default"
+    android:layout_marginTop="@dimen/spacing_default"
     android:layout_marginEnd="@dimen/spacing_default"
     android:layout_marginBottom="@dimen/spacing_default"
     android:background="@android:color/transparent"
@@ -55,7 +56,7 @@
                 android:id="@+id/topContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_small"
+                android:layout_marginTop="@dimen/spacing_default"
                 android:orientation="vertical"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/itemTitleTextView" />
@@ -78,6 +79,12 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/topContent">
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.5dp"
+                    android:layout_marginVertical="24dp"
+                    android:background="?colorSurface" />
+
                 <LinearLayout
                     android:id="@+id/collapsedContent"
                     android:layout_width="match_parent"
@@ -88,6 +95,7 @@
                     android:id="@+id/qrCodeImageView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_large"
                     android:adjustViewBounds="true"
                     android:padding="@dimen/spacing_default"
                     android:scaleType="fitCenter"
@@ -98,7 +106,7 @@
                     style="@style/TextAppearance.Luca.Body2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="@dimen/spacing_small"
                     android:ellipsize="end"
                     android:gravity="center"
                     android:maxLines="2"

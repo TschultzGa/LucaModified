@@ -60,6 +60,18 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
         navigationController?.navigate(R.id.action_accountFragment_to_lucaConnectFragment)
     }
 
+    fun openVoluntaryCheckInView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_voluntaryCheckInFragment)
+    }
+
+    fun openDirectCheckInView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_directCheckInFragment)
+    }
+
+    fun openEntryPolicyView() {
+        navigationController?.navigate(R.id.action_accountFragment_to_entryPolicyPreferencesFragment)
+    }
+
     fun openDailyKeyView() {
         navigationController?.navigate(R.id.action_accountFragment_to_dailyKeyFragment)
     }
@@ -86,22 +98,24 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
      * successful, show error dialog when an error occurred.
      */
     fun deleteAccount() {
-        modelDisposable.add(application.deleteAccount()
-            .doOnSubscribe { updateAsSideEffect(isLoading, true) }
-            .doFinally { updateAsSideEffect(isLoading, false) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
-                Timber.i("Account deleted")
-                application.restart()
-            }) { throwable: Throwable ->
-                Timber.w("Unable to delete account: %s", throwable.toString())
-                val viewError = createErrorBuilder(throwable)
-                    .withTitle(R.string.error_request_failed_title)
-                    .removeWhenShown()
-                    .build()
-                addError(viewError)
-            })
+        modelDisposable.add(
+            application.deleteAccount()
+                .doOnSubscribe { updateAsSideEffect(isLoading, true) }
+                .doFinally { updateAsSideEffect(isLoading, false) }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                    Timber.i("Account deleted")
+                    application.restart()
+                }) { throwable: Throwable ->
+                    Timber.w("Unable to delete account: %s", throwable.toString())
+                    val viewError = createErrorBuilder(throwable)
+                        .withTitle(R.string.error_request_failed_title)
+                        .removeWhenShown()
+                        .build()
+                    addError(viewError)
+                }
+        )
     }
 
     /*
@@ -118,11 +132,11 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
         ).map { content ->
             """
                 ${application.getString(R.string.data_request_tracing_title)}
-                
+
                 ${application.getString(R.string.data_request_tracing_content_prefix)}
-                
+
                 $content
-                
+
                 ${application.getString(R.string.data_request_tracing_content_suffix)}
             """.trimIndent()
         }
@@ -135,11 +149,11 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
             .map { content ->
                 """
                     ${application.getString(R.string.data_request_documents_title)}
-                    
+
                     ${application.getString(R.string.data_request_documents_content_prefix)}
-                    
+
                     $content
-                    
+
                     ${application.getString(R.string.data_request_documents_content_suffix)}
                 """.trimIndent()
             }
@@ -152,14 +166,14 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
             .map { registrationData ->
                 """
                     ${application.getString(R.string.data_request_contact_data_title)}
-                    
+
                     ${printProperty(R.string.data_request_contact_data_name, registrationData.fullName)}
                     ${printProperty(R.string.data_request_contact_data_address, registrationData.address)}
                     ${printProperty(R.string.data_request_contact_data_phone_number, registrationData.phoneNumber)}
                     ${printProperty(R.string.data_request_contact_data_mail, registrationData.email)}
                     ${printProperty(R.string.data_request_storage_location, R.string.data_request_storage_location_local_and_server)}
                     ${printProperty(R.string.data_request_storage_period, R.string.data_request_storage_period_contact_data)}
-                    
+
                 """.trimIndent()
             }
     }
@@ -183,7 +197,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
             .map { checkIns ->
                 """
                     ${application.getString(R.string.data_request_location_data_title)}
-                    
+
                     $checkIns
                 """.trimIndent()
             }
@@ -247,7 +261,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
             .map { documents ->
                 """
                     ${application.getString(R.string.data_request_documents_title)}
-                    
+
                     $documents
                 """.trimIndent()
             }
@@ -270,7 +284,7 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
                     ${printProperty(R.string.data_request_document_data, document.encodedData)}
                     ${printProperty(R.string.data_request_storage_location, R.string.data_request_storage_location_local)}
                     ${printProperty(R.string.data_request_storage_period, R.string.data_request_storage_period_document_data)}
-                    
+
                 """.trimIndent()
             }
     }
@@ -390,8 +404,8 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
         value: String?
     ): String {
         return "${application.getString(key)}: ${
-            if (TextUtils.isEmpty(value)) application.getString(R.string.unknown)
-            else value
+        if (TextUtils.isEmpty(value)) application.getString(R.string.unknown)
+        else value
         }"
     }
 
@@ -408,5 +422,4 @@ class AccountViewModel(application: Application) : BaseViewModel(application) {
     ): StringBuilder {
         return this.append(printProperty(key, value))
     }
-
 }

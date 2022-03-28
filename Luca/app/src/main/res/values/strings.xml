@@ -293,7 +293,6 @@
 
     <!-- Venues -->
     <string name="venue_heading">@string/dummy_heading</string>
-    <string name="venue_check_in_time">Check-in:    <b><xliff:g example="18.08.2020 – 7:23 PM" id="time">%1$s</xliff:g></b></string>
     <string name="venue_current_stay_timer_heading">Current stay</string>
 
     <string name="venue_property_table">Table</string>
@@ -304,7 +303,7 @@
     <string name="venue_check_in_content_description">Check-in button</string>
     <string name="venue_check_out_action">CHECK OUT</string>
     <string name="venue_check_out_content_description">Check-out button</string>
-    <string name="venue_checked_in_time">Check in:\n<xliff:g example="18.08.2020 – 7:23 PM" id="time">%1$s</xliff:g></string>
+    <string name="venue_checked_in_time">Check-in: <b><xliff:g example="18.08.2020 – 7:23 PM" id="time">%1$s</xliff:g></b></string>
     <string name="venue_automatic_check_out">Automatic Check-Out</string>
     <string name="venue_slider_clicked">Please slide the arrow to the right</string>
     <string name="venue_checked_out">You have checked out</string>
@@ -361,6 +360,7 @@
     <!-- Venue URLs -->
     <string name="venue_url_consent_title">Open external link</string>
     <string name="venue_url_consent_description">You\'re about to open <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g>\'s <xliff:g example="Website" id="urlType">%2$s</xliff:g>. This link is provided by the luca Location you are checked into, luca has no control over the content. The following link will be opened:\n\n<xliff:g example="https://nexenio.com" id="url">%3$s</xliff:g></string>
+    <string name="venue_url_consent_do_not_show_again_default_text">Save configuration and don\'t ask again.</string>
     <string name="venue_url_report_title">Report inappropriate content</string>
     <string name="venue_url_report_description">With this mail I would like to report the contents of the following location: <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g> (<xliff:g example="8b212727-b90f-449b-a347-098c38c2f299" id="locationId">%2$s</xliff:g>).\n\nThe location has provided inappropriate content through the following links:\n<xliff:g example="- https://luca-app.de/" id="providedUrls">%3$s</xliff:g>\n\nThe content is inappropriate for the following reason:\nPlease add why you are reporting the links.</string>
     <string name="venue_url_clipboard_label"><xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g>\'s <xliff:g example="Website" id="urlType">%2$s</xliff:g></string>
@@ -509,7 +509,6 @@
     <string name="appointment_action">Book appointment</string>
     <string name="document_import_action">Add Document</string>
     <string name="document_import_anyway_action">Import anyway</string>
-    <string name="document_import_hint">Scan the QR code of your document to add it to the app.</string>
     <string name="document_import_success_message">The document was imported</string>
     <string name="document_import_error_title">The document could not be imported</string>
     <string name="document_import_error_name_mismatch_description">It was not possible to validate that this document belongs to you. Please check if your name is entered correctly in the app.</string>
@@ -532,22 +531,19 @@
     <string name="document_outcome">Result <xliff:g example="Positive" id="outcome">%1$s</xliff:g></string>
     <string name="document_outcome_negative">Negative</string>
     <string name="document_outcome_positive">Positive</string>
-    <string name="document_outcome_partially_immune">Partially Immune %1$s</string>
-    <string name="document_outcome_partially_vaccinated">Partial vaccination %1$s</string>
-    <string name="document_outcome_fully_vaccinated">Complete vaccination %1$s</string>
-    <string name="document_outcome_fully_vaccinated_in">Complete vaccination in %1$s</string>
-    <string name="document_outcome_fully_recovered">RECOVERY PROOF</string>
-    <string name="document_outcome_fully_recovered_in">Recovered in %1$s</string>
     <string name="document_outcome_unknown">Unknown</string>
     <string name="document_type_fast">Rapid Test</string>
     <string name="document_type_pcr">PCR Test</string>
-    <string name="document_type_vaccination">VACCINATION CERTIFICATE</string>
+    <string name="document_type_vaccination">VACCINATION CERTIFICATE %1$s</string>
+    <string name="document_type_recovery">RECOVERY CERTIFICATE</string>
     <string name="document_type_unknown">@string/document_outcome_unknown</string>
     <string name="document_type_of_document_label">Type:</string>
     <string name="document_issued">Issued:</string>
-    <string name="vaccination_date_label">Vaccination date:</string>
+    <string name="vaccination_valid_from_date_label">Valid from:</string>
+    <string name="vaccination_done_before_label">Vaccinated before:</string>
+    <string name="recovery_done_before_label">Recovered before:</string>
+    <string name="testing_done_before_label">Tested before:</string>
     <string name="document_issued_at">Date:</string>
-    <string name="document_created_before">Created before:</string>
     <string name="document_valid_until">Valid until:</string>
     <string name="document_lab_issuer">Issuer:</string>
     <string name="document_lab_tester">Tester:</string>
@@ -620,6 +616,14 @@
         <item formatted="true" quantity="one">%d day</item>
         <item formatted="true" quantity="other">%d days</item>
     </plurals>
+    <plurals name="time_plural_weeks">
+        <item formatted="true" quantity="one">%d week</item>
+        <item formatted="true" quantity="other">%d weeks</item>
+    </plurals>
+    <plurals name="time_plural_months">
+        <item formatted="true" quantity="one">%d month</item>
+        <item formatted="true" quantity="other">%d months</item>
+    </plurals>
 
     <!-- Account tab -->
     <string name="account_tab_section_settings">Settings</string>
@@ -642,6 +646,9 @@
     <string name="account_tab_item_app_version">App version</string>
     <string name="account_tab_item_app_data">App data</string>
     <string name="account_tab_item_source_code">Source code</string>
+    <string name="account_tab_item_direct_check_in">Direct check-in</string>
+    <string name="account_tab_item_entry_policy">2G/3G status</string>
+    <string name="account_tab_item_voluntary_check_in">Voluntary check-in</string>
 
     <string name="account_tab_item_delete_account">Delete account</string>
 
@@ -650,6 +657,23 @@
     <!-- Postal code settings -->
     <string name="postal_code_settings_switch_title">@string/notification_postal_code_matching_title</string>
     <string name="postal_code_settings_description">Some of our (new) features and functions are location dependent. Enable zip code matching to get information about location dependent features.</string>
+
+    <!-- Direct check-in settings -->
+    <string name="direct_check_in_settings_title">@string/account_tab_item_direct_check_in</string>
+    <string name="direct_check_in_settings_description">Check in directly without having to confirm it every time? Activate the direct check-in here. You can cancel this setting at any time.</string>
+    <string name="direct_check_in_settings_switch_text">Check in directly</string>
+
+    <!-- Entry policy settings -->
+    <string name="entry_policy_settings_title">@string/account_tab_item_entry_policy</string>
+    <string name="entry_policy_settings_description">luca locations may have 2G/3G entry requirements. If you choose to share your 2G/3G status, locations will only be informed about whether you fulfill their requirement or not. They will not see your 2G/3G documents. Here in the account tab, you can set whether you want to share your 2G/3G status when checking in.</string>
+    <string name="entry_policy_settings_switch_text">Share 2G/3G status</string>
+
+    <!-- Voluntary check-in settings -->
+    <string name="voluntary_check_in_settings_title">@string/account_tab_item_voluntary_check_in</string>
+    <string name="voluntary_check_in_settings_description">Enable this setting if you want to save and apply it to future check-ins. If you enable it, you will automatically be checked into voluntary check-ins. This is based on your consent according to Art. 6 (1) 1 a) DSGVO. Further information on revocation and deletion can be found in our <a href="https://www.luca-app.de/app-privacy-policy/#data_privacy_app_C4_Checkin">privacy policy</a>.\n\nHere in the account tab you can change your check-in settings at any time.</string>
+    <string name="voluntary_check_in_settings_switch_text">Activate voluntary check-in</string>
+    <string name="voluntary_check_in_settings_share_contact_data_description">Additionally, if you would like to voluntarily submit your contact information during future check-ins, enable here. </string>
+    <string name="voluntary_check_in_settings_share_contact_data_switch_text">Share contact data</string>
 
     <!-- luca Connect settings -->
     <string name="luca_connect_settings_switch_title">Activate luca Connect</string>
@@ -779,5 +803,4 @@
     <string name="dummy_heading" translatable="false">Lorem Ipsum</string>
     <string name="dummy_sentence" translatable="false">Quisque hendrerit facilisis ultricies, fusce a convallis.</string>
     <string name="dummy_paragraph" translatable="false">Curabitur tincidunt in lectus at scelerisque. Nunc arcu lectus, lobortis ut aliquam ac, accumsan nec risus. Quisque hendrerit facilisis ultricies. Fusce a convallis lacus.</string>
-
 </resources>

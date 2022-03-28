@@ -7,7 +7,6 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import de.culture4life.luca.util.AccessibilityServiceUtil
 
-
 abstract class KeyboardInputTrackingAdapter<VH>(context: Context, resource: Int) : ArrayAdapter<VH>(context, resource) {
 
     enum class KeyboardInputEvents {
@@ -22,18 +21,18 @@ abstract class KeyboardInputTrackingAdapter<VH>(context: Context, resource: Int)
             override fun onKey(v: View?, keyCode: Int, event: KeyEvent): Boolean {
                 val selectedItemPosition = listView.selectedItemPosition
                 when {
-                    KeyEvent.ACTION_UP == event.action && AccessibilityServiceUtil.isKeyConfirmButton(event)
-                            && event.flags and KeyEvent.FLAG_LONG_PRESS != KeyEvent.FLAG_LONG_PRESS -> {
+                    KeyEvent.ACTION_UP == event.action && AccessibilityServiceUtil.isKeyConfirmButton(event) &&
+                        event.flags and KeyEvent.FLAG_LONG_PRESS != KeyEvent.FLAG_LONG_PRESS -> {
                         action(KeyboardInputEvents.ENTER_PRESSED, selectedItemPosition)
                         return true
                     }
-                    event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
-                            && event.flags and KeyEvent.FLAG_LONG_PRESS != KeyEvent.FLAG_LONG_PRESS -> {
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT &&
+                        event.flags and KeyEvent.FLAG_LONG_PRESS != KeyEvent.FLAG_LONG_PRESS -> {
                         action(KeyboardInputEvents.RIGHT_PRESSED, selectedItemPosition)
                         return true
                     }
-                    event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT
-                            && event.flags and KeyEvent.FLAG_LONG_PRESS != KeyEvent.FLAG_LONG_PRESS -> {
+                    event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT &&
+                        event.flags and KeyEvent.FLAG_LONG_PRESS != KeyEvent.FLAG_LONG_PRESS -> {
                         action(KeyboardInputEvents.LEFT_PRESSED, selectedItemPosition)
                         return true
                     }

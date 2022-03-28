@@ -138,7 +138,7 @@ open class EudccDocumentProvider(val context: Context) : DocumentProvider<EudccD
             Observable.fromIterable(certificates)
         }.map {
             Gson().fromJson(it, EudccSigningKey::class.java)
-        }.onErrorResumeNext { Observable.error(IllegalStateException("Unable fetch signing keys", it)) };
+        }.onErrorResumeNext { Observable.error(IllegalStateException("Unable fetch signing keys", it)) }
     }
 
     private fun verifySigningKeySignature(data: ByteArray, signature: ByteArray): Completable {
@@ -169,10 +169,9 @@ open class EudccDocumentProvider(val context: Context) : DocumentProvider<EudccD
         derOutputStream.close()
         return byteArrayOutputStream.toByteArray()
     }
-
 }
 
 private const val CERT_SERVER_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\n" +
-        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAETHfi8foQF4UtSNVxSFxeu7W+gMxd\n" +
-        "SGElhdo7825SD3Lyb+Sqh4G6Kra0ro1BdrM6Qx+hsUx4Qwdby7QY0pzxyA==\n" +
-        "-----END PUBLIC KEY-----\n"
+    "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAETHfi8foQF4UtSNVxSFxeu7W+gMxd\n" +
+    "SGElhdo7825SD3Lyb+Sqh4G6Kra0ro1BdrM6Qx+hsUx4Qwdby7QY0pzxyA==\n" +
+    "-----END PUBLIC KEY-----\n"

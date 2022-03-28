@@ -54,5 +54,4 @@ class MessageDetailFragment : BaseFragment<MessageDetailViewModel>() {
     companion object {
         const val KEY_MESSAGE_LIST_ITEM = "MessageListItem"
     }
-
 }

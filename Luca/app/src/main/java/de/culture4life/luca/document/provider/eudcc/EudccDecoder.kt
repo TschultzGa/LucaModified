@@ -55,12 +55,14 @@ class EudccDecoder(private val base45Decoder: Base45Decoder) {
         @JvmStatic
         fun decompressBase45DecodedData(compressedData: ByteArray): ByteArray {
             // ZLIB magic headers
-            val hasExpectedHeaders = compressedData.size >= 2
-                    && compressedData[0] == 0x78.toByte()
-                    && (compressedData[1] == 0x01.toByte() || // Level 1
-                    compressedData[1] == 0x5E.toByte() || // Level 2 - 5
-                    compressedData[1] == 0x9C.toByte() || // Level 6
-                    compressedData[1] == 0xDA.toByte())
+            val hasExpectedHeaders = compressedData.size >= 2 &&
+                compressedData[0] == 0x78.toByte() &&
+                (
+                    compressedData[1] == 0x01.toByte() || // Level 1
+                        compressedData[1] == 0x5E.toByte() || // Level 2 - 5
+                        compressedData[1] == 0x9C.toByte() || // Level 6
+                        compressedData[1] == 0xDA.toByte()
+                    )
 
             return if (hasExpectedHeaders) {
                 InflaterInputStream(compressedData.inputStream()).readBytes()
@@ -84,7 +86,5 @@ class EudccDecoder(private val base45Decoder: Base45Decoder) {
             val objProtected = CBORObject.DecodeFromBytes(protectedRgb).get(key).GetByteString()
             return CoseData(content, objProtected)
         }
-
     }
-
 }

@@ -481,6 +481,7 @@ class RegistrationManager(
                         } else {
                             TimeUtil.getCurrentMillis().toUnixTimestamp()
                         }
+
                         Timber.d("Filtering trace secret wrappers between $startUnixTimestamp and $endUnixTimestamp for ${element.id}")
                         val wrappers = getTracingSecrets
                             .doOnNext { Timber.v("Checking trace secret wrapper: $it") }

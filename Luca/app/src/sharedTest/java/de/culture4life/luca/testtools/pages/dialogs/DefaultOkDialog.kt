@@ -12,14 +12,11 @@ import io.github.kakaocup.kakao.text.KButton
 import org.hamcrest.Matcher
 import org.hamcrest.Matchers
 
-abstract class DefaultYesNoDialog {
+abstract class DefaultOkDialog {
 
     protected val baseDialog = KAlertDialog()
 
     val okButton = baseDialog.positiveButton
-        .also(::interceptButtonOnPerform)
-
-    val cancelButton = baseDialog.negativeButton
         .also(::interceptButtonOnPerform)
 
     /**
@@ -29,7 +26,7 @@ abstract class DefaultYesNoDialog {
      */
     abstract fun isDisplayed()
 
-    private fun interceptButtonOnPerform(builder: KBaseView<KButton>) {
+    protected fun interceptButtonOnPerform(builder: KBaseView<KButton>) {
         builder.intercept {
             onPerform(true) { viewInteraction, viewAction ->
                 baseDialog.isDisplayed()
@@ -46,9 +43,9 @@ abstract class DefaultYesNoDialog {
     }
 
     private fun isSingleClickWithRobolectric(viewAction: ViewAction): Boolean {
-        return LucaApplication.isRunningUnitTests()
-                && viewAction is GeneralClickAction
-                && viewAction.description == "single click"
+        return LucaApplication.isRunningUnitTests() &&
+            viewAction is GeneralClickAction &&
+            viewAction.description == "single click"
     }
 
     class DirectClickAction : ViewAction {

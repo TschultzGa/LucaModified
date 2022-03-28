@@ -237,17 +237,20 @@ public class RegistrationViewModel extends BaseViewModel {
 
     private Completable additionalStepsAfterUpdate() {
         return Completable.mergeArray(
-                deleteResponsibleHealthDepartmentIfRequired(),
+                updateResponsibleHealthDepartmentIfRequired(),
                 unEnrollIfRequired(),
                 updateSharedDataIfRequired(),
                 reImportDocumentsIfRequired()
         );
     }
 
-    private Completable deleteResponsibleHealthDepartmentIfRequired() {
+    private Completable updateResponsibleHealthDepartmentIfRequired() {
         return Single.fromCallable(this::isPostalCodeChanged)
                 .filter(postalCodeChanged -> postalCodeChanged)
-                .flatMapCompletable(postalCodeChanged -> healthDepartmentManager.deleteResponsibleHealthDepartment());
+                .flatMapCompletable(postalCodeChanged ->
+                        healthDepartmentManager.deleteResponsibleHealthDepartment()
+                                .andThen(healthDepartmentManager.updateResponsibleHealthDepartmentIfRequired()
+                                ));
     }
 
     private Completable unEnrollIfRequired() {

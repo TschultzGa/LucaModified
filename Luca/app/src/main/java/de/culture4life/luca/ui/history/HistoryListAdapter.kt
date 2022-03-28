@@ -6,16 +6,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ItemHistoryBinding
+import de.culture4life.luca.ui.history.HistoryListItem.*
 
 class HistoryListAdapter(context: Context, resource: Int, private val showTimeLine: Boolean) :
     ArrayAdapter<HistoryListItem>(context, resource) {
 
     private var isInEditMode = false
     var itemClickHandler: ItemClickHandler? = null
-    private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)
-            as LayoutInflater
+    private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
     fun setHistoryItems(items: List<HistoryListItem>) {
         clear()
@@ -32,23 +33,33 @@ class HistoryListAdapter(context: Context, resource: Int, private val showTimeLi
         }
 
         binding.root.setOnClickListener(null)
-
         val item = getItem(position)!!
 
         if (isInEditMode) {
-            binding.lineGroup.visibility = View.GONE
-            binding.checkbox.visibility = if (item.isContactDataMandatory) View.INVISIBLE else View.VISIBLE
+            binding.topLineView.visibility = View.GONE
+            binding.bottomLineView.visibility = View.GONE
+            binding.dotView.visibility = View.GONE
+            binding.checkbox.visibility = if (HistoryListItem.isContactDataMandatory(item)) View.INVISIBLE else View.VISIBLE
         } else {
-            binding.topLineView.visibility = if (showTimeLine && position > 0) View.VISIBLE else View.GONE
-            binding.bottomLineView.visibility = if (showTimeLine && position < count - 1) View.VISIBLE else View.GONE
-
-            binding.lineGroup.visibility = View.VISIBLE
+            binding.topLineView.isVisible = showTimeLine && position > 0
+            binding.bottomLineView.isVisible = showTimeLine && position < count - 1
             binding.checkbox.visibility = View.GONE
         }
 
         binding.itemTitleTextView.text = item.title
-        binding.itemDescriptionTextView.text = item.description
-        binding.itemDescriptionTextView.visibility = if (item.description != null) View.VISIBLE else View.GONE
+        when (item) {
+            is CheckOutListItem -> {
+                binding.itemDescriptionTextView.text = item.description
+                binding.itemDescriptionTextView.isVisible = item.description != null
+            }
+            is MeetingEndedListItem -> {
+                binding.itemDescriptionTextView.text = item.description
+                binding.itemDescriptionTextView.visibility = View.VISIBLE
+            }
+            else -> {
+                binding.itemDescriptionTextView.visibility = View.GONE
+            }
+        }
 
         if (!isInEditMode) {
             setupViewForViewMode(binding, item)
@@ -62,16 +73,21 @@ class HistoryListAdapter(context: Context, resource: Int, private val showTimeLi
 
     private fun setupViewForViewMode(binding: ItemHistoryBinding, item: HistoryListItem) {
         with(binding.itemTitleImageView) {
-            if (item.additionalTitleDetails != null) {
-                setImageResource(item.titleIconResourceId)
+            if (item is CheckOutListItem || item is MeetingEndedListItem || item is DataSharedListItem) {
                 visibility = when {
-                    item.accessedTraceData.isNotEmpty() -> {
+                    item is CheckOutListItem && item.accessedTraceData.isNotEmpty() -> {
+                        setImageResource(item.titleIconResourceId)
                         binding.root.setOnClickListener { itemClickHandler?.showAccessedDataDetails(item) }
                         View.VISIBLE
                     }
-                    item.isPrivateMeeting -> {
+                    item is MeetingEndedListItem -> {
+                        setImageResource(item.titleIconResourceId)
                         binding.root.setOnClickListener { itemClickHandler?.showPrivateMeetingDetails(item) }
                         View.VISIBLE
+                    }
+                    item is DataSharedListItem -> {
+                        setImageResource(item.titleIconResourceId)
+                        View.GONE
                     }
                     else -> {
                         View.GONE
@@ -87,11 +103,8 @@ class HistoryListAdapter(context: Context, resource: Int, private val showTimeLi
             }
         }
 
-        val isNew = item.accessedTraceData.any { it.isNew }
-        val color = ContextCompat.getColor(
-            context,
-            if (isNew) R.color.highlightColor else android.R.color.white
-        )
+        val isNew = item is CheckOutListItem && item.accessedTraceData.any { it.isNew }
+        val color = ContextCompat.getColor(context, if (isNew) R.color.highlightColor else android.R.color.white)
 
         binding.itemTitleTextView.setTextColor(color)
         binding.dotView.background.setTint(color)
@@ -99,25 +112,21 @@ class HistoryListAdapter(context: Context, resource: Int, private val showTimeLi
     }
 
     private fun setupViewForEditMode(binding: ItemHistoryBinding, item: HistoryListItem) {
-        val color = ContextCompat.getColor(
-            context,
-            if (item.isContactDataMandatory) R.color.grey_500_50PC else android.R.color.white
-        )
+        val isMandatory = HistoryListItem.isContactDataMandatory(item)
+        val color = ContextCompat.getColor(context, if (isMandatory) R.color.grey_500_50PC else android.R.color.white)
         binding.itemTitleTextView.setTextColor(color)
         binding.itemTitleImageView.setColorFilter(color)
         binding.itemDescriptionTextView.setTextColor(color)
         binding.itemTimeTextView.setTextColor(color)
         binding.checkbox.isChecked = item.isSelectedForDeletion
 
-        if (!item.isContactDataMandatory) {
+        if (!isMandatory) {
             // due to reduced checkbox size, click functionality is extended to whole item
             binding.root.setOnClickListener {
                 binding.checkbox.isChecked = !binding.checkbox.isChecked
                 itemClickHandler?.onItemCheckBoxToggled(item, binding.checkbox.isChecked)
             }
-            binding.checkbox.setOnClickListener {
-                itemClickHandler?.onItemCheckBoxToggled(item, binding.checkbox.isChecked)
-            }
+            binding.checkbox.setOnClickListener { itemClickHandler?.onItemCheckBoxToggled(item, binding.checkbox.isChecked) }
         }
     }
 
@@ -127,10 +136,9 @@ class HistoryListAdapter(context: Context, resource: Int, private val showTimeLi
     }
 
     interface ItemClickHandler {
-        fun showAccessedDataDetails(item: HistoryListItem)
+        fun showAccessedDataDetails(item: CheckOutListItem)
         fun showTraceInformation(item: HistoryListItem)
-        fun showPrivateMeetingDetails(item: HistoryListItem)
+        fun showPrivateMeetingDetails(item: MeetingEndedListItem)
         fun onItemCheckBoxToggled(item: HistoryListItem, isChecked: Boolean)
     }
-
 }

@@ -60,10 +60,12 @@ class EntryPolicyFragment : BaseCheckInFlowFragment<EntryPolicyViewModel, CheckI
     }
 
     private fun showInfoDialog() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.venue_check_in_share_entry_policy_title)
-            .setMessage(R.string.venue_check_in_share_entry_policy_info_text)
-            .setPositiveButton(R.string.action_ok) { _, _ -> })
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.venue_check_in_share_entry_policy_title)
+                .setMessage(R.string.venue_check_in_share_entry_policy_info_text)
+                .setPositiveButton(R.string.action_ok) { _, _ -> }
+        )
             .show()
     }
 

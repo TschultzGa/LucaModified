@@ -54,7 +54,7 @@ data class RegistrationData(
     @Expose
     var postalCode: String? = null,
 
-    ) {
+) {
 
     val fullName: String
         get() = person.getFullName()
@@ -64,7 +64,6 @@ data class RegistrationData(
 
     val address: String
         get() = "$street $houseNumber, $postalCode $city"
-
 
     fun hasSameName(data: RegistrationData) = data.firstName == firstName && data.lastName == lastName
     fun hasSamePostalCode(data: RegistrationData) = data.postalCode == postalCode

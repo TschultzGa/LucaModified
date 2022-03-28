@@ -27,7 +27,6 @@ object ObservableUtil {
             }
         }
     }
-
 }
 
 fun <T> Observable<T>.retryWhen(

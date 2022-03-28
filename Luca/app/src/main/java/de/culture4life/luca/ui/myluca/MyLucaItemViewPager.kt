@@ -13,5 +13,4 @@ class MyLucaItemViewPager(
     override fun createFragment(position: Int): Fragment {
         return MyLucaItemForViewPagerFragment.newInstance(items[position].document.id)
     }
-
 }

@@ -146,5 +146,4 @@ class ChildrenManager(
             return isValidChildName(child.firstName) && isValidChildName(child.lastName)
         }
     }
-
 }

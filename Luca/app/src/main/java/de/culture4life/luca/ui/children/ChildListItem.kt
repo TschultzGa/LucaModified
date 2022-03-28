@@ -10,5 +10,4 @@ data class ChildListItem(
     fun toggleIsChecked() {
         isCheckedIn = !isCheckedIn
     }
-
 }

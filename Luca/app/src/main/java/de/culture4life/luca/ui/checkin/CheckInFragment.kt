@@ -1,13 +1,8 @@
 package de.culture4life.luca.ui.checkin
 
-
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
-import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
@@ -17,6 +12,7 @@ import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentCheckInBinding
 import de.culture4life.luca.network.pojo.LocationResponseData
+import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.BaseQrCodeFragment
 import de.culture4life.luca.ui.BaseQrCodeViewModel.Companion.BARCODE_DATA_KEY
 import de.culture4life.luca.ui.checkin.flow.CheckInFlowBottomSheetFragment
@@ -28,8 +24,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import java.util.concurrent.TimeUnit
 
-
-class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.OnDestinationChangedListener {
+class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestinationChangedListener {
 
     private var qrCodeBottomSheet: QrCodeBottomSheetFragment? = null
     private val checkInFlowBottomSheet by lazy { CheckInFlowBottomSheetFragment.newInstance() }
@@ -38,6 +33,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     private lateinit var checkInFlowViewModel: CheckInFlowViewModel
 
     private lateinit var binding: FragmentCheckInBinding
+    private lateinit var cameraFragment: BaseQrCodeFragment
 
     override fun getViewBinding(): ViewBinding {
         binding = FragmentCheckInBinding.inflate(layoutInflater)
@@ -62,18 +58,15 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
 
     override fun initializeViews() {
         super.initializeViews()
+        initializeCameraPreview()
         initializeQrCodeBottomSheet()
         initializeCheckInMultiConfirmBottomSheet()
         initializeMiscellaneous()
     }
 
-    override fun initializeCameraPreview() {
-        super.initializeCameraPreview()
-        cameraPreviewView = binding.cameraPreviewView
-        binding.cameraContainerConstraintLayout.setOnClickListener {
-            showCameraPreview(requestConsent = true, requestPermission = true)
-        }
-        binding.flashLightButtonImageView.setOnClickListener { toggleTorch() }
+    private fun initializeCameraPreview() {
+        cameraFragment = binding.qrCodeScanner.getFragment()
+        cameraFragment.setBarcodeResultCallback(viewModel)
     }
 
     private fun initializeQrCodeBottomSheet() {
@@ -85,7 +78,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
             if (!it.hasBeenHandled()) {
                 it.setHandled(true)
                 if (isAdded) {
-                    showCameraPreview(requestConsent = false, requestPermission = false)
+                    cameraFragment.requestShowCameraPreview()
                 }
             }
         }
@@ -133,15 +126,10 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
         }
         observe(viewModel.isLoading) {
             qrCodeBottomSheet?.setIsLoading(it)
-            binding.checkingInLoadingLayout.isVisible = it
+            cameraFragment.showLoading(it)
         }
         observe(viewModel.isNetworkAvailable) {
             qrCodeBottomSheet?.setNoNetworkWarningVisible(!it)
-        }
-        observe(viewModel.isUpdateRequired) {
-            if (it) {
-                showUpdateRequiredDialog()
-            }
         }
         observe(viewModel.isContactDataMissing) {
             if (it) {
@@ -157,11 +145,15 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
         binding.historyActionBarMenuImageView.setOnClickListener {
             safeNavigateFromNavController(R.id.action_checkInFragment_to_history)
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        viewModel.checkIfUpdateIsRequired()
+        observe(viewModel.showCameraPreview) {
+            if (!it.hasBeenHandled()) {
+                if (it.value) {
+                    cameraFragment.requestShowCameraPreview()
+                } else {
+                    cameraFragment.requestHideCameraPreview()
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -202,7 +194,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     private fun showQrCodeBottomSheet() {
-        hideCameraPreview()
+        cameraFragment.requestHideCameraPreview()
         parentFragmentManager.let {
             qrCodeBottomSheet = QrCodeBottomSheetFragment.newInstance(
                 qrCodeBitmap = viewModel.qrCode.value,
@@ -215,7 +207,7 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     private fun showCheckInConfirmFlow(url: String, locationResponseData: LocationResponseData) {
-        hideCameraPreview()
+        cameraFragment.requestHideCameraPreview()
 
         checkInFlowBottomSheet.arguments = bundleOf(
             Pair(CheckInFlowBottomSheetFragment.KEY_LOCATION_URL, url),
@@ -226,14 +218,16 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     private fun showJoinPrivateMeetingDialog(privateMeetingUrl: String) {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.meeting_join_heading)
-            .setMessage(R.string.meeting_join_description)
-            .setPositiveButton(R.string.action_ok) { _, _ ->
-                viewModel.onPrivateMeetingJoinApproved(privateMeetingUrl)
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
+        cameraFragment.requestHideCameraPreview()
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.meeting_join_heading)
+                .setMessage(R.string.meeting_join_description)
+                .setPositiveButton(R.string.action_ok) { _, _ ->
+                    viewModel.onPrivateMeetingJoinApproved(privateMeetingUrl)
+                }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> }
+        )
             .apply {
                 setOnDismissListener { viewModel.onPrivateMeetingJoinDismissed(privateMeetingUrl) }
                 show()
@@ -241,14 +235,16 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     private fun showCreatePrivateMeetingDialog() {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.meeting_create_modal_heading)
-            .setMessage(R.string.meeting_create_modal_description)
-            .setPositiveButton(R.string.meeting_create_modal_action) { _, _ ->
-                viewModel.onPrivateMeetingCreationRequested()
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
+        cameraFragment.requestHideCameraPreview()
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.meeting_create_modal_heading)
+                .setMessage(R.string.meeting_create_modal_description)
+                .setPositiveButton(R.string.meeting_create_modal_action) { _, _ ->
+                    viewModel.onPrivateMeetingCreationRequested()
+                }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> }
+        )
             .apply {
                 setOnDismissListener { viewModel.onPrivateMeetingCreationDismissed() }
                 show()
@@ -256,16 +252,18 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     private fun showImportDocumentDialog(documentData: String) {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.venue_check_in_document_redirect_title)
-            .setMessage(R.string.venue_check_in_document_redirect_description)
-            .setPositiveButton(R.string.action_continue) { _, _ ->
-                val bundle = Bundle()
-                bundle.putString(BARCODE_DATA_KEY, documentData)
-                safeNavigateFromNavController(R.id.myLucaFragment, bundle)
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
+        cameraFragment.requestHideCameraPreview()
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.venue_check_in_document_redirect_title)
+                .setMessage(R.string.venue_check_in_document_redirect_description)
+                .setPositiveButton(R.string.action_continue) { _, _ ->
+                    val bundle = Bundle()
+                    bundle.putString(BARCODE_DATA_KEY, documentData)
+                    safeNavigateFromNavController(R.id.action_checkInFragment_to_myLucaFragment, bundle)
+                }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> }
+        )
             .apply {
                 setOnDismissListener {
                     viewModel.onImportDocumentConfirmationDismissed()
@@ -275,15 +273,17 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
     }
 
     private fun showContactDataMissingDialog() {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.registration_missing_info)
-            .setMessage(R.string.registration_address_mandatory)
-            .setPositiveButton(R.string.action_ok) { _, _ ->
-                val intent = Intent(application, RegistrationActivity::class.java)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-                application.startActivity(intent)
-            })
+        cameraFragment.requestHideCameraPreview()
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.registration_missing_info)
+                .setMessage(R.string.registration_address_mandatory)
+                .setPositiveButton(R.string.action_ok) { _, _ ->
+                    val intent = Intent(application, RegistrationActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                    application.startActivity(intent)
+                }
+        )
             .apply {
                 isCancelable = false
                 setOnDismissListener {
@@ -291,62 +291,6 @@ class CheckInFragment : BaseQrCodeFragment<CheckInViewModel>(), NavController.On
                 }
                 show()
             }
-    }
-
-    private fun showUpdateRequiredDialog() {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.update_required_title)
-            .setMessage(R.string.update_required_description)
-            .setPositiveButton(R.string.action_update) { _, _ ->
-                try {
-                    application.openUrl("market://details?id=de.culture4life.luca")
-                } catch (e: ActivityNotFoundException) {
-                    application.openUrl("https://luca-app.de")
-                }
-            })
-            .apply {
-                isCancelable = false
-                setOnDismissListener {
-                    viewModel.onUpdateRequiredDialogDismissed()
-                }
-                show()
-            }
-    }
-
-    /*
-        Camera
-     */
-
-    override fun bindCameraPreview(cameraProvider: ProcessCameraProvider) {
-        super.bindCameraPreview(cameraProvider)
-        binding.flashLightButtonImageView.isVisible = camera?.cameraInfo?.hasFlashUnit() == true
-    }
-
-    override fun setCameraPreviewVisible(isVisible: Boolean) {
-        super.setCameraPreviewVisible(isVisible)
-        binding.cameraContainerConstraintLayout.background = ContextCompat.getDrawable(
-            requireContext(),
-            if (isVisible) {
-                R.drawable.bg_camera_box_active_preview
-            } else {
-                R.drawable.bg_camera_box
-            }
-        )
-        binding.startCameraLinearLayout.isVisible = !isVisible
-    }
-
-    override fun setTorchEnabled(isEnabled: Boolean) {
-        super.setTorchEnabled(isEnabled)
-        with(binding.flashLightButtonImageView) {
-            if (isEnabled) {
-                setImageResource(R.drawable.ic_flashlight_off)
-                contentDescription = getString(R.string.check_in_scan_turn_off_flashlight_action)
-            } else {
-                setImageResource(R.drawable.ic_flashlight_on)
-                contentDescription = getString(R.string.check_in_scan_turn_on_flashlight_action)
-            }
-        }
     }
 
     private fun clearBundle() {

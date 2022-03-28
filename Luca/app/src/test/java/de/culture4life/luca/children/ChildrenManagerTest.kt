@@ -147,5 +147,4 @@ class ChildrenManagerTest : LucaUnitTest() {
             .andThen(childrenManager.containsChild(child))
             .test().assertValue(false)
     }
-
 }

@@ -44,8 +44,8 @@ class MessagesFragment : BaseFragment<MessagesViewModel>() {
 
     private fun initializeLucaConnectButton() {
         fun updatedConnectButtonVisibility() {
-            val enrollmentPossible = viewModel.connectEnrollmentStatus.value == false
-                    && viewModel.connectEnrollmentSupportedStatus.value == true
+            val enrollmentPossible = viewModel.connectEnrollmentStatus.value == false &&
+                viewModel.connectEnrollmentSupportedStatus.value == true
             binding.lucaConnectButton.visibility = if (enrollmentPossible) View.VISIBLE else View.GONE
         }
         observe(viewModel.connectEnrollmentStatus) { updatedConnectButtonVisibility() }
@@ -70,8 +70,19 @@ class MessagesFragment : BaseFragment<MessagesViewModel>() {
                     safeNavigateFromNavController(R.id.action_messagesFragment_to_messageDetailFragment, bundle)
                 }
             }
-            observe(viewModel.messageItems) { allItems -> messagesListAdapter.setMessageItems(allItems) }
+            observe(viewModel.messageItems) { allItems ->
+                checkForMessageDeeplink(allItems)
+                messagesListAdapter.setMessageItems(allItems)
+            }
         }
+    }
+
+    private fun checkForMessageDeeplink(messageItems: List<MessageListItem>) {
+        val messageId = arguments?.getString(ARGUMENT_MESSAGE_ID_KEY) ?: return
+        val messageItem = messageItems.firstOrNull { it.id == messageId } ?: return
+        val bundle = bundleOf(KEY_MESSAGE_LIST_ITEM to messageItem)
+        safeNavigateFromNavController(R.id.action_messagesFragment_to_messageDetailFragment, bundle)
+        arguments?.remove(ARGUMENT_MESSAGE_ID_KEY)
     }
 
     private fun initializeEmptyStateViews() {
@@ -83,5 +94,9 @@ class MessagesFragment : BaseFragment<MessagesViewModel>() {
                 messageListView.visibility = contentVisibility
             }
         }
+    }
+
+    companion object {
+        private const val ARGUMENT_MESSAGE_ID_KEY = "id"
     }
 }

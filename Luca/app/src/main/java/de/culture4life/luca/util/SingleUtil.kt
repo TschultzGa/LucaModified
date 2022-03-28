@@ -28,7 +28,6 @@ object SingleUtil {
             }
         }
     }
-
 }
 
 fun <T> Single<T>.retryWhen(

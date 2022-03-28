@@ -8,18 +8,10 @@
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/registrationProgressIndicator"
-        style="@style/Widget.MaterialComponents.LinearProgressIndicator"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        style="@style/Widget.Luca.LinearProgressIndicator.FullWidth"
         android:layout_marginTop="@dimen/spacing_default"
-        android:indeterminate="false"
-        android:max="100"
-        android:progress="0"
-        android:progressBackgroundTint="?attr/colorAccent"
-        android:progressTint="?attr/colorOnSurface"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="MissingConstraints" />
 
     <ScrollView
         android:id="@+id/registrationScrollView"

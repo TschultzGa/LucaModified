@@ -36,5 +36,4 @@ class CertificateUtilTest : LucaUnitTest() {
     fun checkCertificateChain_revokedRootCertificate_throws() {
         // TODO: 01.07.21 implement
     }
-
 }

@@ -31,6 +31,4 @@ data class ConnectContactArchive(
     override fun setData(data: List<Entry>) {
         entries = data
     }
-
 }
-

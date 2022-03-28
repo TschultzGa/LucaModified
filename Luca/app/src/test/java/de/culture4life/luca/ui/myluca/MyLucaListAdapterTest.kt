@@ -64,20 +64,18 @@ class MyLucaListAdapterTest : LucaUnitTest() {
     }
 
     @Test
-    fun sortAndPairItems_correctPerson_returnsHeaderAndItem() {
+    fun sortAndPairItems_correctPerson_returnsItem() {
         val items =
             MyLucaListAdapter.sortAndPairItems(listOf(item), listOf(Person("Erika", "Mustermann")))
-        assertEquals(items[0].sectionHeader, "Erika Mustermann")
-        assertEquals(items[1].items[0], item)
+        assertEquals(items[0].items[0], item)
     }
 
     @Test
     fun sortAndPairItems_personWithChildren_returnsHeadersAndItem() {
         val persons = listOf(Person("Erika", "Mustermann"), Child("Child", "Name"))
         val items = MyLucaListAdapter.sortAndPairItems(listOf(item), persons)
-        assertEquals(items[0].sectionHeader, "Erika Mustermann")
-        assertEquals(items[1].items[0], item)
-        assertEquals(items[2].sectionHeader, "Child Name")
+        assertEquals(items[0].items[0], item)
+        assertEquals(items[1].sectionHeader, "Child Name")
     }
 
     @Test

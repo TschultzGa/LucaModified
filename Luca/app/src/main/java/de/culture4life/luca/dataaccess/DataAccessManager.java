@@ -209,7 +209,7 @@ public class DataAccessManager extends Manager {
         return Observable.fromIterable(accessedTraceDataList)
                 .sorted((access1, access2) -> Integer.compare(access2.getWarningLevel(), access1.getWarningLevel()))
                 .flatMapCompletable(accessedTraceData -> getNotificationTexts(accessedTraceData)
-                        .map(notificationTexts -> notificationManager.createDataAccessedNotificationBuilder()
+                        .map(notificationTexts -> notificationManager.createDataAccessedNotificationBuilder(accessedTraceData.getTraceId())
                                 .setContentTitle(notificationTexts.getTitle())
                                 .setContentText(notificationTexts.getShortMessage())
                                 .build())
@@ -431,8 +431,9 @@ public class DataAccessManager extends Manager {
     public Completable markAsNotNew(@NonNull String traceId, int warningLevel) {
         return archiver.getData()
                 .map(accessedTraceData -> {
-                    boolean wasSeen = accessedTraceData.getTraceId().equals(traceId) && accessedTraceData.getWarningLevel() == warningLevel;
-                    accessedTraceData.setIsNew(!wasSeen);
+                    if (accessedTraceData.getTraceId().equals(traceId) && accessedTraceData.getWarningLevel() == warningLevel) {
+                        accessedTraceData.setIsNew(false);
+                    }
                     return accessedTraceData;
                 })
                 .toList()

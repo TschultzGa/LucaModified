@@ -45,16 +45,18 @@ class HealthDepartmentManager(
             networkManager.initialize(context),
             consentManager.initialize(context),
             registrationManager.initialize(context)
-        ).andThen(Completable.defer {
-            if (LucaApplication.isRunningUnitTests()) {
-                Completable.complete()
-            } else {
-                Completable.mergeArray(
-                    invokeResponsibleHealthDepartmentUpdateIfRequired(),
-                    invoke(startObservingPostalCodeUsagePermission())
-                )
+        ).andThen(
+            Completable.defer {
+                if (LucaApplication.isRunningUnitTests()) {
+                    Completable.complete()
+                } else {
+                    Completable.mergeArray(
+                        invokeResponsibleHealthDepartmentUpdateIfRequired(),
+                        invoke(startObservingPostalCodeUsagePermission())
+                    )
+                }
             }
-        })
+        )
     }
 
     private fun startObservingPostalCodeUsagePermission(): Completable {
@@ -68,11 +70,13 @@ class HealthDepartmentManager(
     }
 
     fun invokeResponsibleHealthDepartmentUpdateIfRequired(): Completable {
-        return invokeDelayed(updateResponsibleHealthDepartmentIfRequired()
-            .doOnError { Timber.w("Unable to update responsible health department: $it") }
-            .retryWhenWithDelay(10, 30, Schedulers.io()) {
-                ThrowableUtil.isNetworkError(it)
-            }, TimeUnit.SECONDS.toMillis(1)
+        return invokeDelayed(
+            updateResponsibleHealthDepartmentIfRequired()
+                .doOnError { Timber.w("Unable to update responsible health department: $it") }
+                .retryWhenWithDelay(10, 30, Schedulers.io()) {
+                    ThrowableUtil.isNetworkError(it)
+                },
+            TimeUnit.SECONDS.toMillis(1)
         )
     }
 
@@ -172,8 +176,10 @@ class HealthDepartmentManager(
 
     fun getPostalCodeCode(): Single<String> {
         return consentManager.requestConsentIfRequiredAndAssertApproved(ID_POSTAL_CODE_MATCHING)
-            .andThen(registrationManager.getRegistrationData()
-                .map { it.postalCode!! })
+            .andThen(
+                registrationManager.getRegistrationData()
+                    .map { it.postalCode!! }
+            )
     }
 
     companion object {

@@ -1,16 +1,16 @@
 package de.culture4life.luca.ui.qrcode.children
 
-import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
 import androidx.viewbinding.ViewBinding
-import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentScanQrCodeBinding
+import de.culture4life.luca.ui.BaseQrCodeFragment
+import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildFragment
 import de.culture4life.luca.ui.qrcode.AddCertificateFlowViewModel
 import io.reactivex.rxjava3.core.Completable
 
-class ScanQrCodeFragment : BaseQrCodeFlowChildFragment<ScanQrCodeViewModel, AddCertificateFlowViewModel>() {
+class ScanQrCodeFragment : BaseFlowChildFragment<ScanQrCodeViewModel, AddCertificateFlowViewModel>() {
 
     private lateinit var binding: FragmentScanQrCodeBinding
+    private lateinit var cameraFragment: BaseQrCodeFragment
 
     override fun getViewBinding(): ViewBinding {
         binding = FragmentScanQrCodeBinding.inflate(layoutInflater)
@@ -20,25 +20,24 @@ class ScanQrCodeFragment : BaseQrCodeFlowChildFragment<ScanQrCodeViewModel, AddC
     override fun getViewModelClass(): Class<ScanQrCodeViewModel> = ScanQrCodeViewModel::class.java
     override fun getSharedViewModelClass(): Class<AddCertificateFlowViewModel> = AddCertificateFlowViewModel::class.java
 
-    override fun initializeCameraPreview() {
-        super.initializeCameraPreview()
-        cameraPreviewView = binding.cameraPreviewView
-        binding.cameraContainerConstraintLayout.setOnClickListener {
-            showCameraPreview(requestConsent = true, requestPermission = true)
-        }
+    override fun initializeViews() {
+        super.initializeViews()
+        initializeCameraPreview()
     }
 
-    override fun setCameraPreviewVisible(isVisible: Boolean) {
-        super.setCameraPreviewVisible(isVisible)
-        binding.cameraContainerConstraintLayout.background = ContextCompat.getDrawable(
-            requireContext(),
-            if (isVisible) {
-                R.drawable.bg_camera_box_active_preview
+    private fun initializeCameraPreview() {
+        cameraFragment = binding.qrCodeScanner.getFragment()
+        cameraFragment.setBarcodeResultCallback(viewModel)
+        observe(viewModel.isLoading) { isLoading ->
+            cameraFragment.showLoading(isLoading)
+        }
+        observe(viewModel.showCameraPreview) { shouldShowCamera ->
+            if (shouldShowCamera) {
+                cameraFragment.requestShowCameraPreview()
             } else {
-                R.drawable.bg_camera_box
+                cameraFragment.requestHideCameraPreview()
             }
-        )
-        binding.startCameraLinearLayout.isVisible = !isVisible
+        }
     }
 
     // TODO Find better way to inject barcode content for automated tests.

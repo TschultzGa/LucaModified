@@ -145,7 +145,5 @@ class WhatIsNewActivity : BaseActivity() {
         const val SHOW_ONLY_UNSEEN_PAGES = "show_only_unseen_pages"
         const val SHOW_PAGE_GROUP = "show_page_group"
         const val FINISH_ON_EXIT = "finish_on_exit"
-
     }
-
 }

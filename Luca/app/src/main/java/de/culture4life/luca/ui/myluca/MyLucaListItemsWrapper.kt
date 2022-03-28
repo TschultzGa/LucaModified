@@ -35,5 +35,4 @@ data class MyLucaListItemsWrapper(
     fun sectionDrawable(): Int {
         return if (isChildSection) R.drawable.ic_child else 0
     }
-
 }

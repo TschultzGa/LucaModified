@@ -3,24 +3,37 @@ package de.culture4life.luca.ui.history
 import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.dataaccess.AccessedTraceData
+import de.culture4life.luca.dataaccess.DataAccessManager
+import de.culture4life.luca.history.CheckOutItem
+import io.reactivex.rxjava3.core.Observable
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.robolectric.annotation.Config
 
 @Config(sdk = [28])
 @RunWith(AndroidJUnit4::class)
 class HistoryViewModelTest : LucaUnitTest() {
 
+    private val checkOutItem = mock<CheckOutItem> {
+        on { timestamp } doReturn 0
+        on { displayName } doReturn ""
+        on { relatedId } doReturn ""
+    }
+
+    private val dataAccessManager = mock<DataAccessManager> {
+        on { getPreviouslyAccessedTraceData(any()) } doReturn Observable.empty()
+    }
+
     private val items = listOf(
-        HistoryListItem(),
-        HistoryListItem().apply {
-            accessedTraceData = listOf(
-                AccessedTraceData().apply {
-                    warningLevel = 1
-                }
-            )
-        }
+        HistoryListItem.CheckOutListItem(application, checkOutItem, dataAccessManager),
+        HistoryListItem.CheckOutListItem(application, checkOutItem, dataAccessManager)
+            .apply {
+                accessedTraceData = listOf(AccessedTraceData().apply { warningLevel = 1 })
+            }
     )
 
     @Test
@@ -29,5 +42,4 @@ class HistoryViewModelTest : LucaUnitTest() {
         Assert.assertEquals(0, HistoryViewModel.filterHistoryListItems(items, 3).size)
         Assert.assertEquals(2, HistoryViewModel.filterHistoryListItems(items, -1).size)
     }
-
 }

@@ -13,4 +13,4 @@ data class ConnectUnEnrollmentRequestData(
     @SerializedName("signature")
     var signature: String? = null,
 
-    )
+)

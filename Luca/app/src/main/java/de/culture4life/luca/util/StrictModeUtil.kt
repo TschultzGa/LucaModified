@@ -33,5 +33,4 @@ object StrictModeUtil {
             .build()
         StrictMode.setThreadPolicy(adjustedThreadPolicy)
     }
-
 }

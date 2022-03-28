@@ -51,5 +51,4 @@ class PersonTest {
     fun simplify_nameWithNonAsciiChars_expectedOutput() {
         assertEquals("TOMSSSMEIER", Person.simplify("Tom Süßmeier"))
     }
-
 }

@@ -46,5 +46,4 @@ class ChildTest {
     fun equals_differentNames_returnsFalse() {
         assertNotEquals(Child("a", "b"), Child("c", "d"))
     }
-
 }

@@ -15,5 +15,4 @@ data class NotificationTexts(
         json.get("shortMessage")?.asString,
         json.get("message")?.asString
     )
-
 }

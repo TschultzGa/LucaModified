@@ -33,5 +33,4 @@ data class PowChallengeResponseData(
             n = BigInteger(n, 10),
             expirationTimestamp = TimeUtil.convertFromUnixTimestamp(expirationTimestamp).blockingGet()
         )
-
 }

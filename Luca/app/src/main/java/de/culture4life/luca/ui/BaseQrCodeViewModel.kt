@@ -3,16 +3,17 @@ package de.culture4life.luca.ui
 import android.annotation.SuppressLint
 import android.app.Application
 import android.media.Image
+import android.net.Uri
 import androidx.annotation.CallSuper
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import de.culture4life.luca.notification.LucaNotificationManager
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import de.culture4life.luca.ui.BaseQrCodeViewModel.CameraRequest.HidePreview
+import de.culture4life.luca.ui.BaseQrCodeViewModel.CameraRequest.ShowPreviewAndRequestMissingPermissions
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -21,15 +22,16 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 
-abstract class BaseQrCodeViewModel(application: Application) :
+class BaseQrCodeViewModel(application: Application) :
     BaseViewModel(application), ImageAnalysis.Analyzer {
 
     protected var notificationManager: LucaNotificationManager = this.application.notificationManager
 
     private val scanner by lazy { BarcodeScanning.getClient() }
     private var imageProcessingDisposable: Disposable? = null
-    protected val showCameraPreview = MutableLiveData(ViewEvent(CameraRequest(false)))
+    protected val showCameraPreview: MutableLiveData<ViewEvent<CameraRequest>> = MutableLiveData(ViewEvent(HidePreview))
     var pauseCameraImageProcessing = false
+    var barcodeCallback: BaseQrCodeCallback? = null
 
     /*
         Camera consent
@@ -41,13 +43,13 @@ abstract class BaseQrCodeViewModel(application: Application) :
 
     private fun setCameraConsentGiven(cameraConsentGiven: Boolean) {
         preferencesManager.persist(KEY_CAMERA_CONSENT_GIVEN, cameraConsentGiven)
-            .andThen(update(showCameraPreview, ViewEvent(CameraRequest(cameraConsentGiven, false))))
+            .andThen(Single.fromCallable { if (cameraConsentGiven) ShowPreviewAndRequestMissingPermissions else HidePreview })
+            .flatMapCompletable { cameraRequest -> update(showCameraPreview, ViewEvent(cameraRequest)) }
             .subscribeOn(Schedulers.io())
             .subscribe()
     }
 
     open fun onCameraConsentRequired() {
-
     }
 
     open fun onCameraConsentGiven() {
@@ -63,15 +65,14 @@ abstract class BaseQrCodeViewModel(application: Application) :
      */
 
     open fun onCameraPermissionRequired() {
-
     }
 
     open fun onCameraPermissionGiven() {
-        updateAsSideEffect(showCameraPreview, ViewEvent(CameraRequest(true)))
+        updateAsSideEffect(showCameraPreview, ViewEvent(ShowPreviewAndRequestMissingPermissions))
     }
 
     open fun onCameraPermissionDenied() {
-        updateAsSideEffect(showCameraPreview, ViewEvent(CameraRequest(false)))
+        updateAsSideEffect(showCameraPreview, ViewEvent(HidePreview))
     }
 
     /*
@@ -87,7 +88,6 @@ abstract class BaseQrCodeViewModel(application: Application) :
         imageProcessingDisposable = processCameraImage(imageProxy)
             .doOnError { Timber.w("Unable to process camera image: %s", it.toString()) }
             .onErrorComplete()
-            .observeOn(AndroidSchedulers.mainThread())
             .doFinally { imageProxy.close() }
             .subscribeOn(Schedulers.computation())
             .subscribe()
@@ -117,36 +117,67 @@ abstract class BaseQrCodeViewModel(application: Application) :
         return Maybe.fromCallable<Image> { imageProxy.image }
             .map { image -> InputImage.fromMediaImage(image, imageProxy.imageInfo.rotationDegrees) }
             .flatMapObservable { image -> detectBarcodes(image) }
-            .flatMapMaybe { barcode -> Maybe.fromCallable<String> { barcode.rawValue } }
             .flatMapCompletable { barcodeData -> processBarcode(barcodeData) }
     }
 
-    private fun detectBarcodes(image: InputImage): Observable<Barcode> {
-        return Observable.create { emitter ->
+    fun detectBarcodes(uri: Uri): Observable<String> {
+        return Single.fromCallable { InputImage.fromFilePath(getApplication(), uri) }
+            .flatMapObservable { image -> detectBarcodes(image) }
+    }
+
+    private fun detectBarcodes(image: InputImage): Observable<String> {
+        return Observable.create<String> { emitter ->
             scanner.process(image)
                 .addOnSuccessListener { barcodes ->
                     for (barcode in barcodes) {
-                        emitter.onNext(barcode)
+                        val rawBarcode = barcode.rawValue
+                        if (rawBarcode != null) {
+                            emitter.onNext(rawBarcode)
+                        } else {
+                            Timber.d("barcode detected but rawValue not available, perhaps not UTF-8 encoded")
+                        }
                     }
                     emitter.onComplete()
                 }
                 .addOnFailureListener { emitter.tryOnError(it) }
         }
+            // Avoid to emit async events on MainThread which is rarely expected when chaining calls.
+            .observeOn(Schedulers.io())
     }
 
-    protected abstract fun processBarcode(barcodeData: String): Completable
+    private fun processBarcode(barcodeData: String): Completable {
+        return application.notificationManager.vibrate()
+            .andThen(barcodeCallback!!.processBarcode(barcodeData))
+            .doOnSubscribe {
+                // Pre set [isLoading] to avoid multiple simultaneous processing. The callback is too slow because of the complex chain and multiple
+                //  thread switches when posting values to ViewModels. But the callback has to decide when done.
+                //  CallbackViewModel -> LivaData -> CallbackFragment -> CameraFragment -> CameraViewModel -> LivaData -> CameraFragment
+                updateAsSideEffect(isLoading, true)
+            }
+    }
 
-    open fun shouldShowCameraPreview(): LiveData<ViewEvent<CameraRequest>> {
+    fun setIsLoading(isLoading: Boolean) {
+        updateAsSideEffectIfRequired(this.isLoading, isLoading)
+    }
+
+    fun setCameraPreviewRequest(request: CameraRequest) {
+        updateAsSideEffectIfRequired(showCameraPreview, ViewEvent(request))
+    }
+
+    fun shouldShowCameraPreview(): LiveData<ViewEvent<CameraRequest>> {
         return showCameraPreview
     }
 
-    data class CameraRequest(
+    sealed class CameraRequest(
         val showCamera: Boolean,
         val onlyIfPossible: Boolean = false
-    )
+    ) {
+        object ShowPreviewAndRequestMissingPermissions : CameraRequest(true, false)
+        object ShowPreviewOnlyIfPermissionsGiven : CameraRequest(true, true)
+        object HidePreview : CameraRequest(false, true)
+    }
 
     companion object {
         const val BARCODE_DATA_KEY = "barcode_data"
     }
-
 }

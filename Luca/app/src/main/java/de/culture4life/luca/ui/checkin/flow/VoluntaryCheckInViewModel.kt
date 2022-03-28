@@ -9,11 +9,13 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 
 class VoluntaryCheckInViewModel(app: Application) : BaseFlowChildViewModel(app) {
 
-    fun onActionButtonClicked(checkInVoluntary: Boolean, alwaysVoluntary: Boolean) {
-        persistAlwaysCheckInVoluntary(alwaysVoluntary)
-            .andThen(Completable.fromAction {
-                (sharedViewModel as CheckInFlowViewModel?)?.checkInVoluntary = checkInVoluntary
-            })
+    fun onActionButtonClicked(checkInAnonymously: Boolean, alwaysVoluntary: Boolean) {
+        persistSettings(alwaysVoluntary, checkInAnonymously)
+            .andThen(
+                Completable.fromAction {
+                    (sharedViewModel as CheckInFlowViewModel?)?.checkInAnonymously = checkInAnonymously
+                }
+            )
             .onErrorComplete()
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -23,11 +25,21 @@ class VoluntaryCheckInViewModel(app: Application) : BaseFlowChildViewModel(app) 
             .addTo(modelDisposable)
     }
 
-    private fun persistAlwaysCheckInVoluntary(alwaysVoluntary: Boolean): Completable {
-        return preferencesManager.persist(KEY_ALWAYS_CHECK_IN_VOLUNTARY, alwaysVoluntary)
+    private fun persistSettings(alwaysVoluntary: Boolean, checkInAnonymously: Boolean): Completable {
+        return Completable.mergeArray(
+            preferencesManager.persist(KEY_ALWAYS_CHECK_IN_VOLUNTARY, alwaysVoluntary),
+            Completable.defer {
+                if (alwaysVoluntary) {
+                    preferencesManager.persist(KEY_ALWAYS_CHECK_IN_ANONYMOUSLY, checkInAnonymously)
+                } else {
+                    Completable.complete()
+                }
+            }
+        )
     }
 
     companion object {
         const val KEY_ALWAYS_CHECK_IN_VOLUNTARY = "always_check_in_voluntary"
+        const val KEY_ALWAYS_CHECK_IN_ANONYMOUSLY = "always_check_in_anonymously"
     }
 }

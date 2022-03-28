@@ -102,5 +102,4 @@ class PowManager(
     private fun checkExpirationTimestamp(challenge: PowChallenge) {
         require(challenge.expirationTimestamp > TimeUtil.getCurrentMillis()) { "Challenge expired" }
     }
-
 }

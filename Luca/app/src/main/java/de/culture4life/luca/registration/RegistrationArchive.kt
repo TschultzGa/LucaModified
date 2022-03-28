@@ -19,5 +19,4 @@ data class RegistrationArchive(
     override fun setData(data: List<RegistrationData>) {
         entries = data
     }
-
 }

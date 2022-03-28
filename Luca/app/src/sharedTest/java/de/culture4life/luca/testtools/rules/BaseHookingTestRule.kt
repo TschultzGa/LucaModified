@@ -9,7 +9,6 @@ abstract class BaseHookingTestRule : TestRule {
     abstract fun beforeTest()
     abstract fun afterTest()
 
-
     override fun apply(base: Statement, description: Description): Statement {
         return object : Statement() {
             override fun evaluate() {

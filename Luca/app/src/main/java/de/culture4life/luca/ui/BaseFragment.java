@@ -31,6 +31,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavAction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.FragmentNavigator;
@@ -197,6 +198,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
         setupBackButton();
         observeErrors();
         observeRequiredPermissions();
+        observeDialogRequests();
     }
 
     protected void setupBackButton() {
@@ -315,13 +317,18 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
                 .setTitle(error.getTitle())
                 .setMessage(error.getDescription());
 
+        if (error.isCancelable()) {
+            builder.setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.cancel());
+        } else {
+            builder.setCancelable(false);
+        }
+
         if (error.isResolvable()) {
-            builder.setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.cancel())
-                    .setPositiveButton(error.getResolveLabel(), (dialog, which) -> viewDisposable.add(error.getResolveAction()
-                            .subscribe(
-                                    () -> Timber.d("Error resolved"),
-                                    throwable -> Timber.w("Unable to resolve error: %s", throwable.toString())
-                            )));
+            builder.setPositiveButton(error.getResolveLabel(), (dialog, which) -> viewDisposable.add(error.getResolveAction()
+                    .subscribe(
+                            () -> Timber.d("Error resolved"),
+                            throwable -> Timber.w("Unable to resolve error: %s", throwable.toString())
+                    )));
         } else {
             builder.setPositiveButton(R.string.action_ok, (dialog, which) -> {
                 // do nothing
@@ -353,16 +360,32 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
         windowInsetsController.hide(WindowInsetsCompat.Type.ime());
     }
 
+    protected void safeNavigateFromNavController(Uri destination) {
+        if (isCurrentDestination() && navigationController.getGraph().hasDeepLink(destination)) {
+            navigationController.navigate(destination);
+        }
+    }
+
     protected void safeNavigateFromNavController(@IdRes int destination) {
         safeNavigateFromNavController(destination, null);
     }
 
     protected void safeNavigateFromNavController(@IdRes int destination, @Nullable Bundle bundle) {
-        FragmentNavigator.Destination currentDestination = (FragmentNavigator.Destination) navigationController.getCurrentDestination();
-        boolean isCurrentDestination = getClass().getName().equals(currentDestination.getClassName());
-        if (isCurrentDestination) {
+        if (isCurrentDestination() && getNavAction(destination) != null) {
             navigationController.navigate(destination, bundle);
         }
+    }
+
+    @Nullable
+    private NavAction getNavAction(@IdRes int destination) {
+        NavAction actionFromCurrent = navigationController.getCurrentDestination().getAction(destination);
+        if (actionFromCurrent != null) return actionFromCurrent;
+        return navigationController.getGraph().getAction(destination);
+    }
+
+    private boolean isCurrentDestination() {
+        FragmentNavigator.Destination currentDestination = (FragmentNavigator.Destination) navigationController.getCurrentDestination();
+        return getClass().getName().equals(currentDestination.getClassName());
     }
 
     protected Single<Uri> getFileExportUri(@NonNull String fileName) {
@@ -391,6 +414,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
                 .switchIfEmpty(Single.error(new UserCancelledException()));
     }
 
+    @NonNull
     public CharSequence getFormattedString(@StringRes int id, Object... args) {
         for (int i = 0; i < args.length; ++i) {
             args[i] = args[i] instanceof String ? TextUtils.htmlEncode((String) args[i]) : args[i];
@@ -404,4 +428,11 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
         return this.getClass().getSimpleName();
     }
 
+    protected void observeDialogRequests() {
+        observe(viewModel.getDialogRequestViewEvent(), dialogRequest -> {
+            if (!dialogRequest.hasBeenHandled()) {
+                new BaseDialogFragment(requireContext(), dialogRequest.getValueAndMarkAsHandled()).show();
+            }
+        });
+    }
 }

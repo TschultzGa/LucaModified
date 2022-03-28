@@ -22,7 +22,6 @@ class Child(firstName: String, lastName: String) : Person(firstName, lastName) {
             return Child(childName, adultLastName)
         }
     }
-
 }
 
 class Children : ArrayList<Child>()

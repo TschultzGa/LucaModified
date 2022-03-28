@@ -66,14 +66,11 @@ class TimeUtilTest : LucaUnitTest() {
     @Test
     fun readableDurationWithPlural_unevenDurations_expectedRoundedAmounts() {
         var duration = TimeUnit.MINUTES.toMillis(2) + TimeUnit.SECONDS.toMillis(30)
-        getReadableDurationWithPlural(duration, application)
-            .test().assertValue("3 minutes")
+        getReadableDurationWithPlural(duration, application).test().assertValue("2 minutes")
         duration = TimeUnit.HOURS.toMillis(2) + TimeUnit.MINUTES.toMillis(30)
-        getReadableDurationWithPlural(duration, application)
-            .test().assertValue("3 hours")
+        getReadableDurationWithPlural(duration, application).test().assertValue("2 hours")
         duration = TimeUnit.DAYS.toMillis(2) + TimeUnit.HOURS.toMillis(12)
-        getReadableDurationWithPlural(duration, application)
-            .test().assertValue("3 days")
+        getReadableDurationWithPlural(duration, application).test().assertValue("2 days")
     }
 
     // Wed Jul 14 2021 02:00:00 GMT+0200
@@ -83,12 +80,10 @@ class TimeUtilTest : LucaUnitTest() {
         val validityStartTimestamp = testingTimestamp + Document.TIME_UNTIL_VACCINATION_IS_VALID
         var currentTimestamp = testingTimestamp + TimeUnit.HOURS.toMillis(2)
         var durationUntilValid = validityStartTimestamp - currentTimestamp
-        getReadableDurationWithPlural(durationUntilValid, application)
-            .test().assertValue("15 days")
+        getReadableDurationWithPlural(durationUntilValid, application).test().assertValue("2 weeks")
         currentTimestamp = validityStartTimestamp - TimeUnit.HOURS.toMillis(2)
         durationUntilValid = validityStartTimestamp - currentTimestamp
-        getReadableDurationWithPlural(durationUntilValid, application)
-            .test().assertValue("2 hours")
+        getReadableDurationWithPlural(durationUntilValid, application).test().assertValue("2 hours")
     }
 
     @Test
@@ -105,5 +100,4 @@ class TimeUtilTest : LucaUnitTest() {
         val parsedDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentMillis), ZoneId.systemDefault())
         assertEquals(fixedDateTime, parsedDateTime)
     }
-
 }

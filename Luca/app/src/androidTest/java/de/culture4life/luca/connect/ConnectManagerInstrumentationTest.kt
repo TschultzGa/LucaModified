@@ -144,5 +144,4 @@ class ConnectManagerInstrumentationTest : LucaInstrumentationTest() {
             .test()
             .assertValue("{\"sub\":\"TBD Bitte zum PCR test gehen\",\"msg\":\"TBD das ist die Nachricht um zum PCR Test zu gehen\"}")
     }
-
 }

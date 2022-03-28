@@ -8,8 +8,8 @@ import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.util.addTo
 import de.culture4life.luca.whatisnew.WhatIsNewManager
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 
 class LucaConnectViewModel(application: Application) : BaseViewModel(application) {
@@ -29,12 +29,12 @@ class LucaConnectViewModel(application: Application) : BaseViewModel(application
                     whatIsNewManager.initialize(application)
                 )
             )
-            .andThen(Completable.fromAction {
-                whatIsNewManager.markMessageAsSeen(WhatIsNewManager.ID_LUCA_CONNECT_MESSAGE)
-                    .onErrorComplete()
-                    .subscribeOn(Schedulers.io())
-                    .subscribe()
-            })
+            .andThen(
+                Completable.mergeArray(
+                    updateEnrollmentStatusImmediately(),
+                    invoke(whatIsNewManager.markMessageAsSeen(WhatIsNewManager.ID_LUCA_CONNECT_MESSAGE))
+                )
+            )
     }
 
     override fun keepDataUpdated(): Completable {
@@ -47,6 +47,14 @@ class LucaConnectViewModel(application: Application) : BaseViewModel(application
     private fun keepEnrollmentStatusUpdated(): Completable {
         return connectManager.getEnrollmentStatusAndChanges()
             .flatMapCompletable { update(enrollmentStatus, it) }
+    }
+
+    fun updateEnrollmentStatusImmediately(): Completable {
+        return connectManager.getEnrollmentStatusAndChanges()
+            .firstOrError()
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSuccess { enrollmentStatus.value = it }
+            .ignoreElement()
     }
 
     fun toggleLucaConnect(enable: Boolean) {
@@ -85,5 +93,4 @@ class LucaConnectViewModel(application: Application) : BaseViewModel(application
             )
             .addTo(modelDisposable)
     }
-
 }

@@ -28,8 +28,7 @@ class ArchivedMeetingData : ArchivedData<MeetingData> {
 
     override fun toString(): String {
         return "ArchivedMeetingData{" +
-                "meetings=" + meetings +
-                '}'
+            "meetings=" + meetings +
+            '}'
     }
-
 }

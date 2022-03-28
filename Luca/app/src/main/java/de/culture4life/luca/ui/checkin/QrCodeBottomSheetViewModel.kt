@@ -24,8 +24,10 @@ class QrCodeBottomSheetViewModel(app: Application) : BaseViewModel(app) {
     override fun initialize(): Completable {
         return super.initialize()
             .andThen(documentManager.initialize(application))
-            .andThen(preferencesManager.restoreOrDefault(KEY_INCLUDE_ENTRY_POLICY, false)
-                .flatMapCompletable { updateIfRequired(includeEntryPolicy, it) })
+            .andThen(
+                preferencesManager.restoreOrDefault(KEY_INCLUDE_ENTRY_POLICY, false)
+                    .flatMapCompletable { updateIfRequired(includeEntryPolicy, it) }
+            )
     }
 
     // TODO: 01.11.21 use keepDataUpdated as soon as QrCodeBottomSheetFragment implements BaseFragment methods

@@ -25,14 +25,16 @@ class AccessedDataViewModel(application: Application) : BaseViewModel(applicatio
 
     private fun invokeAccessedDataUpdate(): Completable {
         return Completable.fromAction {
-            modelDisposable.add(updateAccessedDataItems()
-                .doOnSubscribe { updateAsSideEffect(isLoading, true) }
-                .doFinally { updateAsSideEffect(isLoading, false) }
-                .subscribeOn(Schedulers.io())
-                .subscribe(
-                    { Timber.i("Updated accessed data") },
-                    { throwable -> Timber.w("Unable to update accessed data: %s", throwable.toString()) }
-                ))
+            modelDisposable.add(
+                updateAccessedDataItems()
+                    .doOnSubscribe { updateAsSideEffect(isLoading, true) }
+                    .doFinally { updateAsSideEffect(isLoading, false) }
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                        { Timber.i("Updated accessed data") },
+                        { throwable -> Timber.w("Unable to update accessed data: %s", throwable.toString()) }
+                    )
+            )
         }
     }
 
@@ -46,5 +48,4 @@ class AccessedDataViewModel(application: Application) : BaseViewModel(applicatio
             .map { it.sortedByDescending { item -> item.accessTimestamp } }
             .flatMapCompletable { items -> update(accessedDataItems, items) }
     }
-
 }

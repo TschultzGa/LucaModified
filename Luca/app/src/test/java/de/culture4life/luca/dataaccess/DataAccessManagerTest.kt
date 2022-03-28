@@ -460,5 +460,4 @@ class DataAccessManagerTest : LucaUnitTest() {
             .andThen(dataAccessManager.hasNewNotifications())
             .test().assertValue(true)
     }
-
 }

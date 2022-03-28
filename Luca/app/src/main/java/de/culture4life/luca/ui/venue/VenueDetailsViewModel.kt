@@ -22,6 +22,7 @@ import de.culture4life.luca.checkin.CheckInManager
 import de.culture4life.luca.checkin.CheckOutException
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.children.ChildrenManager
+import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.location.GeofenceManager
 import de.culture4life.luca.location.LocationManager
 import de.culture4life.luca.preference.PreferencesManager
@@ -51,6 +52,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     private val checkInManager: CheckInManager = this.application.checkInManager
     private val geofenceManager: GeofenceManager = this.application.geofenceManager
     private val locationManager: LocationManager = this.application.locationManager
+    private val consentManager: ConsentManager = this.application.consentManager
 
     val id = MutableLiveData<UUID>()
     val title = MutableLiveData<String>()
@@ -69,6 +71,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     val bundle = MutableLiveData<Bundle?>()
     val providedUrls: MutableLiveData<List<Pair<UrlType, String>>> = MutableLiveData(ArrayList())
     val checkInData: MutableLiveData<CheckInData> = MutableLiveData()
+    val askUrlConsent = MutableLiveData<UrlType>()
 
     private var isLocationPermissionGranted = false
     private var isBackgroundLocationPermissionGranted = false
@@ -83,46 +86,60 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
                     preferenceManager.initialize(application),
                     checkInManager.initialize(application),
                     geofenceManager.initialize(application),
-                    locationManager.initialize(application)
+                    locationManager.initialize(application),
+                    consentManager.initialize(application)
                 )
             )
-            .andThen(geofenceManager.isGeofencingSupported
-                .flatMapCompletable { update(isGeofencingSupported, it) })
-            .andThen(initializeAutomaticCheckout())
-            .andThen(checkInManager.isCheckedIn
-                .flatMapCompletable { update(isCheckedIn, it) })
-            .andThen(checkInManager.checkInDataIfAvailable
-                .doOnSuccess { checkInData ->
-                    Timber.d("Check-in data: %s", checkInData)
-                    updateAsSideEffect(this.checkInData, checkInData)
-                    updateAsSideEffect(id, checkInData.locationId)
-                    updateAsSideEffect(hasLocationRestriction, checkInData.hasLocationRestriction())
-                    if (checkInData.locationAreaName != null) {
-                        updateAsSideEffect(subtitle, checkInData.locationGroupName)
-                        updateAsSideEffect(title, checkInData.locationAreaName)
-                    } else {
-                        updateAsSideEffect(subtitle, null)
-                        updateAsSideEffect(title, checkInData.locationGroupName)
+            .andThen(
+                geofenceManager.isGeofencingSupported
+                    .flatMapCompletable { update(isGeofencingSupported, it) }
+            )
+            .andThen(
+                checkInManager.isCheckedIn
+                    .flatMapCompletable { update(isCheckedIn, it) }
+            )
+            .andThen(
+                checkInManager.checkInDataIfAvailable
+                    .doOnSuccess { checkInData ->
+                        Timber.d("Check-in data: %s", checkInData)
+                        updateAsSideEffect(this.checkInData, checkInData)
+                        updateAsSideEffect(id, checkInData.locationId)
+                        updateAsSideEffect(hasLocationRestriction, checkInData.hasLocationRestriction())
+                        if (checkInData.locationAreaName != null) {
+                            updateAsSideEffect(subtitle, checkInData.locationGroupName)
+                            updateAsSideEffect(title, checkInData.locationAreaName)
+                        } else {
+                            updateAsSideEffect(subtitle, null)
+                            updateAsSideEffect(title, checkInData.locationGroupName)
+                        }
                     }
-                }
-                .ignoreElement())
+                    .ignoreElement()
+            )
+            .andThen(initializeAutomaticCheckout())
             .andThen(invokeProvidedUrlsUpdate())
             .andThen(updateChildCounter())
     }
 
     private fun initializeAutomaticCheckout(): Completable {
         return Single.zip(
+            checkInManager.checkInDataIfAvailable
+                .map(CheckInData::hasLocationRestriction)
+                .defaultIfEmpty(false),
             checkInManager.isAutomaticCheckoutEnabled,
-            preferenceManager.restoreOrDefault(KEY_AUTOMATIC_CHECKOUT_ENABLED, false),
-            { isGeofenceActive, automaticCheckoutEnabled ->
-                Completable.defer {
-                    if (isGeofenceActive) {
-                        startObservingAutomaticCheckOutErrors()
-                    } else {
-                        Completable.complete()
-                    }
-                }.andThen(update(shouldEnableAutomaticCheckOut, isGeofenceActive || automaticCheckoutEnabled))
-            })
+            preferenceManager.restoreOrDefault(KEY_AUTOMATIC_CHECKOUT_ENABLED, false)
+        ) { hasLocationRestriction, isGeofenceActive, automaticCheckoutEnabled ->
+            Completable.defer {
+                if (isGeofenceActive) {
+                    startObservingAutomaticCheckOutErrors()
+                } else {
+                    Completable.complete()
+                }
+            }.andThen(
+                update(
+                    shouldEnableAutomaticCheckOut, isGeofenceActive || (hasLocationRestriction && automaticCheckoutEnabled)
+                )
+            )
+        }
             .flatMapCompletable { it }
     }
 
@@ -144,13 +161,15 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
 
     private fun startObservingAutomaticCheckOutErrors(): Completable {
         return Completable.fromAction {
-            modelDisposable.add(checkInManager.autoCheckoutGeofenceRequest
-                .flatMapObservable { Observable.fromIterable(it.geofences) }
-                .flatMap(geofenceManager::getGeofenceEvents)
-                .ignoreElements()
-                .onErrorResumeNext(::handleAutomaticCheckOutError)
-                .subscribeOn(Schedulers.io())
-                .subscribe())
+            modelDisposable.add(
+                checkInManager.autoCheckoutGeofenceRequest
+                    .flatMapObservable { Observable.fromIterable(it.geofences) }
+                    .flatMap(geofenceManager::getGeofenceEvents)
+                    .ignoreElements()
+                    .onErrorResumeNext(::handleAutomaticCheckOutError)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe()
+            )
         }
     }
 
@@ -294,8 +313,8 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
             requestLocationPermission()
             return false
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-            && ActivityCompat.checkSelfPermission(application, ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            ActivityCompat.checkSelfPermission(application, ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED
         ) {
             requestBackgroundLocationPermission()
             return false
@@ -306,7 +325,6 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
         }
         return true
     }
-
 
     fun isLocationConsentGiven(): Single<Boolean> {
         return preferenceManager.restoreOrDefault(KEY_LOCATION_CONSENT_GIVEN, false)
@@ -339,7 +357,8 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
             .subscribeOn(Schedulers.io())
             .subscribe(
                 { Timber.v("Automatic check-out was enabled") },
-                { Timber.w(it, "Unable to enable automatic check-out") })
+                { Timber.w(it, "Unable to enable automatic check-out") }
+            )
             .addTo(modelDisposable)
     }
 
@@ -349,7 +368,8 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
             .subscribeOn(Schedulers.io())
             .subscribe(
                 { Timber.v("Automatic check-out was disabled") },
-                { Timber.w(it, "Unable to disable automatic check-out") })
+                { Timber.w(it, "Unable to disable automatic check-out") }
+            )
             .addTo(modelDisposable)
     }
 
@@ -591,8 +611,19 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
         return providedUrls.value?.firstOrNull { (type, _) -> type == urlType }?.second
     }
 
-    fun openProvidedUrl(urlType: UrlType) {
-        getProvidedUrl(urlType)?.also { application.openUrl(it) }
+    fun openProvidedUrlOrAskConsent(urlType: UrlType) {
+        consentManager.getConsent(ConsentManager.ID_OPEN_VENUE_URL)
+            .doOnSuccess { consent ->
+                if (consent.approved) {
+                    getProvidedUrl(urlType)?.also { application.openUrl(it) }
+                } else {
+                    updateAsSideEffect(askUrlConsent, urlType)
+                }
+            }
+            .onErrorComplete()
+            .subscribeOn(Schedulers.io())
+            .subscribe()
+            .addTo(modelDisposable)
     }
 
     fun reportAbuse(activity: Activity) {
@@ -642,7 +673,5 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
             seconds = seconds % 3600 % 60
             return String.format(Locale.GERMANY, "%02d:%02d:%02d", hours, minutes, seconds)
         }
-
     }
-
 }

@@ -36,8 +36,4 @@ class WhatIsNewPageFragment : Fragment() {
         const val PAGE_HEADING_KEY = "page_heading_key"
         const val PAGE_DESCRIPTION_KEY = "page_description_key"
     }
-
 }
-
-
-

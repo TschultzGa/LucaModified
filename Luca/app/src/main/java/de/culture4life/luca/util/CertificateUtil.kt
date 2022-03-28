@@ -11,7 +11,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.cert.*
 
-
 object CertificateUtil {
 
     private const val TYPE_X509 = "X509"
@@ -47,7 +46,6 @@ object CertificateUtil {
         parameters.isRevocationEnabled = false
         certPathValidator.validate(certPath, parameters)
     }
-
 }
 
 fun X509Certificate.getX500Name(): X500Name {

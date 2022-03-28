@@ -1,11 +1,15 @@
 package de.culture4life.luca.whatisnew
 
 import android.content.Context
+import android.net.Uri
+import androidx.annotation.VisibleForTesting
 import de.culture4life.luca.BuildConfig
+import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
 import de.culture4life.luca.R
 import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.preference.PreferencesManager
+import de.culture4life.luca.registration.RegistrationManager
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -16,7 +20,8 @@ import java.util.concurrent.TimeUnit
 
 class WhatIsNewManager(
     private val preferencesManager: PreferencesManager,
-    private val notificationManager: LucaNotificationManager
+    private val notificationManager: LucaNotificationManager,
+    private val registrationManager: RegistrationManager
 ) : Manager() {
 
     private var cachedContentPages: Observable<WhatIsNewPage>? = null
@@ -27,14 +32,22 @@ class WhatIsNewManager(
     override fun doInitialize(context: Context): Completable {
         return Completable.mergeArray(
             preferencesManager.initialize(context),
-            notificationManager.initialize(context)
-        ).andThen(
-            invoke(
-                checkAndUpdateLastUsedVersionNumber()
-                    .delay(1, TimeUnit.SECONDS)
-                    .andThen(showNotificationsForUnseenMessagesIfRequired())
-            )
+            notificationManager.initialize(context),
+            registrationManager.initialize(context)
         )
+            .andThen(
+                invoke(
+                    Completable.defer {
+                        if (LucaApplication.isRunningUnitTests() || LucaApplication.isRunningInstrumentationTests()) {
+                            checkAndUpdateLastUsedVersionNumber()
+                                .delay(1, TimeUnit.SECONDS)
+                                .andThen(showNotificationsForUnseenMessagesIfRequired())
+                        } else {
+                            Completable.complete()
+                        }
+                    }
+                )
+            )
     }
 
     override fun dispose() {
@@ -210,16 +223,13 @@ class WhatIsNewManager(
         Messages
      */
 
-    private fun showNotificationsForUnseenMessagesIfRequired(): Completable {
-        return Completable.defer {
-            if (isFirstSessionAfterAppUpdate == true) {
-                getAllMessages()
-                    .filter { !it.notified && !it.seen && it.enabled }
-                    .flatMapCompletable { showNotificationForMessage(it) }
-            } else {
-                return@defer Completable.complete()
-            }
-        }
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun showNotificationsForUnseenMessagesIfRequired(): Completable {
+        return registrationManager.hasCompletedRegistration()
+            .filter { hasCompletedRegistration -> isFirstSessionAfterAppUpdate == true && hasCompletedRegistration }
+            .flatMapObservable { getAllMessages() }
+            .filter { message -> !message.notified && !message.seen && message.enabled }
+            .flatMapCompletable { showNotificationForMessage(it) }
     }
 
     fun showNotificationForMessage(message: WhatIsNewMessage): Completable {
@@ -286,7 +296,7 @@ class WhatIsNewManager(
                 it.copy(
                     title = context.getString(R.string.notification_postal_code_matching_title),
                     content = context.getString(R.string.notification_postal_code_matching_description),
-                    destination = R.id.postalCodeFragment
+                    destination = Uri.parse(context.getString(R.string.deeplink_postal_code))
                 )
             }
     }
@@ -297,7 +307,7 @@ class WhatIsNewManager(
                 it.copy(
                     title = context.getString(R.string.notification_luca_connect_supported_title),
                     content = context.getString(R.string.notification_luca_connect_supported_description),
-                    destination = R.id.lucaConnectFragment
+                    destination = Uri.parse(context.getString(R.string.deeplink_connect))
                 )
             }
     }
@@ -314,7 +324,7 @@ class WhatIsNewManager(
         return restoreLastUsedVersionNumberIfAvailable()
             .isEmpty()
             .filter { it } // no version number available yet
-            .flatMapSingle { application.registrationManager.hasCompletedRegistration() }
+            .flatMapSingle { registrationManager.hasCompletedRegistration() }
             .filter { it } // indicates that the app has been used in a previous version
             .flatMapCompletable {
                 persistLastUsedVersionNumber(BuildConfig.VERSION_CODE - 1)
@@ -326,7 +336,8 @@ class WhatIsNewManager(
      * Checks if the app has been updated since the last session and updates
      * [isFirstSessionAfterAppUpdate] accordingly.
      */
-    private fun checkAndUpdateLastUsedVersionNumber(): Completable {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun checkAndUpdateLastUsedVersionNumber(): Completable {
         return migrateLastUsedVersionNumberIfRequired()
             .andThen(restoreLastUsedVersionNumberIfAvailable())
             .defaultIfEmpty(BuildConfig.VERSION_CODE)
@@ -337,11 +348,13 @@ class WhatIsNewManager(
             .flatMapCompletable { persistLastUsedVersionNumber() }
     }
 
-    private fun restoreLastUsedVersionNumberIfAvailable(): Maybe<Int> {
-        return preferencesManager.restoreIfAvailable(KEY_LAST_USED_VERSION_NUMBER, Int::class.java);
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun restoreLastUsedVersionNumberIfAvailable(): Maybe<Int> {
+        return preferencesManager.restoreIfAvailable(KEY_LAST_USED_VERSION_NUMBER, Int::class.java)
     }
 
-    private fun persistLastUsedVersionNumber(lastVersionNumber: Int = BuildConfig.VERSION_CODE): Completable {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun persistLastUsedVersionNumber(lastVersionNumber: Int = BuildConfig.VERSION_CODE): Completable {
         return preferencesManager.persist(KEY_LAST_USED_VERSION_NUMBER, lastVersionNumber)
     }
 
@@ -351,7 +364,5 @@ class WhatIsNewManager(
         private const val KEY_LAST_WHAT_IS_NEW_PAGE_SEEN_INDEX = "key_last_what_is_new_page_seen_index"
         const val ID_POSTAL_CODE_MESSAGE = "news_message_postal_code"
         const val ID_LUCA_CONNECT_MESSAGE = "news_message_luca_connect"
-
     }
-
 }

@@ -44,5 +44,4 @@ class ObservableUtilTest {
             .test()
             .assertError(NullPointerException::class.java)
     }
-
 }

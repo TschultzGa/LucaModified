@@ -152,5 +152,4 @@ class NotificationConfigTest {
             assertEquals(null, getHealthDepartments()[0].phoneNumber)
         }
     }
-
 }

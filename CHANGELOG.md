@@ -1,3 +1,10 @@
+# Release 2.4.2
+
+- UX Improvements 
+- Bug fixes 
+
+In this update we include a series of bug fixes amongst others regarding the import of documents. Further, some UX improvement have been made. 
+
 # Release 2.4.1
 
 - luca Connect

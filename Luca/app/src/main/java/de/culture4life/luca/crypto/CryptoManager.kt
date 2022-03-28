@@ -32,10 +32,8 @@ import java.security.cert.X509Certificate
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.util.*
-import java.util.concurrent.TimeUnit
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
-
 
 /**
  * Provides access to all cryptographic methods, handles Bouncy-Castle key store persistence.
@@ -163,9 +161,11 @@ open class CryptoManager constructor(
      */
     private fun getKeyStorePassword(): Single<CharArray> {
         return restoreWrappedSecretIfAvailable(ALIAS_KEYSTORE_PASSWORD)
-            .switchIfEmpty(generateSecureRandomData(128)
-                .doOnSuccess { Timber.d("Generated new random key store password") }
-                .flatMap { persistWrappedSecret(ALIAS_KEYSTORE_PASSWORD, it).andThen(Single.just(it)) })
+            .switchIfEmpty(
+                generateSecureRandomData(128)
+                    .doOnSuccess { Timber.d("Generated new random key store password") }
+                    .flatMap { persistWrappedSecret(ALIAS_KEYSTORE_PASSWORD, it).andThen(Single.just(it)) }
+            )
             .map(ByteArray::toCharArray)
     }
 
@@ -179,9 +179,11 @@ open class CryptoManager constructor(
      */
     private fun getSecretWrappingKeyPair(): Single<KeyPair> {
         return wrappingCipherProvider.getKeyPairIfAvailable(ALIAS_SECRET_WRAPPING_KEY_PAIR)
-            .switchIfEmpty(wrappingCipherProvider.generateKeyPair(ALIAS_SECRET_WRAPPING_KEY_PAIR, context)
-                .doOnSubscribe { Timber.d("Generating new secret wrapping key pair") }
-                .doOnError { Timber.e("Unable to generate secret wrapping key pair: %s", it.toString()) })
+            .switchIfEmpty(
+                wrappingCipherProvider.generateKeyPair(ALIAS_SECRET_WRAPPING_KEY_PAIR, context)
+                    .doOnSubscribe { Timber.d("Generating new secret wrapping key pair") }
+                    .doOnError { Timber.e("Unable to generate secret wrapping key pair: %s", it.toString()) }
+            )
             .compose(retryWhen(KeyStoreException::class.java, 3))
     }
 
@@ -528,12 +530,13 @@ open class CryptoManager constructor(
      */
     open fun getDailyPublicKey(): Single<DailyPublicKeyData> {
         return Maybe.fromCallable<DailyPublicKeyData> { dailyPublicKeyData }
-            .switchIfEmpty(restoreDailyPublicKey()
-                .doOnSuccess { dailyPublicKeyData = it }
-                .switchIfEmpty(
-                    updateDailyPublicKey()
-                        .andThen(Single.fromCallable { dailyPublicKeyData!! })
-                )
+            .switchIfEmpty(
+                restoreDailyPublicKey()
+                    .doOnSuccess { dailyPublicKeyData = it }
+                    .switchIfEmpty(
+                        updateDailyPublicKey()
+                            .andThen(Single.fromCallable { dailyPublicKeyData!! })
+                    )
             ).onErrorResumeNext { Single.error(DailyKeyUnavailableException(it)) }
     }
 
@@ -606,18 +609,19 @@ open class CryptoManager constructor(
     }
 
     /**
-     * Will complete if the specified key is not older than seven days
+     * Will complete if the specified key is not expired
      * or emit a [DailyKeyExpiredException] otherwise.
      * Uses the [.genuinityManager] to make sure the system time is valid.
      */
     fun assertKeyNotExpired(dailyPublicKeyData: DailyPublicKeyData): Completable {
         return genuinityManager.assertIsGenuineTime()
-            .andThen(Completable.fromAction {
-                val keyAge = TimeUtil.getCurrentMillis() - dailyPublicKeyData.creationTimestamp
-                if (keyAge > TimeUnit.DAYS.toMillis(7)) {
-                    throw DailyKeyExpiredException("Daily public key is older than 7 days")
+            .andThen(
+                Completable.fromAction {
+                    if (TimeUtil.getCurrentMillis() > dailyPublicKeyData.expirationTimestampOrDefault) {
+                        throw DailyKeyExpiredException("Daily public key expired at ${dailyPublicKeyData.expirationTimestampOrDefault.toDateTime()}")
+                    }
                 }
-            })
+            )
     }
 
     /*
@@ -681,9 +685,11 @@ open class CryptoManager constructor(
      */
     fun getDataSecret(): Single<ByteArray> {
         return restoreDataSecret()
-            .switchIfEmpty(generateDataSecret()
-                .observeOn(Schedulers.io())
-                .flatMap { persistDataSecret(it).andThen(Single.just(it)) })
+            .switchIfEmpty(
+                generateDataSecret()
+                    .observeOn(Schedulers.io())
+                    .flatMap { persistDataSecret(it).andThen(Single.just(it)) }
+            )
     }
 
     private fun generateDataSecret(): Single<ByteArray> {
@@ -785,9 +791,7 @@ open class CryptoManager constructor(
                 outputStream.toByteArray()
             }
         }
-
     }
-
 }
 
 fun UUID.toByteArray(): ByteArray {

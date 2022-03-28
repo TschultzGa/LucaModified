@@ -57,5 +57,4 @@ class AccountItemView @JvmOverloads constructor(
     fun showSeparator(show: Boolean) {
         binding.itemSeparatorView.isVisible = show
     }
-
 }

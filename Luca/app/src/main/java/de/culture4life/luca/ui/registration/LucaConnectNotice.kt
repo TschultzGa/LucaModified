@@ -41,5 +41,4 @@ class LucaConnectNotice(val viewModel: RegistrationViewModel, val context: Conte
             .setNegativeButton(R.string.action_cancel, null)
             .show()
     }
-
 }

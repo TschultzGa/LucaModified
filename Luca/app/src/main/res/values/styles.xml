@@ -46,6 +46,8 @@
         <item name="materialCardViewStyle">@style/Widget.Luca.CardView</item>
         <item name="bottomSheetStyle">@style/Widget.Luca.BottomSheet.Modal</item>
         <item name="bottomSheetDialogTheme">@style/Widget.Luca.BottomSheet.Modal</item>
+        <item name="checkboxStyle">@style/Widget.Luca.CheckBox</item>
+        <item name="linearProgressIndicatorStyle">@style/Widget.Luca.LinearProgressIndicator</item>
 
         <item name="elevationOverlayEnabled">false</item>
 
@@ -213,6 +215,11 @@
         <item name="android:textFontWeight" tools:targetApi="p">300</item>
     </style>
 
+    <style name="TextAppearance.Luca.Body2.Bold">
+        <item name="fontFamily">@font/montserrat_bold</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
     <style name="TextAppearance.Luca.Body3" parent="TextAppearance.Luca.Body2">
         <item name="android:textSize">@dimen/font_size_small</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
@@ -268,6 +275,12 @@
         <item name="android:textStyle">bold</item>
         <item name="fontFamily">@font/montserrat_bold</item>
         <item name="android:textSize">@dimen/font_size_default</item>
+    </style>
+
+    <!-- CheckBox -->
+
+    <style name="Widget.Luca.CheckBox" parent="Widget.Material3.CompoundButton.CheckBox">
+        <item name="buttonTint">?attr/colorPrimary</item>
     </style>
 
     <!-- CardView -->
@@ -470,6 +483,21 @@
         <item name="layout_constraintEnd_toEndOf">parent</item>
         <item name="layout_constraintTop_toTopOf">parent</item>
         <item name="layout_constraintBottom_toBottomOf">parent</item>
+    </style>
+
+    <style name="Widget.Luca.LinearProgressIndicator" parent="Widget.MaterialComponents.LinearProgressIndicator">
+        <item name="android:indeterminate">false</item>
+        <item name="android:progressTint">?colorSurface</item>
+        <item name="android:progressBackgroundTint">?colorAccent</item>
+        <item name="android:progress">0</item>
+        <item name="android:max">100</item>
+    </style>
+
+    <style name="Widget.Luca.LinearProgressIndicator.FullWidth">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="layout_constraintStart_toStartOf">parent</item>
+        <item name="layout_constraintEnd_toEndOf">parent</item>
     </style>
 
     <style name="ShapeAppearance.App.MediumComponent" parent="ShapeAppearance.MaterialComponents.MediumComponent">

@@ -71,6 +71,9 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
         binding.appDataItem.setOnClickListener { application.openAppSettings() }
         binding.sourceCodeItem.setOnClickListener { showGitlabDialog() }
         binding.deleteAccountItem.setOnClickListener { showDeleteAccountDialog() }
+        binding.directCheckInItem.setOnClickListener { viewModel.openDirectCheckInView() }
+        binding.entryPolicyItem.setOnClickListener { viewModel.openEntryPolicyView() }
+        binding.voluntaryCheckInItem.setOnClickListener { viewModel.openVoluntaryCheckInView() }
     }
 
     private fun initializeObservers() {
@@ -116,11 +119,13 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
 
     private fun showDeleteAccountDialog() {
         context?.also {
-            BaseDialogFragment(MaterialAlertDialogBuilder(it)
-                .setTitle(R.string.delete_account_dialog_title)
-                .setMessage(R.string.delete_account_dialog_message)
-                .setPositiveButton(R.string.delete_account_dialog_action) { _, _ -> viewModel.deleteAccount() }
-                .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() })
+            BaseDialogFragment(
+                MaterialAlertDialogBuilder(it)
+                    .setTitle(R.string.delete_account_dialog_title)
+                    .setMessage(R.string.delete_account_dialog_message)
+                    .setPositiveButton(R.string.delete_account_dialog_action) { _, _ -> viewModel.deleteAccount() }
+                    .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() }
+            )
                 .show()
         }
     }
@@ -147,25 +152,28 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
                 BuildConfig.VERSION_CODE,
                 commitHash
             )
-            BaseDialogFragment(MaterialAlertDialogBuilder(it)
-                .setTitle(R.string.version_details_dialog_title)
-                .setMessage(message)
-                .setPositiveButton(R.string.version_details_dialog_action) { dialog, _ -> dialog.dismiss() })
+            BaseDialogFragment(
+                MaterialAlertDialogBuilder(it)
+                    .setTitle(R.string.version_details_dialog_title)
+                    .setMessage(message)
+                    .setPositiveButton(R.string.version_details_dialog_action) { dialog, _ -> dialog.dismiss() }
+            )
                 .show()
         }
     }
 
     private fun showGitlabDialog() {
         context?.let {
-            BaseDialogFragment(MaterialAlertDialogBuilder(it)
-                .setTitle(R.string.gitlab_dialog_title)
-                .setMessage(R.string.gitlab_dialog_message)
-                .setPositiveButton(R.string.gitlab_dialog_action) { _, _ ->
-                    application.openUrl(getString(R.string.url_gitlab))
-                }
-                .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() })
+            BaseDialogFragment(
+                MaterialAlertDialogBuilder(it)
+                    .setTitle(R.string.gitlab_dialog_title)
+                    .setMessage(R.string.gitlab_dialog_message)
+                    .setPositiveButton(R.string.gitlab_dialog_action) { _, _ ->
+                        application.openUrl(getString(R.string.url_gitlab))
+                    }
+                    .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() }
+            )
                 .show()
         }
     }
-
 }

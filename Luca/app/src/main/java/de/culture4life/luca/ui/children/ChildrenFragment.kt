@@ -2,7 +2,6 @@ package de.culture4life.luca.ui.children
 
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
-import androidx.annotation.CallSuper
 import androidx.core.view.isVisible
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -11,9 +10,12 @@ import de.culture4life.luca.children.Child
 import de.culture4life.luca.databinding.FragmentAddingChildrenBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.util.AccessibilityServiceUtil
+import de.culture4life.luca.util.addTo
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.schedulers.Schedulers
 
-class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
+class ChildrenFragment :
+    BaseFragment<ChildrenViewModel>(),
     AddChildDialogFragment.AddChildListener {
 
     private var bottomSheet: AddChildDialogFragment? = null
@@ -35,7 +37,6 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
         return binding
     }
 
-    @CallSuper
     override fun initializeViews() {
         super.initializeViews()
         initializeChildItemsViews()
@@ -44,22 +45,26 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
 
     override fun onResume() {
         super.onResume()
-        viewModel.restoreChildren().subscribe()
+        viewModel.updateList()
+            .subscribeOn(Schedulers.io())
+            .subscribe()
+            .addTo(viewDisposable)
     }
 
     override fun addChild(child: Child) {
         viewDisposable.add(
             viewModel.addChild(child, isCheckedIn)
                 .onErrorComplete()
+                .observeOn(AndroidSchedulers.mainThread())
                 .doFinally { bottomSheet?.dismiss() }
-                .subscribe())
+                .subscribeOn(Schedulers.io())
+                .subscribe()
+        )
     }
 
     private fun initializeAddChildViews() {
-        with(binding) {
-            actionBarBackButtonImageView.setOnClickListener { viewModel.navigateBack() }
-            primaryActionButton.setOnClickListener { showAddChildDialog() }
-        }
+        binding.actionBarBackButtonImageView.setOnClickListener { viewModel.navigateBack() }
+        binding.primaryActionButton.setOnClickListener { showAddChildDialog() }
     }
 
     private fun initializeChildItemsViews() {
@@ -123,5 +128,4 @@ class ChildrenFragment : BaseFragment<ChildrenViewModel>(),
     companion object {
         const val CHECK_IN = "checkIn"
     }
-
 }

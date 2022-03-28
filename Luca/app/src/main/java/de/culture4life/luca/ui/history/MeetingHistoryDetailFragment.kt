@@ -46,5 +46,4 @@ class MeetingHistoryDetailFragment : BaseFragment<MeetingHistoryDetailViewModel>
     companion object {
         const val KEY_PRIVATE_MEETING_ITEM = "PrivateMeetingItem"
     }
-
 }

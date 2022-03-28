@@ -164,5 +164,4 @@ class PowManagerTest : LucaUnitTest() {
             reentrantLock.unlock()
         }
     }
-
 }

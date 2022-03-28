@@ -1,5 +1,6 @@
 package de.culture4life.luca.ui.messages
 
+import android.net.Uri
 import de.culture4life.luca.connect.ConnectMessage
 import de.culture4life.luca.dataaccess.AccessedTraceData
 import de.culture4life.luca.dataaccess.NotificationTexts
@@ -22,7 +23,7 @@ sealed class MessageListItem : Serializable {
         override val detailedMessage: String,
         override val timestamp: Long,
         override val isNew: Boolean,
-        val destination: Int
+        val destination: Uri
     ) : MessageListItem() {
 
         constructor(item: WhatIsNewMessage) : this(
@@ -34,7 +35,6 @@ sealed class MessageListItem : Serializable {
             isNew = !item.seen,
             destination = item.destination!!
         )
-
     }
 
     data class AccessedDataListItem(
@@ -67,7 +67,6 @@ sealed class MessageListItem : Serializable {
             accessorName = item.healthDepartment.name,
             locationName = item.locationName,
         )
-
     }
 
     data class LucaConnectListItem(
@@ -87,7 +86,5 @@ sealed class MessageListItem : Serializable {
             timestamp = item.timestamp,
             isNew = !item.read
         )
-
     }
-
 }

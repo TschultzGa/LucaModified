@@ -79,5 +79,4 @@ data class KeyIssuerResponseData(
             issuerId = jwt.body["iss"] as String
         ).apply { this.signedJwt = signedJwt }
     }
-
 }

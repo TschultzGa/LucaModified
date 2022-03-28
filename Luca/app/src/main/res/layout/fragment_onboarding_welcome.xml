@@ -91,7 +91,6 @@
             android:id="@+id/termsCheckBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:buttonTint="?attr/colorOnSurface"
             android:contentDescription="@string/welcome_terms_checkbox_content_description" />
 
         <TextView

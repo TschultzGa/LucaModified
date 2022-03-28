@@ -17,7 +17,10 @@ import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.ui.accesseddata.AccessedDataDetailFragment
 import de.culture4life.luca.ui.accesseddata.AccessedDataFragment
 import de.culture4life.luca.ui.accesseddata.AccessedDataListItem
+import de.culture4life.luca.ui.history.HistoryListItem.*
 import de.culture4life.luca.util.TimeUtil
+import de.culture4life.luca.util.addTo
+import de.culture4life.luca.util.toDateTime
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.*
 import io.reactivex.rxjava3.core.Observable
@@ -112,7 +115,7 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
                 .flatMapMaybe(this::createHistoryViewItem),
             cachedSingleItems
                 .flatMapMaybe(this::createHistoryViewItem)
-        ).sorted { (timestamp1), (timestamp2) -> timestamp2.compareTo(timestamp1) }
+        ).sorted { item1, item2 -> item2.timestamp.compareTo(item1.timestamp) }
     }
 
     /**
@@ -130,9 +133,9 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
                 Maybe.fromCallable {
                     // get the matching start item type
                     if (endItem.type == HistoryItem.TYPE_CHECK_OUT) {
-                        return@fromCallable HistoryItem.TYPE_CHECK_IN
+                        HistoryItem.TYPE_CHECK_IN
                     } else {
-                        return@fromCallable HistoryItem.TYPE_MEETING_STARTED
+                        HistoryItem.TYPE_MEETING_STARTED
                     }
                 }.flatMap { startItemType ->
                     historyItems.filter { historyItem: HistoryItem -> historyItem.type == startItemType }
@@ -140,100 +143,41 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
                         .firstElement()
                 }
             }
-
     }
 
     private fun createHistoryViewItem(historyItemPair: Pair<HistoryItem, HistoryItem>): Maybe<HistoryListItem> {
-        return Maybe.zip(createHistoryViewItem(historyItemPair.first), createHistoryViewItem(historyItemPair.second),
-            { start, end ->
-                end.time = TimeUtil.getReadableDurationWithPlural(end.timestamp - start.timestamp, application).blockingGet()
-                val merged = HistoryListItem()
-                merged.title = end.title
-                merged.description = end.description
-                merged.additionalTitleDetails = end.additionalTitleDetails
-                merged.time = application.getString(R.string.history_time_merged, start.time, end.time)
-                merged.timestamp = end.timestamp
-                merged.titleIconResourceId = end.titleIconResourceId
-                merged.relatedId = end.relatedId
-                merged.accessedTraceData = end.accessedTraceData
-                merged.isPrivateMeeting = end.isPrivateMeeting
-                merged.guests = end.guests
-                merged.isContactDataMandatory = start.isContactDataMandatory
-                return@zip merged
-            })
+        return Maybe.zip(createHistoryViewItem(historyItemPair.first), createHistoryViewItem(historyItemPair.second)) { start, end ->
+            end.time = TimeUtil.getReadableDateTimeDifference(application, start.timestamp.toDateTime(), end.timestamp.toDateTime())
+            end.time = application.getString(R.string.history_time_merged, start.time, end.time)
+            if (start is CheckInListItem && end is CheckOutListItem) {
+                end.isContactDataMandatory = start.isContactDataMandatory
+            }
+            end
+        }
     }
 
     private fun createHistoryViewItem(historyItem: HistoryItem): Maybe<HistoryListItem> {
         return Single.just(historyItem)
-            .filter {
-                historyItem.type == HistoryItem.TYPE_CHECK_IN || historyItem.type == HistoryItem.TYPE_CHECK_OUT || historyItem.type == HistoryItem.TYPE_MEETING_STARTED || historyItem.type == HistoryItem.TYPE_MEETING_ENDED || historyItem.type == HistoryItem.TYPE_CONTACT_DATA_REQUEST
-            }
+            .filter { HistoryListItem.canHandle(it) }
             .flatMap {
                 Maybe.fromCallable {
-                    val item = HistoryListItem()
-                    item.timestamp = historyItem.timestamp
-                    item.time = application.getString(R.string.history_time, TimeUtil.getReadableTime(application, historyItem.timestamp))
-                    item.relatedId = historyItem.relatedId
-
                     when (historyItem.type) {
-                        HistoryItem.TYPE_CHECK_IN -> {
-                            val checkInItem = historyItem as CheckInItem
-                            item.title = checkInItem.displayName
-                            item.isContactDataMandatory = checkInItem.isContactDataMandatory
-                        }
-                        HistoryItem.TYPE_CHECK_OUT -> {
-                            val checkOutItem = historyItem as CheckOutItem
-                            item.title = checkOutItem.displayName
-                            val accessedTraceData =
-                                dataAccessManager.getPreviouslyAccessedTraceData(checkOutItem.relatedId)
-                                    .toList().blockingGet()
-                            val accessed = accessedTraceData.isNotEmpty()
-                            item.accessedTraceData = accessedTraceData
-                            item.additionalTitleDetails = application.getString(R.string.history_check_out_details, checkOutItem.relatedId)
-                            item.titleIconResourceId = if (accessed) R.drawable.ic_eye else R.drawable.ic_information_outline
-                            val children = checkOutItem.children
-                            if (children != null && children.isNotEmpty()) {
-                                val currentDescription = item.description
-                                var builder = StringBuilder()
-                                if (currentDescription != null) {
-                                    builder = builder.append(currentDescription)
-                                        .append(System.lineSeparator())
-                                }
-                                val childrenCsv = HistoryManager.createCsv(children)
-                                builder = builder.append(application.getString(R.string.history_children_title, childrenCsv))
-                                item.description = builder.toString()
-                            }
-                        }
-                        HistoryItem.TYPE_MEETING_STARTED -> {
-                            item.title = application.getString(R.string.history_meeting_started_title)
-                            item.isContactDataMandatory = false
-                        }
-                        HistoryItem.TYPE_MEETING_ENDED -> {
-                            val meetingEndedItem = historyItem as MeetingEndedItem
-                            item.title = application.getString(R.string.history_meeting_ended_title)
-                            item.isPrivateMeeting = true
-                            item.isContactDataMandatory = false
-                            item.additionalTitleDetails = application.getString(R.string.history_check_out_details, item.relatedId)
-                            item.titleIconResourceId = R.drawable.ic_information_outline
-                            if (meetingEndedItem.guests.isEmpty()) {
-                                item.description = application.getString(R.string.history_meeting_empty_description)
-                            } else {
-                                val guestCsv = HistoryManager.createCsv(meetingEndedItem.guests)
-                                item.description = application.getString(R.string.history_meeting_not_empty_description, guestCsv)
-                                item.guests = meetingEndedItem.guests
-                            }
-                        }
-                        HistoryItem.TYPE_CONTACT_DATA_REQUEST -> {
-                            val dataSharedItem = historyItem as DataSharedItem
-                            item.title = application.getString(R.string.history_data_shared_title)
-                            item.additionalTitleDetails = application.getString(R.string.history_data_shared_description, dataSharedItem.days)
-                            item.titleIconResourceId = R.drawable.ic_information_outline
-                        }
-                        else -> {
-                            Timber.w("Unknown history item type: %d", historyItem.type)
-                        }
+                        HistoryItem.TYPE_CHECK_IN -> CheckInListItem(application, historyItem as CheckInItem)
+                        HistoryItem.TYPE_CHECK_OUT -> CheckOutListItem(
+                            application,
+                            historyItem as CheckOutItem,
+                            dataAccessManager
+                        )
+                        HistoryItem.TYPE_MEETING_STARTED -> MeetingStartedListItem(application, historyItem)
+                        HistoryItem.TYPE_MEETING_ENDED -> MeetingEndedListItem(
+                            application,
+                            historyItem as MeetingEndedItem
+                        )
+                        else -> DataSharedListItem(
+                            application,
+                            historyItem as DataSharedItem
+                        )
                     }
-                    item
                 }
             }
             .doOnError { Timber.w("Unable to create history view item for %s: %s", historyItem, it.toString()) }
@@ -269,45 +213,45 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
 
     fun onShareHistoryRequested(days: Int) {
         Timber.d("onShareHistoryRequested() called with: days = [%s]", days)
-        modelDisposable.add(application.registrationManager
-            .transferUserData(days)
-            .doOnSubscribe {
-                updateAsSideEffect(isLoading, true)
-                removeError(dataSharingError)
-            }
-            .map { obj: String -> obj.uppercase(Locale.getDefault()) }
-            .map { tracingTan: String ->
-                if (tracingTan.contains("-")) {
-                    return@map tracingTan
+        modelDisposable.add(
+            application.registrationManager
+                .transferUserData(days)
+                .doOnSubscribe {
+                    updateAsSideEffect(isLoading, true)
+                    removeError(dataSharingError)
                 }
-                val tracingTanBuilder = StringBuilder(tracingTan)
-                for (i in 1 until tracingTan.length / TAN_CHARS_PER_SECTION) {
-                    val hyphenPosition =
-                        tracingTanBuilder.lastIndexOf("-") + TAN_CHARS_PER_SECTION + 1
-                    tracingTanBuilder.insert(hyphenPosition, "-")
+                .map { obj: String -> obj.uppercase(Locale.getDefault()) }
+                .map { tracingTan: String ->
+                    if (tracingTan.contains("-")) {
+                        return@map tracingTan
+                    }
+                    val tracingTanBuilder = StringBuilder(tracingTan)
+                    for (i in 1 until tracingTan.length / TAN_CHARS_PER_SECTION) {
+                        val hyphenPosition = tracingTanBuilder.lastIndexOf("-") + TAN_CHARS_PER_SECTION + 1
+                        tracingTanBuilder.insert(hyphenPosition, "-")
+                    }
+                    tracingTanBuilder.toString()
                 }
-                tracingTanBuilder.toString()
-            }
-            .flatMapCompletable { tracingTan: String ->
-                Completable.mergeArray(
-                    update(tracingTanEvent, ViewEvent(tracingTan)),
-                    historyManager.addDataSharedItem(tracingTan, days)
+                .flatMapCompletable { tracingTan: String ->
+                    Completable.mergeArray(
+                        update(tracingTanEvent, ViewEvent(tracingTan)),
+                        historyManager.addDataSharedItem(tracingTan, days)
+                    )
+                }
+                .doOnError { throwable: Throwable? ->
+                    dataSharingError = createErrorBuilder(throwable!!)
+                        .withTitle(R.string.error_request_failed_title)
+                        .withResolveAction(Completable.fromAction { onShareHistoryRequested(days) })
+                        .withResolveLabel(R.string.action_retry)
+                        .build()
+                    addError(dataSharingError)
+                }
+                .doFinally { updateAsSideEffect(isLoading, false) }
+                .subscribeOn(Schedulers.io())
+                .subscribe(
+                    { Timber.d("Received data sharing TAN") },
+                    { Timber.w("Unable to get data sharing TAN: %s", it.toString()) }
                 )
-            }
-            .doOnError { throwable: Throwable? ->
-                dataSharingError = createErrorBuilder(throwable!!)
-                    .withTitle(R.string.error_request_failed_title)
-                    .withResolveAction(Completable.fromAction { onShareHistoryRequested(days) })
-                    .withResolveLabel(R.string.action_retry)
-                    .build()
-                addError(dataSharingError)
-            }
-            .doFinally { updateAsSideEffect(isLoading, false) }
-            .subscribeOn(Schedulers.io())
-            .subscribe(
-                { Timber.d("Received data sharing TAN") },
-                { Timber.w("Unable to get data sharing TAN: %s", it.toString()) }
-            )
         )
     }
 
@@ -318,52 +262,47 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
     ) {
         val bundle = Bundle()
         val filteredData = filterTraceData(accessedTraceData, warningLevelFilter)
-        if (filteredData.isNotEmpty()) {
-            val firstItem = filteredData[0]
-            if (filteredData.size == 1) {
-                modelDisposable.add(
-                    dataAccessManager.getNotificationTexts(firstItem)
-                        .map { AccessedDataListItem.from(getApplication(), firstItem, it) }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe { dataListItem: AccessedDataListItem ->
-                            if (isCurrentDestinationId(R.id.historyFragment)) {
-                                bundle.putSerializable(AccessedDataDetailFragment.KEY_ACCESSED_DATA_LIST_ITEM, dataListItem)
-                                navigationController!!.navigate(R.id.action_historyFragment_to_accessedDataDetailFragment, bundle)
-                            }
-                        })
-            } else {
-                bundle.putString(AccessedDataFragment.KEY_TRACE_ID, firstItem.traceId)
-                bundle.putInt(HistoryFragment.KEY_WARNING_LEVEL_FILTER, warningLevelFilter)
-                navigationController!!.navigate(R.id.action_historyFragment_to_accessedDataFragment, bundle)
-            }
+        if (filteredData.isEmpty()) {
+            return
+        }
+        val firstItem = filteredData[0]
+        if (filteredData.size == 1) {
+            dataAccessManager.getNotificationTexts(firstItem)
+                .map { AccessedDataListItem.from(getApplication(), firstItem, it) }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe { dataListItem: AccessedDataListItem ->
+                    if (isCurrentDestinationId(R.id.historyFragment)) {
+                        bundle.putSerializable(AccessedDataDetailFragment.KEY_ACCESSED_DATA_LIST_ITEM, dataListItem)
+                        navigationController!!.navigate(R.id.action_historyFragment_to_accessedDataDetailFragment, bundle)
+                    }
+                }
+                .addTo(modelDisposable)
+        } else {
+            bundle.putString(AccessedDataFragment.KEY_TRACE_ID, firstItem.traceId)
+            bundle.putInt(HistoryFragment.KEY_WARNING_LEVEL_FILTER, warningLevelFilter)
+            navigationController!!.navigate(R.id.action_historyFragment_to_accessedDataFragment, bundle)
         }
     }
 
     fun onDeleteSelectedHistoryListItemsRequested() {
-        Flowable.fromIterable(getHistoryItems().value)
-            .filter {
-                it.isSelectedForDeletion && !it.isContactDataMandatory
-            }
+        Flowable.fromIterable(getHistoryItems().value!!)
+            .filter { it.isSelectedForDeletion && !HistoryListItem.isContactDataMandatory(it) }
             .flatMapCompletable { item ->
                 val relatedId = item.relatedId
-                if (relatedId != null) {
-                    if (item.isPrivateMeeting) {
-                        checkInManager.deleteCheckInLocally(relatedId)
-                    } else {
-                        checkInManager.deleteCheckInFromBackend(relatedId)
-                            .onErrorResumeNext { throwable: Throwable ->
-                                if (NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_FORBIDDEN, HttpURLConnection.HTTP_NOT_FOUND)) {
-                                    // 403: incorrect signature, no way to recover
-                                    // 404: relatedId not found in backend, maybe already deleted
-                                    checkInManager.deleteCheckInLocally(relatedId)
-                                } else {
-                                    Completable.error(throwable)
-                                }
-                            }
-                    }
+                if (item is MeetingStartedListItem || item is MeetingEndedListItem) {
+                    checkInManager.deleteCheckInLocally(relatedId)
                 } else {
-                    historyManager.deleteItems { historyItem: HistoryItem -> item.timestamp == historyItem.timestamp }
+                    checkInManager.deleteCheckInFromBackend(relatedId)
+                        .onErrorResumeNext { throwable: Throwable ->
+                            if (NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_FORBIDDEN, HttpURLConnection.HTTP_NOT_FOUND)) {
+                                // 403: incorrect signature, no way to recover
+                                // 404: relatedId not found in backend, maybe already deleted
+                                checkInManager.deleteCheckInLocally(relatedId)
+                            } else {
+                                Completable.error(throwable)
+                            }
+                        }
                 }
             }
             .doOnError {
@@ -379,17 +318,11 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
             )
     }
 
-    fun getTracingTanEvent(): LiveData<ViewEvent<String>> {
-        return tracingTanEvent
-    }
+    fun getTracingTanEvent(): LiveData<ViewEvent<String>> = tracingTanEvent
 
-    fun getNewAccessedData(): LiveData<ViewEvent<List<AccessedTraceData>>> {
-        return newAccessedData
-    }
+    fun getNewAccessedData(): LiveData<ViewEvent<List<AccessedTraceData>>> = newAccessedData
 
-    fun getHistoryItems(): LiveData<List<HistoryListItem>> {
-        return historyItems
-    }
+    fun getHistoryItems(): LiveData<List<HistoryListItem>> = historyItems
 
     companion object {
 
@@ -398,15 +331,15 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
         fun filterHistoryListItems(items: List<HistoryListItem>, warningLevelFilter: Int): List<HistoryListItem> {
             return if (warningLevelFilter != HistoryFragment.NO_WARNING_LEVEL_FILTER) {
                 items.stream()
-                    .filter { item: HistoryListItem -> item.containsWarningLevel(warningLevelFilter) }
-                    .map { item: HistoryListItem -> filterAccessedTraceData(item, warningLevelFilter) }
+                    .filter { it is CheckOutListItem && it.containsWarningLevel(warningLevelFilter) }
+                    .map { filterAccessedTraceData(it as CheckOutListItem, warningLevelFilter) }
                     .collect(Collectors.toList())
             } else {
                 items
             }
         }
 
-        private fun filterAccessedTraceData(item: HistoryListItem, warningLevelFilter: Int): HistoryListItem {
+        private fun filterAccessedTraceData(item: CheckOutListItem, warningLevelFilter: Int): HistoryListItem {
             item.accessedTraceData = item.accessedTraceData.stream()
                 .filter { traceData: AccessedTraceData -> traceData.warningLevel == warningLevelFilter }
                 .collect(Collectors.toList())
@@ -423,5 +356,4 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
             }
         }
     }
-
 }

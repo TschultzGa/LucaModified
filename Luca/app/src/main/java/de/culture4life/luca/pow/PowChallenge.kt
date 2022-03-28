@@ -17,5 +17,4 @@ data class PowChallenge(
         val two = BigInteger.valueOf(2)
         return two.modPow((two.pow(t)), n)
     }
-
 }

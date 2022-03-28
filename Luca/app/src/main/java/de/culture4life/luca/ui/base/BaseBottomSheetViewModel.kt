@@ -12,5 +12,4 @@ abstract class BaseBottomSheetViewModel(app: Application) : BaseViewModel(app) {
 
     fun dismissBottomSheet() = updateAsSideEffect(dismissBottomSheetRequests, ViewEvent(true))
     open fun onBottomSheetDismissed() = updateAsSideEffect(bottomSheetDismissed, ViewEvent(true))
-
 }

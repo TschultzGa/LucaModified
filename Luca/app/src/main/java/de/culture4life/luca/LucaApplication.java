@@ -55,6 +55,7 @@ import de.culture4life.luca.registration.RegistrationManager;
 import de.culture4life.luca.service.LucaService;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.dialog.BaseDialogFragment;
+import de.culture4life.luca.ui.splash.SplashActivity;
 import de.culture4life.luca.util.StrictModeUtil;
 import de.culture4life.luca.util.TimeUtil;
 import de.culture4life.luca.whatisnew.WhatIsNewManager;
@@ -63,6 +64,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -117,10 +119,10 @@ public class LucaApplication extends MultiDexApplication {
         geofenceManager = new GeofenceManager();
         powManager = new PowManager(networkManager);
         consentManager = new ConsentManager(preferencesManager);
-        whatIsNewManager = new WhatIsNewManager(preferencesManager, notificationManager);
         genuinityManager = new GenuinityManager(preferencesManager, networkManager);
         cryptoManager = new CryptoManager(preferencesManager, networkManager, genuinityManager);
         registrationManager = new RegistrationManager(preferencesManager, networkManager, cryptoManager);
+        whatIsNewManager = new WhatIsNewManager(preferencesManager, notificationManager, registrationManager);
         childrenManager = new ChildrenManager(preferencesManager, registrationManager);
         historyManager = new HistoryManager(preferencesManager, childrenManager);
         healthDepartmentManager = new HealthDepartmentManager(preferencesManager, networkManager, consentManager, registrationManager, cryptoManager);
@@ -210,7 +212,8 @@ public class LucaApplication extends MultiDexApplication {
         ).andThen(Completable.mergeArray(
                 invokeRotatingBackendPublicKeyUpdate(),
                 invokeAccessedDataUpdate(),
-                startKeepingDataUpdated()
+                startKeepingDataUpdated(),
+                invokeCheckUpdateRequired()
         ));
     }
 
@@ -412,12 +415,61 @@ public class LucaApplication extends MultiDexApplication {
         return !startedActivities.isEmpty();
     }
 
-    public Single<Boolean> isUpdateRequired() {
-        return networkManager.getLucaEndpointsV3()
+    private Completable invokeCheckUpdateRequired() {
+        return Completable.fromAction(() -> {
+            Disposable isUpdateRequiredCheck = checkUpdateRequired()
+                    .doOnSubscribe(disposable -> Timber.d("Checking if update is required"))
+                    .retryWhen(throwable -> throwable.delay(5, TimeUnit.SECONDS))
+                    // Short delay to skip the SplashActivity where it isn't safe to show dialogs.
+                    //  Delay should be enough for most devices. On too slow devices we will fall into the retry mechanism.
+                    .delaySubscription(500, TimeUnit.MILLISECONDS, Schedulers.io())
+                    .subscribe(
+                            () -> Timber.d("Update required check done"),
+                            throwable -> Timber.w("Unable to check if update is required: %s", throwable.toString())
+                    );
+            applicationDisposable.add(isUpdateRequiredCheck);
+        });
+    }
+
+    public Completable checkUpdateRequired() {
+        return getInitializedManager(networkManager)
+                .flatMap(NetworkManager::getLucaEndpointsV3)
                 .flatMap(LucaEndpointsV3::getSupportedVersionNumber)
                 .map(jsonObject -> jsonObject.get("minimumVersion").getAsInt())
                 .doOnSuccess(versionNumber -> Timber.d("Minimum supported app version number: %d", versionNumber))
-                .map(minimumVersionNumber -> BuildConfig.VERSION_CODE < minimumVersionNumber);
+                .map(minimumVersionNumber -> BuildConfig.VERSION_CODE < minimumVersionNumber)
+                .onErrorResumeNext(throwable -> {
+                    if (NetworkManager.isHttpException(throwable, NetworkManager.HTTP_UPGRADE_REQUIRED)) {
+                        return Single.just(true);
+                    } else {
+                        return Single.error(throwable);
+                    }
+                })
+                .doOnSuccess(isUpdateRequired -> {
+                    Timber.v("Update required: %b", isUpdateRequired);
+                    if (isUpdateRequired) {
+                        showUpdateRequired();
+                    }
+                })
+                .ignoreElement();
+    }
+
+    private void showUpdateRequired() {
+        showErrorAsDialog(
+                new ViewError.Builder(this)
+                        .withTitle(R.string.update_required_title)
+                        .withDescription(R.string.update_required_description)
+                        .withResolveLabel(R.string.action_update)
+                        .withResolveAction(Completable.fromAction(() -> {
+                            try {
+                                openUrl("https://play.google.com/store/apps/details?id=de.culture4life.luca");
+                            } catch (ActivityNotFoundException e) {
+                                openUrl("https://luca-app.de");
+                            }
+                        }))
+                        .setNotCancelable()
+                        .build()
+        );
     }
 
     public void onActivityStarted(@NonNull Activity activity) {
@@ -429,33 +481,56 @@ public class LucaApplication extends MultiDexApplication {
     }
 
     public void showError(@NonNull ViewError error) {
+        boolean isShown = false;
+
         if (isUiCurrentlyVisible()) {
-            showErrorAsDialog(error);
-        } else if (error.canBeShownAsNotification()) {
+            try {
+                showErrorAsDialog(error);
+                isShown = true;
+            } catch (UiNotAvailableException e) {
+                // Just ignore and try to show as notification.
+                // If you want to enforce a dialog is shown then use [showErrorAsDialog] and handle the case.
+            }
+        }
+
+        if (!isShown && error.canBeShownAsNotification()) {
             showErrorAsNotification(error);
-        } else {
+            isShown = true;
+        }
+
+        if (!isShown) {
             Timber.w("Unable to show error, UI is not currently visible and error should not be shown as notification: %s", error);
         }
     }
 
+    /**
+     * Show error as dialog.
+     *
+     * @throws UiNotAvailableException Usually happen when app is already closed or not completely started (e.g. still on [SplashActivity]) .
+     */
     protected void showErrorAsDialog(@NonNull ViewError error) {
         Activity activity = getActivityContext();
-        if (activity == null) {
-            Timber.w("Unable to show error, no started activity available: %s", error);
-            return;
+        // SplashActivity is not a good candidate because dialogs becomes instantly dismissed when automatically switched to another activity.
+        if (activity == null || activity instanceof SplashActivity) {
+            throw new UiNotAvailableException();
         }
 
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity)
                 .setTitle(error.getTitle())
                 .setMessage(error.getDescription());
 
+        if (error.isCancelable()) {
+            builder.setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.cancel());
+        } else {
+            builder.setCancelable(false);
+        }
+
         if (error.isResolvable()) {
-            builder.setNegativeButton(R.string.action_cancel, (dialog, which) -> dialog.cancel())
-                    .setPositiveButton(error.getResolveLabel(), (dialog, which) -> applicationDisposable.add(error.getResolveAction()
-                            .subscribe(
-                                    () -> Timber.d("Error resolved"),
-                                    throwable -> Timber.w("Unable to resolve error: %s", throwable.toString())
-                            )));
+            builder.setPositiveButton(error.getResolveLabel(), (dialog, which) -> applicationDisposable.add(error.getResolveAction()
+                    .subscribe(
+                            () -> Timber.d("Error resolved"),
+                            throwable -> Timber.w("Unable to resolve error: %s", throwable.toString())
+                    )));
         } else {
             builder.setPositiveButton(R.string.action_ok, (dialog, which) -> {
                 // do nothing
@@ -640,5 +715,11 @@ public class LucaApplication extends MultiDexApplication {
         dataAccessManager = null;
         documentManager = null;
         connectManager = null;
+    }
+
+    static class UiNotAvailableException extends IllegalStateException {
+        public UiNotAvailableException() {
+            super("ui not available, usually app is closed already or startup not completed yet");
+        }
     }
 }

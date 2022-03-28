@@ -11,17 +11,17 @@ object ThrowableUtil {
 
     @JvmStatic
     fun isCause(throwableClass: Class<out Throwable>, throwable: Throwable?): Boolean {
-        return throwableClass.isInstance(throwable)
-                || isNotRxJavaAssemblyException(throwable) && (throwable != null && isCause(throwableClass, throwable.cause))
+        return throwableClass.isInstance(throwable) ||
+            isNotRxJavaAssemblyException(throwable) && (throwable != null && isCause(throwableClass, throwable.cause))
     }
 
     @JvmStatic
     fun isNetworkError(throwable: Throwable?): Boolean {
         return when {
             isCause(UnknownHostException::class.java, throwable) ||
-                    isCause(ConnectException::class.java, throwable) ||
-                    isCause(SocketTimeoutException::class.java, throwable) ||
-                    isCause(SocketException::class.java, throwable) -> true
+                isCause(ConnectException::class.java, throwable) ||
+                isCause(SocketTimeoutException::class.java, throwable) ||
+                isCause(SocketException::class.java, throwable) -> true
             else -> false
         }
     }

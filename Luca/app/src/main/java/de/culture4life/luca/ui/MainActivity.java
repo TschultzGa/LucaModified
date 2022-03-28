@@ -21,10 +21,10 @@ import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.R;
 import de.culture4life.luca.ui.consent.ConsentBottomSheetFragment;
+import de.culture4life.luca.ui.consent.ConsentUiExtension;
 import de.culture4life.luca.ui.registration.RegistrationActivity;
 import de.culture4life.luca.util.AccessibilityServiceUtil;
 import five.star.me.FiveStarMe;
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -111,16 +111,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void initializeConsentRequests() {
-        activityDisposable.add(application.getConsentManager()
-                .getConsentRequests()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::showConsentRequest));
-    }
-
-    private void showConsentRequest(String id) {
-        ConsentBottomSheetFragment fragment = ConsentBottomSheetFragment.Companion.newInstance(id);
-        String tag = "consent_" + id;
-        fragment.show(getSupportFragmentManager(), tag);
+        new ConsentUiExtension(getSupportFragmentManager(), application.getConsentManager(), activityDisposable);
     }
 
     @Override

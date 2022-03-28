@@ -117,7 +117,7 @@ class ArchiverTest : LucaUnitTest() {
             .andThen(injectUnCachedData())
             .andThen(archiver.getData())
             .test()
-            .assertValue(data);
+            .assertValue(data)
     }
 
     @Test
@@ -127,7 +127,7 @@ class ArchiverTest : LucaUnitTest() {
             .andThen(injectUnCachedData())
             .andThen(archiver.getData())
             .test()
-            .assertValueCount(0);
+            .assertValueCount(0)
     }
 
     @Test
@@ -152,7 +152,7 @@ class ArchiverTest : LucaUnitTest() {
             .andThen(injectUnCachedData())
             .andThen(archiver.getData())
             .test()
-            .assertValueCount(1);
+            .assertValueCount(1)
     }
 
     private fun injectUnCachedData(timestamp: Long = 0): Completable {
@@ -191,8 +191,8 @@ class ArchiverTest : LucaUnitTest() {
 
         override fun toString(): String {
             return "ArchivedTestData{" +
-                    "data=" + dataList +
-                    '}'
+                "data=" + dataList +
+                '}'
         }
     }
 

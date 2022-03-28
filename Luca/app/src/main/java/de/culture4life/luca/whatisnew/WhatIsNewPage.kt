@@ -8,4 +8,3 @@ data class WhatIsNewPage(
     val heading: String,
     val description: String
 )
-

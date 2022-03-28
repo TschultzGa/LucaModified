@@ -2,11 +2,13 @@ package de.culture4life.luca.testtools
 
 import androidx.fragment.app.Fragment
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
 import de.culture4life.luca.preference.EncryptedSharedPreferencesProvider
 import de.culture4life.luca.testtools.rules.*
+import io.reactivex.rxjava3.disposables.CompositeDisposable
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -27,7 +29,8 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
         .around(mockWebServerRule)
         .around(fragmentScenarioRule)
 
-    val applicationContext = ApplicationProvider.getApplicationContext<LucaApplication>()
+    val applicationContext: LucaApplication = ApplicationProvider.getApplicationContext()
+    val testDisposable = CompositeDisposable()
 
     @Before
     fun setupLucaFragmentTest() {
@@ -52,6 +55,8 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
     fun cleanupLucaFragmentTest() {
         // Attention! App state should be cleaned up before each test to ensure previous runs didn't
         // left stuff behind which would affect this run. See setup docs for more details.
+
+        testDisposable.dispose()
     }
 
     private fun clearSharedPreferences() {
@@ -66,5 +71,22 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
     protected open fun <ManagerType : Manager> getInitializedManager(manager: ManagerType): ManagerType {
         manager.initialize(applicationContext).blockingAwait()
         return manager
+    }
+
+    /**
+     * No one likes it but for fast feedback, we need a sleep as first step sometimes.
+     *
+     * Always try to find a different solution! e.g. IdlingResources
+     *
+     * At the moment we can't wait for rx delayed execution automatically.
+     * https://github.com/square/RxIdler/issues/9
+     */
+    fun waitFor(milliseconds: Long) {
+        // First let all current task finish to ensure the delay is created.
+        Espresso.onIdle()
+        FixRobolectricIdlingResource.waitForIdle()
+
+        // Then wait to ensure delay time is over.
+        Thread.sleep(milliseconds)
     }
 }

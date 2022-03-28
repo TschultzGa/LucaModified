@@ -69,7 +69,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     }
 
     private void initializeDeleteHistoryViews() {
-        binding.editHistoryActionBarMenuImageView.setOnClickListener(l -> safeNavigateFromNavController(R.id.historyEditFragment));
+        binding.editHistoryActionBarMenuImageView.setOnClickListener(l -> safeNavigateFromNavController(R.id.action_historyFragment_to_historyEditFragment));
     }
 
     private void initializeHistoryItemsViews() {
@@ -77,7 +77,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
         historyListAdapter = new HistoryListAdapter(getContext(), binding.historyListView.getId(), warningLevelFilter == NO_WARNING_LEVEL_FILTER);
         historyListAdapter.setItemClickHandler(new HistoryListAdapter.ItemClickHandler() {
             @Override
-            public void showPrivateMeetingDetails(@NonNull HistoryListItem item) {
+            public void showPrivateMeetingDetails(@NonNull HistoryListItem.MeetingEndedListItem item) {
                 Bundle bundle = new Bundle();
                 MeetingHistoryItem dataListItem = MeetingHistoryItem.from(getContext(), item);
                 bundle.putSerializable(MeetingHistoryDetailFragment.KEY_PRIVATE_MEETING_ITEM, dataListItem);
@@ -85,13 +85,22 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
             }
 
             @Override
-            public void showAccessedDataDetails(@NonNull HistoryListItem item) {
+            public void showAccessedDataDetails(@NonNull HistoryListItem.CheckOutListItem item) {
                 viewModel.onShowAccessedDataRequested(item.getAccessedTraceData(), warningLevelFilter);
             }
 
             @Override
             public void showTraceInformation(@NonNull HistoryListItem item) {
-                showHistoryItemDetailsDialog(item, item.getAdditionalTitleDetails());
+                if (item instanceof HistoryListItem.CheckOutListItem) {
+                    HistoryListItem.CheckOutListItem checkOutListItem = (HistoryListItem.CheckOutListItem) item;
+                    showHistoryItemDetailsDialog(item, checkOutListItem.getAdditionalTitleDetails());
+                } else if (item instanceof HistoryListItem.MeetingEndedListItem) {
+                    HistoryListItem.MeetingEndedListItem meetingEndedListItem = (HistoryListItem.MeetingEndedListItem) item;
+                    showHistoryItemDetailsDialog(item, meetingEndedListItem.getAdditionalTitleDetails());
+                } else if (item instanceof HistoryListItem.DataSharedListItem) {
+                    HistoryListItem.DataSharedListItem dataSharedListItem = (HistoryListItem.DataSharedListItem) item;
+                    showHistoryItemDetailsDialog(item, dataSharedListItem.getAdditionalTitleDetails());
+                }
             }
 
             @Override
@@ -149,7 +158,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
         });
     }
 
-    private void showHistoryItemDetailsDialog(@NonNull HistoryListItem item, String additionalDetails) {
+    protected void showHistoryItemDetailsDialog(@NonNull HistoryListItem item, String additionalDetails) {
         new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
                 .setTitle(item.getTitle())
                 .setMessage(additionalDetails)

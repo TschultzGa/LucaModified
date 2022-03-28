@@ -37,6 +37,8 @@ public class ViewError {
 
     private boolean isExpected;
 
+    private boolean isCancelable = true;
+
     public ViewError(@NonNull String title, @NonNull String description) {
         this.title = title;
         this.description = description;
@@ -134,6 +136,14 @@ public class ViewError {
         isExpected = expected;
     }
 
+    public boolean isCancelable() {
+        return isCancelable;
+    }
+
+    public void setCancelable(boolean cancelable) {
+        isCancelable = cancelable;
+    }
+
     private static boolean isGenericException(@NonNull Throwable throwable) {
         return throwable instanceof NullPointerException;
     }
@@ -204,6 +214,7 @@ public class ViewError {
         private boolean removeWhenShown;
         private boolean canBeShownAsNotification;
         private boolean isExpected;
+        private boolean isCancelable = true;
 
         public Builder(@NonNull Context context) {
             this.context = context;
@@ -272,6 +283,12 @@ public class ViewError {
             return this;
         }
 
+        @NonNull
+        public Builder setNotCancelable() {
+            isCancelable = false;
+            return this;
+        }
+
         public ViewError build() {
             if (title == null) {
                 throw new IllegalStateException("No error title set");
@@ -288,6 +305,7 @@ public class ViewError {
             viewError.setRemoveWhenShown(removeWhenShown);
             viewError.setCanBeShownAsNotification(canBeShownAsNotification);
             viewError.setExpected(isExpected);
+            viewError.setCancelable(isCancelable);
 
             return viewError;
         }

@@ -13,7 +13,7 @@ class AccessedDataListAdapter(context: Context, resource: Int) :
     ArrayAdapter<AccessedDataListItem>(context, resource) {
 
     private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)
-            as LayoutInflater
+        as LayoutInflater
 
     fun setHistoryItems(items: List<AccessedDataListItem>) {
         if (shouldUpdateDataSet(items)) {
@@ -51,5 +51,4 @@ class AccessedDataListAdapter(context: Context, resource: Int) :
         }
         return view
     }
-
 }

@@ -5,7 +5,6 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.registration.ConnectKritisData
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildViewModel
-import de.culture4life.luca.util.StringSanitizeUtil
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable

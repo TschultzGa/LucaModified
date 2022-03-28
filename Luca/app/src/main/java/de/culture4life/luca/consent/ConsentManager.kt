@@ -38,7 +38,7 @@ open class ConsentManager(
     }
 
     fun getConsentAndChanges(id: String): Observable<Consent> {
-        return getOrCreateConsentSubject(id)
+        return Observable.defer { getOrCreateConsentSubject(id) }
     }
 
     fun persistConsent(consent: Consent): Completable {
@@ -129,8 +129,7 @@ open class ConsentManager(
         const val ID_IMPORT_DOCUMENT = "import_document"
         const val ID_INCLUDE_ENTRY_POLICY = "include_entry_policy"
         const val ID_POSTAL_CODE_MATCHING = "postal_code_matching"
+        const val ID_OPEN_VENUE_URL = "open_venue_url"
         private const val KEY_CONSENT_PREFIX = "consent_"
-
     }
-
 }

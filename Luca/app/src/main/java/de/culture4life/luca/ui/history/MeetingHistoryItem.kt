@@ -14,7 +14,7 @@ class MeetingHistoryItem(
     companion object {
 
         @JvmStatic
-        fun from(context: Context, item: HistoryListItem): MeetingHistoryItem {
+        fun from(context: Context, item: HistoryListItem.MeetingEndedListItem): MeetingHistoryItem {
             with(context) {
                 return MeetingHistoryItem(
                     getString(R.string.meeting_heading),
@@ -26,5 +26,4 @@ class MeetingHistoryItem(
             }
         }
     }
-
 }

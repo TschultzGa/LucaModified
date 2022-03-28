@@ -5,7 +5,6 @@ import de.culture4life.luca.databinding.FragmentConsentBinding
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildFragment
 import de.culture4life.luca.ui.lucaconnect.LucaConnectBottomSheetViewModel
 
-
 class ConsentFragment : BaseFlowChildFragment<ConsentViewModel, LucaConnectBottomSheetViewModel>() {
 
     private lateinit var binding: FragmentConsentBinding

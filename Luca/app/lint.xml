@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- TODO Should be fixed by updating AGP https://issuetracker.google.com/issues/203123034 -->
+    <issue id="UnusedIds" severity="ignore" />
+    <issue id="DuplicateStrings" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+</lint>

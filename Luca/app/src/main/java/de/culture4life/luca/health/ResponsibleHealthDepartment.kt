@@ -31,7 +31,7 @@ data class ResponsibleHealthDepartment(
     @SerializedName("postalCode")
     val postalCode: String,
 
-    ) {
+) {
 
     @Expose
     @SerializedName("updateTimestamp")
@@ -63,5 +63,4 @@ data class ResponsibleHealthDepartment(
             return claims["key"] as String
         }
     }
-
 }

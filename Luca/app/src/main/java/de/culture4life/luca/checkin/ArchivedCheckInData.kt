@@ -23,8 +23,7 @@ class ArchivedCheckInData(
 
     override fun toString(): String {
         return "ArchivedCheckInData{" +
-                "checkIns=" + checkIns +
-                '}'
+            "checkIns=" + checkIns +
+            '}'
     }
-
 }

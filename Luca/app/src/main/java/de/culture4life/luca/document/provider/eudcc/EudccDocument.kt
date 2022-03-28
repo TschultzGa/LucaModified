@@ -79,7 +79,7 @@ class EudccDocument(
             with(result.greenCertificate) {
                 hashableEncodedData = tests?.getOrNull(0)?.certificateIdentifier
                     ?: vaccinations?.getOrNull(0)?.certificateIdentifier
-                            ?: recoveryStatements?.getOrNull(0)?.certificateIdentifier
+                    ?: recoveryStatements?.getOrNull(0)?.certificateIdentifier
                 hashableEncodedData += vaccinations?.getOrNull(0)?.doseNumber ?: ""
                 firstName = person.givenName
                 lastName = person.familyName
@@ -167,7 +167,7 @@ class EudccDocument(
                         Procedure.Type.RECOVERY,
                         statement.dateOfFirstPositiveTest.parseDate(),
                         1,
-                        1  // assuming we only need a single recovery to be valid
+                        1 // assuming we only need a single recovery to be valid
                     )
                     procedures.add(procedure)
                 }

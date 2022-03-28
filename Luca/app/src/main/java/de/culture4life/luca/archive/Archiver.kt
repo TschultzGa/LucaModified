@@ -101,5 +101,4 @@ class Archiver<T>(
     private fun TimestampHelper<T>.compare(data1: T, data2: T): Int {
         return compareValues(getTimestamp(data1), getTimestamp(data2))
     }
-
 }

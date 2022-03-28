@@ -289,7 +289,6 @@
 
     <!-- Venues -->
     <string name="venue_heading">@string/dummy_heading</string>
-    <string name="venue_check_in_time">Check-in:    <xliff:g example="18.08.2020 – 19:23" id="time">%1$s</xliff:g> <b>Uhr</b></string>
     <string name="venue_current_stay_timer_heading">Aktueller Aufenthalt</string>
 
     <string name="venue_property_table">Tisch</string>
@@ -357,6 +356,7 @@
     <!-- Venue URLs -->
     <string name="venue_url_consent_title">Externen Link öffnen</string>
     <string name="venue_url_consent_description">Du bist dabei, <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g>\'s <xliff:g example="Website" id="urlType">%2$s</xliff:g> zu öffnen. Dieser Link wird von dem luca Standort, an dem du eingecheckt bist, zur Verfügung gestellt. luca hat keine Kontrolle über den Inhalt. Der folgende Link wird geöffnet:\n\n<xliff:g example="https://nexenio.com" id="url">%3$s</xliff:g></string>
+    <string name="venue_url_consent_do_not_show_again_default_text">Zukünftig nicht mehr fragen und Einstellung merken.</string>
     <string name="venue_url_report_title">Unangemessene Inhalte melden</string>
     <string name="venue_url_report_description">Mit dieser E-Mail möchte ich die Inhalte von folgendem Standort melden: <xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g> (<xliff:g example="8b212727-b90f-449b-a347-098c38c2f299" id="locationId">%2$s</xliff:g>).\n\nDer Standort hat unangemessene Inhalte über die folgenden Links zur Verfügung gestellt:\n<xliff:g example="- https://luca-app.de/" id="providedUrls">%3$s</xliff:g>\n\nDie Inhalte sind aus folgenden Grund unangemessen:\nBitte ergänze weswegen du die Links meldest.</string>
     <string name="venue_url_clipboard_label"><xliff:g example="neXenio Office" id="locationName">%1$s</xliff:g>\'s <xliff:g example="Website" id="urlType">%2$s</xliff:g></string>
@@ -502,7 +502,6 @@
     <string name="appointment_action">Termin buchen</string>
     <string name="document_import_action">Dokument Hinzufügen</string>
     <string name="document_import_anyway_action">Trotzdem importieren</string>
-    <string name="document_import_hint">Scanne den QR-Code deines Dokuments, um dieses zur App hinzuzufügen.</string>
     <string name="document_import_success_message">Das Dokument wurde importiert</string>
     <string name="document_import_error_title">Das Dokument konnte nicht importiert werden</string>
     <string name="document_import_error_name_mismatch_description">Es konnte nicht validiert werden, dass dieses Dokument für dich erstellt wurde. Bitte prüfe, ob dein Name richtig in der App hinterlegt ist.</string>
@@ -525,22 +524,19 @@
     <string name="document_outcome">Testergebnis <xliff:g example="Positiv" id="outcome">%1$s</xliff:g></string>
     <string name="document_outcome_negative">Negativ</string>
     <string name="document_outcome_positive">Positiv</string>
-    <string name="document_outcome_partially_immune">Teilweise Immunisiert %1$s</string>
-    <string name="document_outcome_partially_vaccinated">Partieller Impfschutz %1$s</string>
-    <string name="document_outcome_fully_vaccinated">Vollständiger Impfschutz %1$s</string>
-    <string name="document_outcome_fully_vaccinated_in">Vollständiger Impfschutz in %1$s</string>
-    <string name="document_outcome_fully_recovered">GENESENENNACHWEIS</string>
-    <string name="document_outcome_fully_recovered_in">Genesen in %1$s</string>
     <string name="document_outcome_unknown">Unbekannt</string>
     <string name="document_type_fast">Schnelltest</string>
     <string name="document_type_pcr">PCR Test</string>
-    <string name="document_type_vaccination">IMPFNACHWEIS</string>
+    <string name="document_type_vaccination">IMPFNACHWEIS %1$s</string>
+    <string name="document_type_recovery">GENESENENNACHWEIS</string>
     <string name="document_type_unknown">@string/document_outcome_unknown</string>
     <string name="document_type_of_document_label">Testart:</string>
     <string name="document_issued">Ausgestellt:</string>
-    <string name="vaccination_date_label">Impfdatum:</string>
+    <string name="vaccination_valid_from_date_label">Gültig ab:</string>
+    <string name="vaccination_done_before_label">Geimpft vor:</string>
+    <string name="recovery_done_before_label">Genesen vor:</string>
+    <string name="testing_done_before_label">Getestet vor:</string>
     <string name="document_issued_at">Datum:</string>
-    <string name="document_created_before">Erstellt vor:</string>
     <string name="document_valid_until">Gültig bis:</string>
     <string name="document_lab_issuer">Aussteller:</string>
     <string name="document_lab_tester">Tester:</string>
@@ -612,6 +608,14 @@
         <item formatted="true" quantity="one">%d Tag</item>
         <item formatted="true" quantity="other">%d Tagen</item>
     </plurals>
+    <plurals name="time_plural_weeks">
+        <item formatted="true" quantity="one">%d Woche</item>
+        <item formatted="true" quantity="other">%d Wochen</item>
+    </plurals>
+    <plurals name="time_plural_months">
+        <item formatted="true" quantity="one">%d Monat</item>
+        <item formatted="true" quantity="other">%d Monate</item>
+    </plurals>
 
     <!-- Account tab -->
     <string name="account_tab_section_settings">Einstellungen</string>
@@ -634,6 +638,9 @@
     <string name="account_tab_item_app_version">App Version</string>
     <string name="account_tab_item_app_data">App Daten</string>
     <string name="account_tab_item_source_code">Quelltext</string>
+    <string name="account_tab_item_direct_check_in">Direkter Check-in</string>
+    <string name="account_tab_item_entry_policy">2G/3G-Status</string>
+    <string name="account_tab_item_voluntary_check_in">Freiwilliger Check-in</string>
 
     <string name="account_tab_item_delete_account">Account löschen</string>
 
@@ -642,6 +649,23 @@
     <!-- Postal code settings -->
     <string name="postal_code_settings_switch_title">Postleitzahl-Abgleich aktivieren</string>
     <string name="postal_code_settings_description">Manche unserer (neuen) Features und Funktionen sind standortabhängig. Aktiviere den Postleitzahl-Abgleich, um Informationen zu standortabhängigen Features zu erhalten.</string>
+
+    <!-- Direct check-in settings -->
+    <string name="direct_check_in_settings_title">@string/account_tab_item_direct_check_in</string>
+    <string name="direct_check_in_settings_description">Direkt einchecken, ohne den Check-in für die jeweilige Location jedes Mal zu bestätigen? Aktiviere den direkten Check-in hier. Diese Einstellung kannst du jederzeit widerrufen.</string>
+    <string name="direct_check_in_settings_switch_text">Direkt einchecken</string>
+
+    <!-- Entry policy settings -->
+    <string name="entry_policy_settings_title">@string/account_tab_item_entry_policy</string>
+    <string name="entry_policy_settings_description">luca Standorte können Einlassregelungen haben, die einen Nachweis deines 2G/3G-Status erfordern. Wenn du dich dazu entscheidest, deinen 2G/3G-Status zu teilen, erhalten Standorte nur die Info, ob du ihre Einlassregelung erfüllst. Sie sehen deine Nachweise nicht. Hier im Account-Tab kannst du einstellen, ob du deinen 2G/3G-Status bei zukünftigen Check-Ins teilen möchtest.</string>
+    <string name="entry_policy_settings_switch_text">2G/3G-Status teilen</string>
+
+    <!-- Voluntary check-in settings -->
+    <string name="voluntary_check_in_settings_title">@string/account_tab_item_voluntary_check_in</string>
+    <string name="voluntary_check_in_settings_description">Aktivieren, wenn du deine ausgewählten Einstellungen für zukünftige Check-ins speichern möchtest. Du wirst dann automatisch eingecheckt, wenn der Check-in freiwillig ist. Dies erfolgt auf deiner Einwilligung gemäß Art. 6 (1) 1 a) DSGVO. Weitere Information zum Widerruf und Löschung findest du in unserer <a href="https://www.luca-app.de/app-privacy-policy/#data_privacy_app_C4_Checkin">Datenschutzerklärung</a>.\n\nHier im Account-Tab kannst du deine Check-in-Einstellungen jederzeit ändern.</string>
+    <string name="voluntary_check_in_settings_switch_text">Freiwilligen Check-in aktivieren</string>
+    <string name="voluntary_check_in_settings_share_contact_data_description">Aktiviere, wenn du bei zukünftigen Check-ins zusätzlich deine Kontaktdaten übermitteln möchtest.</string>
+    <string name="voluntary_check_in_settings_share_contact_data_switch_text">Kontaktdaten übermitteln</string>
 
     <!-- luca Connect settings -->
     <string name="luca_connect_settings_switch_title">luca Connect aktivieren</string>

@@ -440,6 +440,20 @@ class ConnectManagerTest : LucaUnitTest() {
         latestCertificates.assertValues(vaccination, recovery)
     }
 
+    @Test
+    fun `Responsible health department update triggers un-enrollment`() {
+        // Given
+        var unEnrollments = 0
+        whenever(connectManager.unEnroll()).thenReturn(Completable.fromAction { unEnrollments++ })
+
+        // When
+        healthDepartmentManager.deleteResponsibleHealthDepartment().blockingAwait()
+        triggerScheduler()
+
+        // Then
+        assertEquals(1, unEnrollments)
+    }
+
     private fun givenEnrolled(isEnrolled: Boolean) {
         whenever(connectManager.getEnrollmentStatusAndChanges()).then { Observable.just(isEnrolled) }
     }

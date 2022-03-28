@@ -64,18 +64,20 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
 
     private fun registerNewUser(): Completable {
         return cryptoManager.deleteKeyPair(RegistrationManager.ALIAS_GUEST_KEY_PAIR)
-            .andThen(Single.fromCallable {
-                RegistrationData().apply {
-                    firstName = "Erika"
-                    lastName = "Mustermann"
-                    phoneNumber = "+491711234567"
-                    email = "erika.mustermann@example.de"
-                    street = "Street"
-                    houseNumber = "123"
-                    postalCode = "12345"
-                    city = "City"
+            .andThen(
+                Single.fromCallable {
+                    RegistrationData().apply {
+                        firstName = "Erika"
+                        lastName = "Mustermann"
+                        phoneNumber = "+491711234567"
+                        email = "erika.mustermann@example.de"
+                        street = "Street"
+                        houseNumber = "123"
+                        postalCode = "12345"
+                        city = "City"
+                    }
                 }
-            })
+            )
             .flatMapCompletable(registrationManager::persistRegistrationData)
             .andThen(registrationManager.registerUser())
             .doOnSubscribe { Timber.i("Registering user") }
@@ -98,5 +100,4 @@ class RegistrationManagerTest : LucaInstrumentationTest() {
             .andThen(cryptoManager.deleteKeyPair(RegistrationManager.ALIAS_GUEST_KEY_PAIR))
             .doOnSubscribe { Timber.i("Deleting user") }
     }
-
 }

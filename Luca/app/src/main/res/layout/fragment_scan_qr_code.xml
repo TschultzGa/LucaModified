@@ -35,98 +35,15 @@
             android:text="@string/luca_connect_add_certificate_scan_qr_code_description"
             app:layout_constraintTop_toBottomOf="@id/scanQrCodeTitleTextView" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/cameraContainerConstraintLayout"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_marginTop="@dimen/spacing_large"
-            android:background="@drawable/bg_camera_box"
-            android:padding="3dp"
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/qrCodeScanner"
+            android:name="de.culture4life.luca.ui.BaseQrCodeFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             app:layout_constraintDimensionRatio="h,1:1"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/scanQrCodeDescriptionTextView">
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:cardBackgroundColor="@color/scan_qr_code_background">
-
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                    <androidx.camera.view.PreviewView
-                        android:id="@+id/cameraPreviewView"
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:contentDescription="@string/qr_code_scanner"
-                        android:keepScreenOn="true"
-                        android:scaleType="fitCenter"
-                        android:visibility="gone"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <LinearLayout
-                        android:id="@+id/startCameraLinearLayout"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/check_in_activate_camera_action"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintWidth_percent="0.6">
-
-                        <ImageView
-                            android:id="@+id/startCameraImageView"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:src="@drawable/ic_camera" />
-
-                        <TextView
-                            android:id="@+id/startCameraTextView"
-                            style="@style/TextAppearance.Luca.Body2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/spacing_default"
-                            android:text="@string/check_in_activate_camera_action"
-                            android:textAlignment="center"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                    </LinearLayout>
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/checkingInLoadingLayout"
-                        android:layout_width="0dp"
-                        android:layout_height="0dp"
-                        android:background="?attr/colorSurface"
-                        android:visibility="gone"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
-
-                        <ProgressBar
-                            style="@style/LoadingSpinner"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            app:layout_constraintTop_toBottomOf="@id/scanQrCodeDescriptionTextView" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

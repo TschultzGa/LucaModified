@@ -39,5 +39,4 @@ data class KeyIssuerData(
         }
 
     var signedJwt: String? = null
-
 }

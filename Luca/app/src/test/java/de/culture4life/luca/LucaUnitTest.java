@@ -1,9 +1,12 @@
 package de.culture4life.luca;
 
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,7 +15,8 @@ import de.culture4life.luca.testtools.rules.LoggingRule;
 import de.culture4life.luca.testtools.rules.MemoryUsageRule;
 import de.culture4life.luca.testtools.rules.ReplaceRxJavaSchedulersRule;
 
-public class LucaUnitTest {
+@RunWith(AndroidJUnit4.class)
+public abstract class LucaUnitTest {
 
     public ReplaceRxJavaSchedulersRule.TestSchedulersRule rxSchedulersRule = ReplaceRxJavaSchedulersRule.Companion.manualExecution();
 
@@ -21,6 +25,7 @@ public class LucaUnitTest {
             .around(new MemoryUsageRule())
             .around(new FixNestedSpiesMemoryLeakRule())
             .around(new LoggingRule())
+            .around(new InstantTaskExecutorRule())
             .around(rxSchedulersRule);
 
     protected LucaApplication application;

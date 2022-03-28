@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="deeplink_check_in" translatable="false">luca://check-in</string>
+    <string name="deeplink_messages" translatable="false">luca://messages</string>
+    <string name="deeplink_messages_detail" translatable="false">luca://messages/{id}</string>
+    <string name="deeplink_connect" translatable="false">luca://connect</string>
+    <string name="deeplink_postal_code" translatable="false">luca://postal-code</string>
+</resources>

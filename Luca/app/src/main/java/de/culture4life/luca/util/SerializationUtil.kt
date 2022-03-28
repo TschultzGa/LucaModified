@@ -67,7 +67,6 @@ object SerializationUtil {
     fun fromBase32(base32: String): Single<ByteArray> {
         return Single.fromCallable { BASE_32.decode(base32) }
     }
-
 }
 
 fun Any.serializeToJson(): String {

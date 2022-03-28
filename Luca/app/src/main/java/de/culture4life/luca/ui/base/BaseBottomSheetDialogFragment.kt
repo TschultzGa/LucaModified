@@ -17,13 +17,14 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
 import de.culture4life.luca.ui.ViewError
+import de.culture4life.luca.ui.ViewEvent
+import de.culture4life.luca.ui.dialog.BaseDialogContent
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import timber.log.Timber
-
 
 abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetViewModel> : BottomSheetDialogFragment() {
 
@@ -98,6 +99,7 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
     protected open fun initializeViews() {
         observeOnDismissBottomSheet()
         observeErrors()
+        observeDialogRequests()
     }
 
     protected open fun observeErrors() {
@@ -159,4 +161,11 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
         }
     }
 
+    protected open fun observeDialogRequests() {
+        viewModel.dialogRequestViewEvent.observe(viewLifecycleOwner) { dialogRequest: ViewEvent<BaseDialogContent?> ->
+            if (!dialogRequest.hasBeenHandled()) {
+                BaseDialogFragment(requireContext(), dialogRequest.valueAndMarkAsHandled).show()
+            }
+        }
+    }
 }

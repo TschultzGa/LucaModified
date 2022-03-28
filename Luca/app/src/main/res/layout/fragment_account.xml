@@ -52,6 +52,31 @@
                         app:startIconSrc="@drawable/ic_person_outline"
                         app:text="@string/account_tab_item_edit_contact_data" />
 
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/directCheckInItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:startIconSrc="@drawable/ic_checkmark_circle_white"
+                        app:text="@string/account_tab_item_direct_check_in" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/entryPolicyItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:startIconSrc="@drawable/ic_seal_white"
+                        app:text="@string/account_tab_item_entry_policy" />
+
+                    <de.culture4life.luca.ui.compound.AccountItemView
+                        android:id="@+id/voluntaryCheckInItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:startIconSrc="@drawable/ic_questionmark_white"
+                        app:text="@string/account_tab_item_voluntary_check_in" />
+
                     <de.culture4life.luca.ui.compound.AccountItemView
                         android:id="@+id/postalCodeItem"
                         android:layout_width="match_parent"

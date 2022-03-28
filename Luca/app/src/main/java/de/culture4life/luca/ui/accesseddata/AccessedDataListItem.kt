@@ -8,7 +8,6 @@ import de.culture4life.luca.util.getReadableDate
 import de.culture4life.luca.util.getReadableTime
 import java.io.Serializable
 
-
 data class AccessedDataListItem(
     val traceId: String,
     val warningLevel: Int,
@@ -48,7 +47,5 @@ data class AccessedDataListItem(
                 )
             }
         }
-
     }
-
 }

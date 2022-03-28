@@ -6,6 +6,7 @@ import de.culture4life.luca.databinding.FragmentLucaConnectBinding
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.lucaconnect.LucaConnectBottomSheetDialogFragment
 import de.culture4life.luca.ui.lucaconnect.LucaConnectBottomSheetViewModel
+import de.culture4life.luca.util.setCheckedImmediately
 import io.reactivex.rxjava3.core.Completable
 
 class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
@@ -25,10 +26,12 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
 
     override fun initializeViewModel(): Completable {
         return super.initializeViewModel()
-            .andThen(Completable.fromAction {
-                lucaConnectBottomSheetViewModel = ViewModelProvider(requireActivity())
-                    .get(LucaConnectBottomSheetViewModel::class.java)
-            })
+            .andThen(
+                Completable.fromAction {
+                    lucaConnectBottomSheetViewModel = ViewModelProvider(requireActivity())
+                        .get(LucaConnectBottomSheetViewModel::class.java)
+                }
+            )
     }
 
     override fun initializeViews() {
@@ -38,9 +41,8 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
     }
 
     private fun initializeObservers() {
-        observe(viewModel.enrollmentStatus) {
-            binding.lucaConnectToggle.isChecked = it
-        }
+        binding.lucaConnectToggle.setCheckedImmediately(viewModel.enrollmentStatus.value)
+        observe(viewModel.enrollmentStatus) { binding.lucaConnectToggle.isChecked = it }
         observe(viewModel.openEnrollmentFlow) {
             if (!it.hasBeenHandled() && it.valueAndMarkAsHandled) {
                 openEnrollmentFlow()
@@ -55,5 +57,4 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
     private fun openEnrollmentFlow() {
         lucaConnectBottomSheetFragment.show(parentFragmentManager, LucaConnectBottomSheetDialogFragment.TAG)
     }
-
 }

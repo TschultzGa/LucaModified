@@ -50,5 +50,4 @@ class MessageDetailViewModel(application: Application) : BaseViewModel(applicati
             .doOnError { Timber.w("Could not get message list item from arguments: %s", it.toString()) }
             .onErrorComplete()
     }
-
 }

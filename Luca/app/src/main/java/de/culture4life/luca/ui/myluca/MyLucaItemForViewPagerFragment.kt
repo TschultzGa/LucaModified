@@ -25,7 +25,8 @@ class MyLucaItemForViewPagerFragment : Fragment() {
                     itemViewHolder.show(item)
                     itemViewHolder.setListeners(
                         { viewModel.onItemExpandToggleRequested(item) },
-                        { viewModel.onItemDeletionRequested(item) })
+                        { viewModel.onItemDeletionRequested(item) }
+                    )
                 }
             }
         }
@@ -41,8 +42,4 @@ class MyLucaItemForViewPagerFragment : Fragment() {
             }
         }
     }
-
 }
-
-
-

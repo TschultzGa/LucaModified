@@ -1,6 +1,6 @@
 package de.culture4life.luca.whatisnew
 
-import androidx.annotation.IdRes
+import android.net.Uri
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
 import de.culture4life.luca.util.TimeUtil
@@ -29,7 +29,5 @@ data class WhatIsNewMessage(
 
     val content: String? = null,
 
-    @IdRes
-    val destination: Int? = null
-
+    val destination: Uri? = null
 )

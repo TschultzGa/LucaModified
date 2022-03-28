@@ -46,14 +46,11 @@ open class HistoryEditFragment : BaseFragment<HistoryViewModel>() {
         historyListAdapter.setEditMode(true)
         historyListAdapter.itemClickHandler = object : ItemClickHandler {
 
-            override fun showPrivateMeetingDetails(item: HistoryListItem) {
-            }
+            override fun showAccessedDataDetails(item: HistoryListItem.CheckOutListItem) {}
 
-            override fun showAccessedDataDetails(item: HistoryListItem) {
-            }
+            override fun showTraceInformation(item: HistoryListItem) {}
 
-            override fun showTraceInformation(item: HistoryListItem) {
-            }
+            override fun showPrivateMeetingDetails(item: HistoryListItem.MeetingEndedListItem) {}
 
             override fun onItemCheckBoxToggled(item: HistoryListItem, isChecked: Boolean) {
                 item.isSelectedForDeletion = isChecked
@@ -80,30 +77,34 @@ open class HistoryEditFragment : BaseFragment<HistoryViewModel>() {
     }
 
     private fun showClearHistoryConfirmationDialog() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.history_clear_title)
-            .setMessage(R.string.history_clear_description)
-            .setPositiveButton(R.string.action_delete) { _, _ ->
-                application.historyManager.clearItems()
-                    .subscribeOn(Schedulers.io())
-                    .subscribe(
-                        { Timber.i("History cleared") },
-                        { Timber.w("Unable to clear history: %s", it.toString()) }
-                    )
-            }
-            .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() })
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.history_clear_title)
+                .setMessage(R.string.history_clear_description)
+                .setPositiveButton(R.string.action_delete) { _, _ ->
+                    application.historyManager.clearItems()
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(
+                            { Timber.i("History cleared") },
+                            { Timber.w("Unable to clear history: %s", it.toString()) }
+                        )
+                }
+                .setNegativeButton(R.string.action_cancel) { dialog, _ -> dialog.dismiss() }
+        )
             .show()
     }
 
     private fun showDeletedSelectedHistoryItemsDialog() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.history_delete_selected_title)
-            .setMessage(R.string.history_delete_selected_description)
-            .setPositiveButton(R.string.action_delete) { _, _ ->
-                viewModel.onDeleteSelectedHistoryListItemsRequested()
-                binding.primaryActionButton.isEnabled = false
-            }
-            .setNeutralButton(R.string.action_cancel) { dialogInterface, _ -> dialogInterface.cancel() })
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.history_delete_selected_title)
+                .setMessage(R.string.history_delete_selected_description)
+                .setPositiveButton(R.string.action_delete) { _, _ ->
+                    viewModel.onDeleteSelectedHistoryListItemsRequested()
+                    binding.primaryActionButton.isEnabled = false
+                }
+                .setNeutralButton(R.string.action_cancel) { dialogInterface, _ -> dialogInterface.cancel() }
+        )
             .show()
     }
 }

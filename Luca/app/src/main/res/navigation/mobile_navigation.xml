@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mainNavigation"
-    app:startDestination="@+id/checkInFragment">
+    app:startDestination="@+id/myLucaFragment">
 
     <!-- My luca tab -->
 
@@ -21,6 +21,9 @@
         <action
             android:id="@+id/action_myLucaFragment_to_messageDetailFragment"
             app:destination="@id/messageDetailFragment" />
+        <action
+            android:id="@+id/action_myLucaFragment_to_checkInFragment"
+            app:destination="@id/checkInFragment" />
     </fragment>
 
     <fragment
@@ -54,6 +57,11 @@
             app:launchSingleTop="true"
             app:popUpTo="@id/mainNavigation"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_checkInFragment_to_myLucaFragment"
+            app:destination="@id/myLucaFragment" />
+
+        <deepLink app:uri="@string/deeplink_check_in" />
     </fragment>
 
     <fragment
@@ -144,6 +152,9 @@
         <action
             android:id="@+id/action_messagesFragment_to_postalCodeFragment"
             app:destination="@id/postalCodeFragment" />
+
+        <deepLink app:uri="@string/deeplink_messages" />
+        <deepLink app:uri="@string/deeplink_messages_detail" />
     </fragment>
 
     <fragment
@@ -179,6 +190,15 @@
             android:id="@+id/action_accountFragment_to_postalCodeFragment"
             app:destination="@id/postalCodeFragment" />
         <action
+            android:id="@+id/action_accountFragment_to_voluntaryCheckInFragment"
+            app:destination="@id/voluntaryCheckInFragment" />
+        <action
+            android:id="@+id/action_accountFragment_to_directCheckInFragment"
+            app:destination="@id/directCheckInFragment" />
+        <action
+            android:id="@+id/action_accountFragment_to_entryPolicyPreferencesFragment"
+            app:destination="@id/entryPolicyPreferencesFragment" />
+        <action
             android:id="@+id/action_accountFragment_to_lucaConnectFragment"
             app:destination="@id/lucaConnectFragment" />
         <action
@@ -193,13 +213,35 @@
         android:id="@+id/postalCodeFragment"
         android:name="de.culture4life.luca.ui.account.postalcode.PostalCodeFragment"
         android:label="@string/account_tab_item_postal_code"
-        tools:layout="@layout/fragment_postal_code" />
+        tools:layout="@layout/fragment_postal_code">
+        <deepLink app:uri="@string/deeplink_postal_code" />
+    </fragment>
 
     <fragment
         android:id="@+id/lucaConnectFragment"
         android:name="de.culture4life.luca.ui.account.lucaconnect.LucaConnectFragment"
         android:label="@string/account_tab_item_luca_connect"
-        tools:layout="@layout/fragment_luca_connect" />
+        tools:layout="@layout/fragment_luca_connect">
+        <deepLink app:uri="@string/deeplink_connect" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/entryPolicyPreferencesFragment"
+        android:name="de.culture4life.luca.ui.account.entrypolicy.EntryPolicyPreferencesFragment"
+        android:label="@string/account_tab_item_entry_policy"
+        tools:layout="@layout/fragment_entry_policy_preferences" />
+
+    <fragment
+        android:id="@+id/directCheckInFragment"
+        android:name="de.culture4life.luca.ui.account.directcheckin.DirectCheckInPreferencesFragment"
+        android:label="@string/account_tab_item_direct_check_in"
+        tools:layout="@layout/fragment_direct_check_in_preferences" />
+
+    <fragment
+        android:id="@+id/voluntaryCheckInFragment"
+        android:name="de.culture4life.luca.ui.account.voluntarycheckin.VoluntaryCheckInPreferencesFragment"
+        android:label="@string/voluntary_check_in_settings_title"
+        tools:layout="@layout/fragment_voluntary_checkin" />
 
     <fragment
         android:id="@+id/newsFragment"

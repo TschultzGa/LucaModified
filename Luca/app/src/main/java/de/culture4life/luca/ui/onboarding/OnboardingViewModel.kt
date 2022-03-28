@@ -50,7 +50,6 @@ class OnboardingViewModel(app: Application) : BaseViewModel(app) {
                     updateAsSideEffect(showInfoScreenLiveData, ViewEvent(true))
                 }
                 .addTo(modelDisposable)
-
         } else {
             if (!termsChecked) {
                 updateAsSideEffect(checkBoxErrorLiveData, ViewEvent(true))

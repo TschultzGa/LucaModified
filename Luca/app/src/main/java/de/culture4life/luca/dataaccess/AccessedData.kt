@@ -18,10 +18,9 @@ data class AccessedData(
         traceData = data
     }
 
-
     override fun toString(): String {
         return "AccessedData{" +
-                "traceData=" + traceData +
-                '}'
+            "traceData=" + traceData +
+            '}'
     }
 }

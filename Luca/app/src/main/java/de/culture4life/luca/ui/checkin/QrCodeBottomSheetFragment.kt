@@ -27,7 +27,6 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import timber.log.Timber
 
-
 class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
 
     private lateinit var sharedViewModel: QrCodeBottomSheetViewModel
@@ -149,10 +148,11 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun showIncludeEntryPolicyInfoDialog() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.check_in_include_entry_policy_title)
-            .setMessage(R.string.check_in_include_entry_policy_description)
-            .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.check_in_include_entry_policy_title)
+                .setMessage(R.string.check_in_include_entry_policy_description)
+                .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
         ).show()
     }
 
@@ -172,10 +172,11 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun showDocumentsInvalidError() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.check_in_documents_invalid_title)
-            .setMessage(R.string.check_in_documents_invalid_description)
-            .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.check_in_documents_invalid_title)
+                .setMessage(R.string.check_in_documents_invalid_description)
+                .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
         ).apply {
             setOnDismissListener { binding.includeEntryPolicySwitch.isChecked = false }
             show()
@@ -183,10 +184,11 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun showDocumentsUnavailableError() {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.check_in_documents_unavailable_title)
-            .setMessage(R.string.check_in_documents_unavailable_description)
-            .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.check_in_documents_unavailable_title)
+                .setMessage(R.string.check_in_documents_unavailable_description)
+                .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.cancel() }
         ).apply {
             setOnDismissListener { binding.includeEntryPolicySwitch.isChecked = false }
             show()
@@ -207,4 +209,3 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 }
-

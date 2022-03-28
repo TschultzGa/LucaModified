@@ -64,5 +64,4 @@ class AccessedDataFragment : BaseFragment<AccessedDataViewModel>() {
     companion object {
         const val KEY_TRACE_ID = "TraceId"
     }
-
 }

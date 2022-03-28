@@ -17,5 +17,4 @@ class MeetingHistoryDetailViewModel(application: Application) : BaseViewModel(ap
             .andThen(Maybe.fromCallable { arguments?.getSerializable(KEY_PRIVATE_MEETING_ITEM) as MeetingHistoryItem? })
             .flatMapCompletable { updateIfRequired(privateMeetingItem, it) }
     }
-
 }

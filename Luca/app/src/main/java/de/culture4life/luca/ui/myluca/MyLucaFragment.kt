@@ -5,26 +5,25 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
-import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.databinding.FragmentMyLucaBinding
 import de.culture4life.luca.databinding.LayoutTopSheetBinding
-import de.culture4life.luca.document.Document
 import de.culture4life.luca.registration.Person
-import de.culture4life.luca.ui.BaseQrCodeFragment
+import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.BaseQrCodeViewModel
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.myluca.MyLucaListAdapter.MyLucaListClickListener
+import de.culture4life.luca.ui.qrcode.AddCertificateFlowFragment
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
-import timber.log.Timber
 
-class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickListener {
+class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener {
 
     private val myLucaListAdapter = MyLucaListAdapter(this, this)
     private lateinit var binding: FragmentMyLucaBinding
@@ -49,11 +48,6 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         initializeMyLucaItemsViews()
         initializeImportViews()
         initializeBanners()
-    }
-
-    override fun initializeCameraPreview() {
-        super.initializeCameraPreview()
-        cameraPreviewView = binding.cameraPreviewView
     }
 
     private fun initializeMyLucaItemsViews() {
@@ -94,14 +88,9 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
 
     private fun initializeImportViews() {
         binding.appointmentsActionBarMenuImageView.setOnClickListener { viewModel.onAppointmentRequested() }
-        binding.primaryActionButton.setOnClickListener { toggleCameraPreview() }
+        binding.primaryActionButton.setOnClickListener { showAddCertificate() }
         observe(viewModel.isLoading) {
-            binding.loadingLayout.visibility = if (it) View.VISIBLE else View.GONE
-        }
-        observe(viewModel.parsedDocument) {
-            if (!it.hasBeenHandled()) {
-                showDocumentImportConsentDialog(it.valueAndMarkAsHandled)
-            }
+            binding.loadingIndicator.isVisible = it
         }
         observe(viewModel.addedDocument) {
             if (!it.hasBeenHandled()) {
@@ -112,11 +101,6 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         observe(viewModel.possibleCheckInData) {
             if (!it.hasBeenHandled()) {
                 showCheckInDialog(it.valueAndMarkAsHandled)
-            }
-        }
-        observe(viewModel.showBirthDateHint) {
-            if (!it.hasBeenHandled()) {
-                showDocumentImportBirthdayMismatchDialog(it.valueAndMarkAsHandled)
             }
         }
         observe(viewModel.bundle) { processBundle(it) }
@@ -171,103 +155,39 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         }
     }
 
-    private fun toggleCameraPreview() {
-        if (cameraPreviewDisposable == null || cameraPreviewDisposable!!.isDisposed) {
-            showCameraPreview(requestConsent = true, requestPermission = true)
-        } else {
-            hideCameraPreview()
-        }
-    }
-
-    override fun setCameraPreviewVisible(isVisible: Boolean) {
-        super.setCameraPreviewVisible(isVisible)
-        val cameraVisibility: Int
-        val contentVisibility: Int
-        val emptyStateVisibility: Int
-        if (isVisible) {
-            cameraVisibility = View.VISIBLE
-            contentVisibility = View.GONE
-            emptyStateVisibility = contentVisibility
-            binding.primaryActionButton.setText(R.string.action_cancel)
-        } else {
-            cameraVisibility = View.GONE
-            contentVisibility = View.VISIBLE
-            emptyStateVisibility = if (myLucaListAdapter.itemCount == 0) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
-            binding.primaryActionButton.setText(R.string.document_import_action)
-        }
-        binding.scanDocumentHintTextView.visibility = cameraVisibility
-        binding.cardView.visibility = cameraVisibility
-        binding.surfaceBackground.visibility = cameraVisibility
-        binding.myLucaRecyclerView.visibility = contentVisibility
-        binding.bannerScrollView.visibility = contentVisibility
-        binding.emptyStateScrollView.visibility = emptyStateVisibility
-    }
-
-    private fun showDocumentImportConsentDialog(document: Document) {
-        hideCameraPreview()
-        val consentManager = application.consentManager
-        consentManager.initialize(application)
-            .andThen(consentManager.requestConsentAndGetResult(ConsentManager.ID_IMPORT_DOCUMENT))
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { consent, _ ->
-                if (consent.approved) {
-                    viewModel.addDocumentIfBirthDatesMatch(document)
-                        .subscribeOn(Schedulers.io())
-                        .subscribe(
-                            { Timber.i("Document added: %s", document) },
-                            { Timber.w("Unable to add document: %s", it.toString()) }
-                        )
-                        .addTo(viewDisposable)
-                }
-            }
-    }
-
-    private fun showDocumentImportBirthdayMismatchDialog(document: Document) {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.document_import_error_different_birth_dates_title)
-            .setMessage(R.string.document_import_error_different_birth_dates_description)
-            .setPositiveButton(R.string.action_ok) { _, _ -> }
-            .setNeutralButton(R.string.document_import_anyway_action) { _, _ ->
-                viewModel.addDocument(document)
-                    .onErrorComplete()
-                    .subscribeOn(Schedulers.io())
-                    .subscribe()
-                    .addTo(viewDisposable)
-            })
-            .show()
+    private fun showAddCertificate() {
+        AddCertificateFlowFragment.newInstance().show(childFragmentManager, AddCertificateFlowFragment.TAG)
     }
 
     private fun showCheckInDialog(documentData: String) {
-        hideCameraPreview()
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.document_import_check_in_redirect_title)
-            .setMessage(R.string.document_import_check_in_redirect_description)
-            .setPositiveButton(R.string.action_continue) { _, _ ->
-                val bundle = Bundle()
-                bundle.putString(BaseQrCodeViewModel.BARCODE_DATA_KEY, documentData)
-                safeNavigateFromNavController(R.id.checkInFragment, bundle)
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.document_import_check_in_redirect_title)
+                .setMessage(R.string.document_import_check_in_redirect_description)
+                .setPositiveButton(R.string.action_continue) { _, _ ->
+                    val bundle = Bundle()
+                    bundle.putString(BaseQrCodeViewModel.BARCODE_DATA_KEY, documentData)
+                    safeNavigateFromNavController(R.id.action_myLucaFragment_to_checkInFragment, bundle)
+                }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> }
+        )
             .show()
     }
 
     private fun showDeleteDocumentDialog(myLucaListItem: MyLucaListItem) {
-        BaseDialogFragment(MaterialAlertDialogBuilder(requireContext())
-            .setTitle(myLucaListItem.getDeleteButtonText())
-            .setMessage(R.string.document_delete_confirmation_message)
-            .setPositiveButton(R.string.action_confirm) { _, _ ->
-                viewModel.deleteListItem(myLucaListItem)
-                    .onErrorComplete()
-                    .subscribeOn(Schedulers.io())
-                    .subscribe()
-                    .addTo(viewDisposable)
-            }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> })
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(myLucaListItem.getDeleteButtonText())
+                .setMessage(R.string.document_delete_confirmation_message)
+                .setPositiveButton(R.string.action_confirm) { _, _ ->
+                    viewModel.deleteListItem(myLucaListItem)
+                        .onErrorComplete()
+                        .subscribeOn(Schedulers.io())
+                        .subscribe()
+                        .addTo(viewDisposable)
+                }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> }
+        )
             .show()
     }
 
@@ -301,5 +221,4 @@ class MyLucaFragment : BaseQrCodeFragment<MyLucaViewModel>(), MyLucaListClickLis
         persons.addAll(viewModel.children.value!!)
         return persons
     }
-
 }

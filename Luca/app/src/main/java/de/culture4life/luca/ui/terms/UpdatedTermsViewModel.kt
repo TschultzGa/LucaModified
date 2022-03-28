@@ -17,22 +17,23 @@ class UpdatedTermsViewModel(application: Application) : BaseViewModel(applicatio
      * successful, show error dialog when an error occurred.
      */
     fun deleteAccount() {
-        modelDisposable.add(application.deleteAccount()
-            .doOnSubscribe { updateAsSideEffect(isLoading, true) }
-            .doFinally { updateAsSideEffect(isLoading, false) }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({
-                Timber.i("Account deleted")
-                application.restart()
-            }) { throwable: Throwable ->
-                Timber.w("Unable to delete account: %s", throwable.toString())
-                val viewError = createErrorBuilder(throwable)
-                    .withTitle(R.string.error_request_failed_title)
-                    .removeWhenShown()
-                    .build()
-                addError(viewError)
-            })
+        modelDisposable.add(
+            application.deleteAccount()
+                .doOnSubscribe { updateAsSideEffect(isLoading, true) }
+                .doFinally { updateAsSideEffect(isLoading, false) }
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                    Timber.i("Account deleted")
+                    application.restart()
+                }) { throwable: Throwable ->
+                    Timber.w("Unable to delete account: %s", throwable.toString())
+                    val viewError = createErrorBuilder(throwable)
+                        .withTitle(R.string.error_request_failed_title)
+                        .removeWhenShown()
+                        .build()
+                    addError(viewError)
+                }
+        )
     }
-
 }
