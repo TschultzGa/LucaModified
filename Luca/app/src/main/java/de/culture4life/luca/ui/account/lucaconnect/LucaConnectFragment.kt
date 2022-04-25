@@ -1,19 +1,24 @@
 package de.culture4life.luca.ui.account.lucaconnect
 
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.databinding.FragmentLucaConnectBinding
 import de.culture4life.luca.ui.BaseFragment
+import de.culture4life.luca.ui.SharedViewModelScopeProvider
 import de.culture4life.luca.ui.lucaconnect.LucaConnectBottomSheetDialogFragment
 import de.culture4life.luca.ui.lucaconnect.LucaConnectBottomSheetViewModel
 import de.culture4life.luca.util.setCheckedImmediately
 import io.reactivex.rxjava3.core.Completable
 
-class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
+class LucaConnectFragment : BaseFragment<LucaConnectViewModel>(), SharedViewModelScopeProvider {
 
     private lateinit var binding: FragmentLucaConnectBinding
     private lateinit var lucaConnectBottomSheetViewModel: LucaConnectBottomSheetViewModel
     private val lucaConnectBottomSheetFragment by lazy { LucaConnectBottomSheetDialogFragment.newInstance() }
+
+    override val sharedViewModelStoreOwner: ViewModelStoreOwner
+        get() = this
 
     override fun getViewBinding(): ViewBinding {
         binding = FragmentLucaConnectBinding.inflate(layoutInflater)
@@ -28,7 +33,7 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
         return super.initializeViewModel()
             .andThen(
                 Completable.fromAction {
-                    lucaConnectBottomSheetViewModel = ViewModelProvider(requireActivity())
+                    lucaConnectBottomSheetViewModel = ViewModelProvider(sharedViewModelStoreOwner)
                         .get(LucaConnectBottomSheetViewModel::class.java)
                 }
             )
@@ -44,7 +49,7 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
         binding.lucaConnectToggle.setCheckedImmediately(viewModel.enrollmentStatus.value)
         observe(viewModel.enrollmentStatus) { binding.lucaConnectToggle.isChecked = it }
         observe(viewModel.openEnrollmentFlow) {
-            if (!it.hasBeenHandled() && it.valueAndMarkAsHandled) {
+            if (it.isNotHandled && it.valueAndMarkAsHandled) {
                 openEnrollmentFlow()
             }
         }
@@ -55,6 +60,6 @@ class LucaConnectFragment : BaseFragment<LucaConnectViewModel>() {
     }
 
     private fun openEnrollmentFlow() {
-        lucaConnectBottomSheetFragment.show(parentFragmentManager, LucaConnectBottomSheetDialogFragment.TAG)
+        lucaConnectBottomSheetFragment.show(childFragmentManager, LucaConnectBottomSheetDialogFragment.TAG)
     }
 }

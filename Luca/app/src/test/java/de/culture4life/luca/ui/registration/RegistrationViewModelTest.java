@@ -2,26 +2,21 @@ package de.culture4life.luca.ui.registration;
 
 import static org.junit.Assert.assertEquals;
 
-import androidx.test.core.app.ApplicationProvider;
-import androidx.test.runner.AndroidJUnit4;
-
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class RegistrationViewModelTest {
+import de.culture4life.luca.LucaUnitTest;
+
+public class RegistrationViewModelTest extends LucaUnitTest {
 
     private RegistrationViewModel viewModel;
 
     @Before
     public void setUp() {
-        viewModel = new RegistrationViewModel(ApplicationProvider.getApplicationContext());
+        viewModel = new RegistrationViewModel(application);
     }
 
     @Test

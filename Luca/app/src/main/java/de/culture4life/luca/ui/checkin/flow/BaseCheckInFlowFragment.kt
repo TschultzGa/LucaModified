@@ -2,22 +2,20 @@ package de.culture4life.luca.ui.checkin.flow
 
 import android.widget.TextView
 import de.culture4life.luca.R
-import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildFragment
-import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildViewModel
-import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
+import de.culture4life.luca.ui.base.bottomsheetflow.*
 
 abstract class BaseCheckInFlowFragment<ViewModelType : BaseFlowChildViewModel, ParentViewModel : BaseFlowViewModel> :
     BaseFlowChildFragment<ViewModelType, ParentViewModel>() {
 
-    override fun initializeViews() {
-        super.initializeViews()
+    override fun onResume() {
+        super.onResume()
         updateActionButtonText()
     }
 
-    protected fun updateActionButtonText() {
+    private fun updateActionButtonText() {
         view?.also {
             val actionButton = it.findViewById<TextView>(R.id.actionButton)
-            if (viewModel?.isLastPage(this) == true) {
+            if ((parentFragment as BaseFlowBottomSheetDialogFragment<*, *>).showsLastPage()) {
                 actionButton.setText(R.string.action_check_in)
             } else {
                 actionButton.setText(R.string.action_continue)

@@ -3,7 +3,6 @@ package de.culture4life.luca.ui.lucaconnect
 import android.app.Application
 import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
-import de.culture4life.luca.ui.lucaconnect.children.*
 import de.culture4life.luca.util.addTo
 import de.culture4life.luca.whatisnew.WhatIsNewManager.Companion.ID_LUCA_CONNECT_MESSAGE
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -13,8 +12,9 @@ import timber.log.Timber
 
 class LucaConnectBottomSheetViewModel(app: Application) : BaseFlowViewModel(app) {
 
-    fun initializeViewModel(): Completable {
-        return updatePages()
+    override fun initialize(): Completable {
+        return super.initialize()
+            .andThen(updatePages())
             .andThen(updateEnrollmentSupportRecognized())
     }
 
@@ -22,12 +22,12 @@ class LucaConnectBottomSheetViewModel(app: Application) : BaseFlowViewModel(app)
         return Completable.fromCallable {
             pages.apply {
                 clear()
-                add(ExplanationFragment.newInstance())
-                add(ProvideProofFragment.newInstance())
-                add(LucaConnectSharedDataFragment.newInstance())
-                add(KritisFragment.newInstance())
-                add(ConsentFragment.newInstance())
-                add(ConnectSuccessFragment.newInstance())
+                add(LucaConnectFlowPage.ExplanationPage)
+                add(LucaConnectFlowPage.ProvideProofPage)
+                add(LucaConnectFlowPage.LucaConnectSharedDataPage)
+                add(LucaConnectFlowPage.KritisPage)
+                add(LucaConnectFlowPage.LucaConnectConsentPage)
+                add(LucaConnectFlowPage.ConnectSuccessPage)
             }
         }
             .doOnComplete {

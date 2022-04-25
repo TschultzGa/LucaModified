@@ -1,11 +1,12 @@
 package de.culture4life.luca.ui.myluca
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
-import android.view.View
 import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -15,18 +16,27 @@ import de.culture4life.luca.databinding.LayoutTopSheetBinding
 import de.culture4life.luca.registration.Person
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.BaseQrCodeViewModel
+import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
+import de.culture4life.luca.ui.idnow.UserAuthenticationRequiredPrompt
 import de.culture4life.luca.ui.myluca.MyLucaListAdapter.MyLucaListClickListener
+import de.culture4life.luca.ui.myluca.listitems.DocumentItem
+import de.culture4life.luca.ui.myluca.listitems.IdentityItem
+import de.culture4life.luca.ui.myluca.listitems.IdentityRequestedItem
+import de.culture4life.luca.ui.myluca.listitems.MyLucaListItem
 import de.culture4life.luca.ui.qrcode.AddCertificateFlowFragment
+import de.culture4life.luca.ui.recyclerview.LastItemSpacingDecoration
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import timber.log.Timber
 
 class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener {
 
     private val myLucaListAdapter = MyLucaListAdapter(this, this)
     private lateinit var binding: FragmentMyLucaBinding
+    private val userAuthenticationRequiredPrompt = UserAuthenticationRequiredPrompt(this)
 
     override fun getViewBinding(): ViewBinding {
         binding = FragmentMyLucaBinding.inflate(layoutInflater)
@@ -37,10 +47,13 @@ class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener 
         return MyLucaViewModel::class.java
     }
 
+    override fun getViewModelStoreOwner(): ViewModelStoreOwner {
+        return requireActivity()
+    }
+
     override fun initializeViewModel(): Completable {
         return super.initializeViewModel()
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnComplete { viewModel.setupViewModelReference(requireActivity()) }
     }
 
     override fun initializeViews() {
@@ -50,60 +63,54 @@ class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener 
         initializeBanners()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun initializeMyLucaItemsViews() {
         binding.myLucaRecyclerView.adapter = myLucaListAdapter
         binding.myLucaRecyclerView.layoutManager = LinearLayoutManager(context)
-        binding.childrenActionBarMenuImageView.setOnClickListener { viewModel.onChildrenManagementRequested() }
+        binding.myLucaRecyclerView.addItemDecoration(LastItemSpacingDecoration(R.dimen.my_luca_recycler_view_padding_bottom))
         binding.childrenCounterTextView.setOnClickListener { viewModel.onChildrenManagementRequested() }
         observe(viewModel.children) {
             if (it.isEmpty()) {
-                binding.childrenCounterTextView.visibility = View.GONE
+                binding.childrenCounterTextView.text = null
             } else {
-                binding.childrenCounterTextView.visibility = View.VISIBLE
                 binding.childrenCounterTextView.text = it.size.toString()
             }
         }
-        observe(viewModel.myLucaItems) {
-            val listItems = myLucaListAdapter.setItems(it, getPersons())
-            val emptyStateVisibility = if (listItems.isEmpty()) View.VISIBLE else View.GONE
-            val contentVisibility = if (listItems.isNotEmpty()) View.VISIBLE else View.GONE
-            binding.emptyStateScrollView.visibility = emptyStateVisibility
-            binding.myLucaRecyclerView.visibility = contentVisibility
-        }
+        observe(viewModel.myLucaItems) { myLucaListAdapter.setItems(it, getPersons()) }
         observe(viewModel.itemToDelete) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 showDeleteDocumentDialog(it.valueAndMarkAsHandled)
             }
         }
         observe(viewModel.itemToExpand) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 val wrapper = myLucaListAdapter.getWrapperWith(it.valueAndMarkAsHandled)!!
-                for (wrapperItem in wrapper.items) {
+                for (wrapperItem in wrapper.items.filterIsInstance<DocumentItem>()) {
                     wrapperItem.toggleExpanded()
                 }
-                myLucaListAdapter.notifyDataSetChanged()
+                myLucaListAdapter.notifyItemChanged(myLucaListAdapter.getPositionOfWrapper(wrapper))
             }
         }
     }
 
     private fun initializeImportViews() {
         binding.appointmentsActionBarMenuImageView.setOnClickListener { viewModel.onAppointmentRequested() }
-        binding.primaryActionButton.setOnClickListener { showAddCertificate() }
+        binding.primaryActionButton.setOnClickListener { showAddDocument() }
         observe(viewModel.isLoading) {
             binding.loadingIndicator.isVisible = it
         }
         observe(viewModel.addedDocument) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+            if (it.isNotHandled) {
+                it.isHandled = true
                 Toast.makeText(context, R.string.document_import_success_message, Toast.LENGTH_SHORT).show()
             }
         }
         observe(viewModel.possibleCheckInData) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 showCheckInDialog(it.valueAndMarkAsHandled)
             }
         }
-        observe(viewModel.bundle) { processBundle(it) }
+        observe(viewModel.bundleLiveData) { processBundle(it) }
     }
 
     private fun initializeBanners() {
@@ -115,7 +122,6 @@ class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener 
         viewDisposable.add(
             Completable.mergeArray(
                 viewModel.updateUserName(),
-                viewModel.invokeListUpdate(),
                 viewModel.invokeServerTimeOffsetUpdate()
             ).subscribe()
         )
@@ -155,7 +161,7 @@ class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener 
         }
     }
 
-    private fun showAddCertificate() {
+    private fun showAddDocument() {
         AddCertificateFlowFragment.newInstance().show(childFragmentManager, AddCertificateFlowFragment.TAG)
     }
 
@@ -174,13 +180,13 @@ class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener 
             .show()
     }
 
-    private fun showDeleteDocumentDialog(myLucaListItem: MyLucaListItem) {
+    private fun showDeleteDocumentDialog(documentItem: DocumentItem) {
         BaseDialogFragment(
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle(myLucaListItem.getDeleteButtonText())
+                .setTitle(documentItem.deleteButtonText)
                 .setMessage(R.string.document_delete_confirmation_message)
                 .setPositiveButton(R.string.action_confirm) { _, _ ->
-                    viewModel.deleteListItem(myLucaListItem)
+                    viewModel.deleteDocumentListItem(documentItem)
                         .onErrorComplete()
                         .subscribeOn(Schedulers.io())
                         .subscribe()
@@ -191,22 +197,78 @@ class MyLucaFragment : BaseFragment<MyLucaViewModel>(), MyLucaListClickListener 
             .show()
     }
 
+    private fun showDeleteIdentityDialog(listItem: MyLucaListItem) {
+        BaseDialogFragment(
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.luca_id_deletion_dialog_title)
+                .setMessage(R.string.luca_id_deletion_dialog_description)
+                .setPositiveButton(R.string.action_confirm) { _, _ -> viewModel.onDeleteIdentityListItem(listItem) }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> }
+        )
+            .show()
+    }
+
     private fun showDocumentNotVerifiedDialog() {
         BaseDialogFragment(
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.document_not_verified_dialog_title)
-                .setMessage(R.string.document_not_verified_dialog_description)
+                .setTitle(R.string.certificate_not_verified_dialog_title)
+                .setMessage(R.string.certificate_not_verified_dialog_description)
                 .setPositiveButton(R.string.action_ok) { dialog, _ -> dialog.dismiss() }
         ).show()
     }
 
     override fun onDelete(myLucaListItem: MyLucaListItem) {
-        showDeleteDocumentDialog(myLucaListItem)
+        when (myLucaListItem) {
+            is DocumentItem -> showDeleteDocumentDialog(myLucaListItem)
+            is IdentityItem -> showDeleteIdentityDialog(myLucaListItem)
+            is IdentityRequestedItem -> showDeleteIdentityDialog(myLucaListItem)
+        }
+    }
+
+    override fun onExpandIdentity(identityItem: IdentityItem, position: Int) {
+        if (identityItem.isExpanded) {
+            identityItem.isExpanded = false
+            identityItem.idData = null
+            myLucaListAdapter.notifyItemChanged(position)
+        } else {
+            userAuthenticationRequiredPrompt.showForLucaIdDisplay(
+                {
+                    viewModel.idDataIfAvailable
+                        .toSingle()
+                        .subscribe(
+                            { identity ->
+                                Timber.d("Setting ID data: $identity")
+                                identityItem.isExpanded = true
+                                identityItem.idData = identity
+                                myLucaListAdapter.notifyItemChanged(position)
+                            },
+                            { throwable ->
+                                Timber.d("Unable to set ID data: $throwable")
+                                val error = ViewError.Builder(requireContext())
+                                    .withCause(throwable)
+                                    .removeWhenShown()
+                                    .build()
+                                viewModel.addError(error)
+                            }
+                        )
+                        .addTo(viewDisposable)
+                }
+            )
+        }
+    }
+
+    override fun onExpandDocument(documentItem: DocumentItem, position: Int) {
+        documentItem.toggleExpanded()
+        myLucaListAdapter.notifyItemChanged(position)
     }
 
     override fun onIcon(myLucaListItem: MyLucaListItem) {
-        if (!myLucaListItem.document.isVerified) {
-            showDocumentNotVerifiedDialog()
+        if (myLucaListItem is DocumentItem) {
+            if (!myLucaListItem.document.isVerified) {
+                showDocumentNotVerifiedDialog()
+            }
+        } else if (myLucaListItem is IdentityItem) {
+            Toast.makeText(context, R.string.luca_id_card_icon_tooltip, Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -1,7 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lint>
-    <!-- TODO Should be fixed by updating AGP https://issuetracker.google.com/issues/203123034 -->
-    <issue id="UnusedIds" severity="ignore" />
+    <issue id="UnpackedNativeCode" severity="ignore" />
+
+    <!-- We disallow backup, but beginning with Android 12 that does not include D2D backups. Maybe we need to check if we should also disable that -->
+    <issue id="DataExtractionRules" severity="ignore" />
+
+    <!-- Ignore because we dont want the build to fail because of this. Will be fixed when Play Store or library needs it -->
+    <issue id="OldTargetApi" severity="ignore" />
+
+    <!-- We have a lot of duplicate strings but it will be replaced with POEditor anyway -->
     <issue id="DuplicateStrings" severity="ignore" />
+
+    <!-- NiceToHave we provide copy/export functions where necessary. Has to be tested a lot because it does interferer with simple click events e.g. for expand recycler views item.  https://stackoverflow.com/questions/36801486/androidtextisselectable-true-not-working-for-textview-in-recyclerview -->
+    <issue id="SelectableText" severity="ignore" />
+
+    <!-- We dont want lint to fail because a newer version of a library is available, sometimems it is a deliberate decision -->
     <issue id="GradleDependency" severity="ignore" />
+
+    <!-- Some icons contain svg elements that are not supported, but that is nothing we can influence -->
+    <issue id="VectorRaster" severity="ignore" />
+
+    <!-- Error in bcprov-jdk15on and coroutines library -->
+    <issue id="InvalidPackage">
+        <ignore path="**/bcprov-jdk15on-*.jar" />
+        <ignore path="**/bcpkix-jdk15on-*.jar" />
+        <ignore path="**/kotlinx-coroutines-core-jvm-*.jar" />
+    </issue>
+
+    <issue id="TrustAllX509TrustManager">
+        <ignore path="org/bouncycastle/est/jcajce/**" />
+    </issue>
+
+    <!-- We hard lock the orientation for all activities anyway to portrait -->
+    <issue id="LockedOrientationActivity" severity="ignore" />
+
+    <!-- We don't use directional quotes in the strings we get from design -->
+    <issue id="TypographyQuotes" severity="ignore" />
+
+    <!-- Some attributes are only used in SDK versions higher than our minimum, but the warning does not give us any benefits -->
+    <issue id="UnusedAttribute">
+        <ignore regexp="accessibilityPaneTitle" />
+        <ignore regexp="accessibilityTraversalAfter" />
+        <ignore regexp="networkSecurityConfig" />
+        <!-- New feature with android 26, additional security for instant apps. Fine for us that is unused in prior versions. -->
+        <ignore regexp="targetSandboxVersion" />
+        <!-- new feature with android 23, open web URLs directly without asking which app. Fine for us that is unused in prior versions. -->
+        <ignore regexp="autoVerify" />
+    </issue>
+
+    <!-- TODO Ignore this for now as it seems to break the pipeline due to absolute paths in message -->
+    <issue id="IconMissingDensityFolder" severity="ignore" />
+
+    <!-- Ignore launcher icons for PNG to WEBP conversion as Android Studio conversion tool also ignores them explicitely -->
+    <issue id="ConvertToWebp">
+        <ignore path="**/ic_launcher.png" />
+        <ignore path="**/ic_launcher_round.png" />
+    </issue>
+
+    <!-- TODO Lint does not seem to like our ldpi images, maybe needs to be checked with design -->
+    <issue id="IconDipSize">
+        <ignore path="**/drawable-ldpi/**" />
+    </issue>
+
+    <!-- Just a warning about a possible issue and an unexpected behaviour. Only important for high performance.https://stackoverflow.com/questions/4501324/synthetic-accessor-method-warning -->
+    <issue id="SyntheticAccessor" severity="ignore" />
+
+    <issue id="UnusedResources">
+        <!-- This library throws a lot of unused strings warnings when lint checks generated sources, nothing we can really influence -->
+        <ignore path="**/aboutlibraries/**" />
+        <!-- Strings are exported from PoEditor in the future, does not make much sense to fix those warnings for now -->
+        <ignore path="**/strings.xml" />
+        <!-- Colors are extracted from design system, may be used in the future and would not make sense to remove for now -->
+        <ignore path="**/colors.xml" />
+        <!-- Font sizes should be kept even if unused to have all available in the future, similar to colors -->
+        <ignore regexp="font_size_.*" />
+    </issue>
+
+    <issue id="all">
+        <ignore path="build" />
+    </issue>
 </lint>

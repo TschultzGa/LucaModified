@@ -49,6 +49,7 @@
             <ImageView
                 android:id="@+id/emptyImageView"
                 style="@style/EmptyStateImageView"
+                android:importantForAccessibility="no"
                 android:src="@drawable/g_messages"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="@id/emptyDescriptionTextView"

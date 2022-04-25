@@ -124,7 +124,7 @@ open class ConsentManager(
     }
 
     companion object {
-
+        const val ID_TERMS_OF_SERVICE_LUCA_ID = "terms_of_service_luca_id" // March 2022, version code 96
         const val ID_ENABLE_CAMERA = "enable_camera"
         const val ID_IMPORT_DOCUMENT = "import_document"
         const val ID_INCLUDE_ENTRY_POLICY = "include_entry_policy"

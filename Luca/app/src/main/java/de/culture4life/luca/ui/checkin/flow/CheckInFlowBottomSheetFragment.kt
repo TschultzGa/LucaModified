@@ -1,29 +1,45 @@
 package de.culture4life.luca.ui.checkin.flow
 
+import androidx.fragment.app.Fragment
 import de.culture4life.luca.network.pojo.LocationResponseData
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowBottomSheetDialogFragment
+import de.culture4life.luca.ui.checkin.flow.children.ConfirmCheckInFragment
+import de.culture4life.luca.ui.checkin.flow.children.EntryPolicyFragment
+import de.culture4life.luca.ui.checkin.flow.children.VoluntaryCheckInFragment
+import io.reactivex.rxjava3.core.Completable
 
-class CheckInFlowBottomSheetFragment : BaseFlowBottomSheetDialogFragment<CheckInFlowViewModel>() {
+class CheckInFlowBottomSheetFragment : BaseFlowBottomSheetDialogFragment<CheckInFlowPage, CheckInFlowViewModel>() {
 
     override fun getViewModelClass(): Class<CheckInFlowViewModel> = CheckInFlowViewModel::class.java
     override fun lastPageHasBackButton(): Boolean = true
 
-    override fun initializeViews() {
-        super.initializeViews()
+    override fun initializeViewModel(): Completable {
         arguments?.apply {
             viewModel.locationResponseData = arguments?.getSerializable(KEY_LOCATION_RESPONSE_DATA)!! as LocationResponseData
             viewModel.url = arguments?.getString(KEY_LOCATION_URL)
         }
+        return super.initializeViewModel()
+    }
+
+    override fun initializeViews() {
+        super.initializeViews()
         initializeObservers()
-        viewModel.initializeViewModel()
     }
 
     private fun initializeObservers() {
         viewModel.onCheckInRequested.observe(viewLifecycleOwner) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+            if (it.isNotHandled) {
+                it.isHandled = true
                 dismiss()
             }
+        }
+    }
+
+    override fun mapPageToFragment(page: CheckInFlowPage): Fragment {
+        return when (page) {
+            is CheckInFlowPage.ConfirmCheckInPage -> ConfirmCheckInFragment.newInstance(page.arguments)
+            is CheckInFlowPage.VoluntaryCheckInPage -> VoluntaryCheckInFragment.newInstance()
+            is CheckInFlowPage.EntryPolicyPage -> EntryPolicyFragment.newInstance()
         }
     }
 
@@ -32,8 +48,6 @@ class CheckInFlowBottomSheetFragment : BaseFlowBottomSheetDialogFragment<CheckIn
         const val KEY_LOCATION_RESPONSE_DATA = "locationResponseData"
         const val KEY_LOCATION_URL = "locationUrl"
 
-        fun newInstance(): CheckInFlowBottomSheetFragment {
-            return CheckInFlowBottomSheetFragment()
-        }
+        fun newInstance(): CheckInFlowBottomSheetFragment = CheckInFlowBottomSheetFragment()
     }
 }

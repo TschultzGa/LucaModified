@@ -1,95 +1,37 @@
 package de.culture4life.luca.ui.checkin
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowManager
-import android.widget.FrameLayout
 import androidx.core.view.isVisible
-import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.ViewModelProvider
-import com.google.android.material.bottomsheet.BottomSheetBehavior
+import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.R
 import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.databinding.DialogQrCodeBinding
+import de.culture4life.luca.ui.base.BaseBottomSheetDialogFragment
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Single
-import timber.log.Timber
 
-class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
+class QrCodeBottomSheetFragment : BaseBottomSheetDialogFragment<QrCodeBottomSheetViewModel>() {
 
-    private lateinit var sharedViewModel: QrCodeBottomSheetViewModel
     private lateinit var binding: DialogQrCodeBinding
     private var qrCodeBitmap: Bitmap? = null
     private var isLoading = false
     private var isNetworkAvailable = true
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setStyle(DialogFragment.STYLE_NORMAL, R.style.ThemeOverlay_Luca_BottomSheet)
-        sharedViewModel = ViewModelProvider(requireActivity()).get(QrCodeBottomSheetViewModel::class.java)
+    override fun getViewBinding(): ViewBinding {
+        binding = DialogQrCodeBinding.inflate(layoutInflater)
+        return binding
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = DialogQrCodeBinding.inflate(inflater)
+    override fun getViewModelClass(): Class<QrCodeBottomSheetViewModel> = QrCodeBottomSheetViewModel::class.java
 
-        initializeViewModel()
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnComplete { initializeViews() }
-            .subscribe(
-                { Timber.d("Initialized %s with %s", this, sharedViewModel) },
-                { Timber.e("Unable to initialize %s with %s: %s", this, sharedViewModel, it.toString()) }
-            )
-
-        return binding.root
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-
-        dialog.window?.apply {
-            attributes.screenBrightness = 1f
-            addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-            setDimAmount(0.8F)
-        }
-
-        dialog.setOnShowListener {
-            val bottomSheet =
-                dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            with(BottomSheetBehavior.from(bottomSheet!!)) {
-                skipCollapsed = true
-                state = BottomSheetBehavior.STATE_EXPANDED
-            }
-        }
-        return dialog
-    }
-
-    override fun onDismiss(dialog: DialogInterface) {
-        sharedViewModel.onQrCodeBottomSheetClosed()
-        super.onDismiss(dialog)
-    }
-
-    private fun initializeViewModel(): Completable {
-        return Single.fromCallable { ViewModelProvider(requireActivity()).get(QrCodeBottomSheetViewModel::class.java) }
-            .flatMapCompletable { it.initialize() }
-    }
-
-    private fun initializeViews() {
+    override fun initializeViews() {
+        super.initializeViews()
         qrCodeBitmap?.let {
             setQrCodeBitmap(it)
         }
@@ -101,31 +43,38 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
             if (binding.includeEntryPolicySwitch.isChecked) {
                 showIncludeEntryPolicyConsentDialog()
             } else {
-                sharedViewModel.onIncludeEntryPolicyToggled(false)
+                viewModel.onIncludeEntryPolicyToggled(false)
             }
         }
-        sharedViewModel.includeEntryPolicy.observe(viewLifecycleOwner) { binding.includeEntryPolicySwitch.isChecked = it }
+        setNoNetworkWarningVisible(!isNetworkAvailable)
+        initializeObservers()
+    }
 
-        sharedViewModel.onDocumentsUnavailable.observe(viewLifecycleOwner) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+    private fun initializeObservers() {
+        viewModel.includeEntryPolicy.observe(viewLifecycleOwner) { binding.includeEntryPolicySwitch.isChecked = it }
+        viewModel.onDocumentsUnavailable.observe(viewLifecycleOwner) {
+            if (it.isNotHandled) {
+                it.isHandled = true
                 showDocumentsUnavailableError()
             }
         }
-
-        sharedViewModel.onOnlyInvalidDocumentsAvailable.observe(viewLifecycleOwner) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+        viewModel.onOnlyInvalidDocumentsAvailable.observe(viewLifecycleOwner) {
+            if (it.isNotHandled) {
+                it.isHandled = true
                 showDocumentsInvalidError()
             }
         }
-
         if (BuildConfig.DEBUG) {
             // simulate check in when clicking on the QR code in debug builds
-            binding.qrCodeImageView.setOnClickListener { sharedViewModel.onDebuggingCheckInRequested() }
+            binding.qrCodeImageView.setOnClickListener { viewModel.onDebuggingCheckInRequested() }
         }
+    }
 
-        setNoNetworkWarningVisible(!isNetworkAvailable)
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        return dialog.apply {
+            window?.attributes?.screenBrightness = 1f
+        }
     }
 
     fun setQrCodeBitmap(bitmap: Bitmap) {
@@ -164,7 +113,7 @@ class QrCodeBottomSheetFragment : BottomSheetDialogFragment() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe { consent, _ ->
                 if (consent.approved) {
-                    sharedViewModel.onIncludeEntryPolicyToggled(true)
+                    viewModel.onIncludeEntryPolicyToggled(true)
                 } else {
                     binding.includeEntryPolicySwitch.isChecked = false
                 }

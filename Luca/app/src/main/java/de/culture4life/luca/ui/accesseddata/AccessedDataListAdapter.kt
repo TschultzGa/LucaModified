@@ -9,8 +9,7 @@ import androidx.core.content.ContextCompat
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ItemAccessedDataBinding
 
-class AccessedDataListAdapter(context: Context, resource: Int) :
-    ArrayAdapter<AccessedDataListItem>(context, resource) {
+class AccessedDataListAdapter(context: Context, resource: Int) : ArrayAdapter<AccessedDataListItem>(context, resource) {
 
     private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)
         as LayoutInflater

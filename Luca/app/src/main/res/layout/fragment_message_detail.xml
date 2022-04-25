@@ -9,7 +9,7 @@
     <ImageView
         android:id="@+id/actionBarBackButtonImageView"
         style="@style/ActionBarBackButtonImageView"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints, ContentDescription" />
 
     <TextView
         android:id="@+id/actionBarTitleTextView"

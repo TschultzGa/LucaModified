@@ -11,6 +11,7 @@
         <item>6</item>
         <item>7</item>
         <item>8</item>
+        <item>9</item>
     </integer-array>
 
     <integer-array name="what_is_new_pages_images" translatable="false">
@@ -23,6 +24,7 @@
         <item>@drawable/img_new_6_qr_entry_policy</item>
         <item>@drawable/img_new_7_menu_card_and_more</item>
         <item>@drawable/img_new_8_message_tab</item>
+        <item>@drawable/img_new_9_luca_id</item>
     </integer-array>
 
     <string-array name="what_is_new_pages_headings" translatable="false">
@@ -35,6 +37,7 @@
         <item>@string/what_is_new_6_heading</item>
         <item>@string/what_is_new_7_heading</item>
         <item>@string/what_is_new_8_heading</item>
+        <item>@string/what_is_new_9_heading</item>
     </string-array>
 
     <string-array name="what_is_new_pages_descriptions" translatable="false">
@@ -47,6 +50,7 @@
         <item>@string/what_is_new_6_description</item>
         <item>@string/what_is_new_7_description</item>
         <item>@string/what_is_new_8_description</item>
+        <item>@string/what_is_new_9_description</item>
     </string-array>
 
 </resources>

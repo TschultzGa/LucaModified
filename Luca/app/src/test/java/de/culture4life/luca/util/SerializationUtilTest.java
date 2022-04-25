@@ -1,17 +1,13 @@
 package de.culture4life.luca.util;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.HashMap;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class SerializationUtilTest {
+import de.culture4life.luca.LucaUnitTest;
+
+public class SerializationUtilTest extends LucaUnitTest {
 
     private final String TEST_STRING = "abcde1234!§$% äöü @ ,.-;:_*<>";
 
@@ -33,7 +29,7 @@ public class SerializationUtilTest {
 
     @Test
     public void serializeToAndFromJson() {
-        HashMap testObject = new HashMap();
+        HashMap<String, String> testObject = new HashMap<>();
         testObject.put("testString", TEST_STRING);
         SerializationUtil.toJson(testObject)
                 .map(serialized -> SerializationUtil.fromJson(serialized, HashMap.class))

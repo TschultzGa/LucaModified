@@ -6,11 +6,14 @@ import android.text.method.LinkMovementMethod
 import android.view.View
 import android.widget.ArrayAdapter
 import androidx.activity.viewModels
+import de.culture4life.luca.BuildConfig
+import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentOnboardingCountryUnavailableBinding
 import de.culture4life.luca.databinding.FragmentOnboardingInfoBinding
 import de.culture4life.luca.databinding.FragmentOnboardingWelcomeBinding
 import de.culture4life.luca.ui.BaseActivity
+import de.culture4life.luca.ui.onboarding.OnboardingViewModel.Companion.AVAILABLE_COUNTRY
 import de.culture4life.luca.ui.registration.RegistrationActivity
 import de.culture4life.luca.util.ViewRequiredUtil.showCheckBoxRequiredError
 
@@ -30,6 +33,7 @@ class OnboardingActivity : BaseActivity() {
         infoBinding = FragmentOnboardingInfoBinding.inflate(layoutInflater)
         countryUnavailableBinding = FragmentOnboardingCountryUnavailableBinding.inflate(layoutInflater)
 
+        initializeHeaderClickListener()
         showWelcomeScreen()
         hideActionBar()
     }
@@ -38,20 +42,20 @@ class OnboardingActivity : BaseActivity() {
         setContentView(welcomeBinding.root)
         viewModel.countryListLiveData.observe(this) { updateCountrySelection(it) }
         viewModel.checkBoxErrorLiveData.observe(this) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+            if (it.isNotHandled) {
+                it.isHandled = true
                 showCheckboxErrors()
             }
         }
         viewModel.showInfoScreenLiveData.observe(this) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+            if (it.isNotHandled) {
+                it.isHandled = true
                 showInfoScreen()
             }
         }
         viewModel.showCountryUnavailableLiveData.observe(this) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+            if (it.isNotHandled) {
+                it.isHandled = true
                 showCountryUnavailableScreen()
             }
         }
@@ -68,6 +72,19 @@ class OnboardingActivity : BaseActivity() {
         }
 
         viewModel.initializeCountries()
+    }
+
+    private fun initializeHeaderClickListener() {
+        if (LucaApplication.IS_USING_STAGING_ENVIRONMENT || BuildConfig.DEBUG) {
+            welcomeBinding.onboardingTitleTextView.setOnClickListener {
+                val availableCountry = viewModel.countryListLiveData
+                    .value!!
+                    .countryItems
+                    .first { it.countryCode == AVAILABLE_COUNTRY }
+                viewModel.setSelectedCountryItem(availableCountry)
+                welcomeBinding.countryAutoCompleteTextView.setText(availableCountry.countryDisplayName, false)
+            }
+        }
     }
 
     private fun updateCountrySelection(countryUserData: OnboardingViewModel.CountryUserData) {

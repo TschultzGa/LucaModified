@@ -40,6 +40,7 @@ import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -69,7 +70,6 @@ import de.culture4life.luca.network.pojo.TraceData;
 import de.culture4life.luca.network.pojo.TraceDeletionRequestData;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
-import de.culture4life.luca.ui.checkin.CheckInViewModel;
 import de.culture4life.luca.ui.checkin.QrCodeData;
 import de.culture4life.luca.util.SerializationUtil;
 import de.culture4life.luca.util.TimeUtil;
@@ -683,7 +683,7 @@ public class CheckInManager extends Manager {
             radius = Math.min(MAXIMUM_GEOFENCE_RADIUS, radius);
 
             return Single.just(new Geofence.Builder()
-                    .setRequestId(checkInData.getLocationId().toString().toLowerCase())
+                    .setRequestId(checkInData.getLocationId().toString().toLowerCase(Locale.ROOT))
                     .setCircularRegion(checkInData.getLatitude(), checkInData.getLongitude(), radius)
                     .setNotificationResponsiveness((int) UPDATE_INTERVAL_DEFAULT)
                     .setExpirationDuration(Geofence.NEVER_EXPIRE)
@@ -1205,17 +1205,6 @@ public class CheckInManager extends Manager {
         return TimeUtil.getStartOfCurrentDayTimestamp()
                 .flatMapObservable(firstStartOfDayTimestamp -> Observable.range(0, (int) TimeUnit.MILLISECONDS.toDays(duration) + 1)
                         .map(dayIndex -> firstStartOfDayTimestamp - TimeUnit.DAYS.toMillis(dayIndex)));
-    }
-
-    /*
-        Utilities
-     */
-
-    public static boolean isSelfCheckInUrl(@NonNull String url) {
-        return CheckInViewModel.getScannerIdFromUrl(url)
-                .map(uuid -> url.contains("luca-app.de/webapp/"))
-                .onErrorReturnItem(false)
-                .blockingGet();
     }
 
     public static Single<String> getGuestEphemeralKeyPairAlias(byte[] traceId) {

@@ -3,32 +3,10 @@
     android:height="16dp"
     android:viewportWidth="16"
     android:viewportHeight="16">
-  <path
-      android:pathData="M3.5,1L3.5,1A2.5,2.5 0,0 1,6 3.5L6,3.5A2.5,2.5 0,0 1,3.5 6L3.5,6A2.5,2.5 0,0 1,1 3.5L1,3.5A2.5,2.5 0,0 1,3.5 1z"
-      android:strokeLineJoin="round"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
-  <path
-      android:pathData="M3.5,10L3.5,10A2.5,2.5 0,0 1,6 12.5L6,12.5A2.5,2.5 0,0 1,3.5 15L3.5,15A2.5,2.5 0,0 1,1 12.5L1,12.5A2.5,2.5 0,0 1,3.5 10z"
-      android:strokeLineJoin="round"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
-  <path
-      android:pathData="M12.5,1L12.5,1A2.5,2.5 0,0 1,15 3.5L15,3.5A2.5,2.5 0,0 1,12.5 6L12.5,6A2.5,2.5 0,0 1,10 3.5L10,3.5A2.5,2.5 0,0 1,12.5 1z"
-      android:strokeLineJoin="round"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
-  <path
-      android:pathData="M12.5,10L12.5,10A2.5,2.5 0,0 1,15 12.5L15,12.5A2.5,2.5 0,0 1,12.5 15L12.5,15A2.5,2.5 0,0 1,10 12.5L10,12.5A2.5,2.5 0,0 1,12.5 10z"
-      android:strokeLineJoin="round"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
+    <path
+        android:fillType="evenOdd"
+        android:pathData="M3.5 1A2.5 2.5 0 0 1 6 3.5 2.5 2.5 0 0 1 3.5 6 2.5 2.5 0 0 1 1 3.5 2.5 2.5 0 0 1 3.5 1zm0 9A2.5 2.5 0 0 1 6 12.5 2.5 2.5 0 0 1 3.5 15 2.5 2.5 0 0 1 1 12.5 2.5 2.5 0 0 1 3.5 10zm9-9A2.5 2.5 0 0 1 15 3.5 2.5 2.5 0 0 1 12.5 6 2.5 2.5 0 0 1 10 3.5 2.5 2.5 0 0 1 12.5 1zm0 9a2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5z"
+        android:strokeWidth="2"
+        android:strokeColor="#000000"
+        android:strokeLineJoin="round" />
 </vector>

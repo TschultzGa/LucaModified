@@ -478,8 +478,8 @@ public class RegistrationViewModel extends BaseViewModel {
                                     .withDescription(R.string.verification_rate_limit_description);
                         } else if (NetworkManager.isHttpException(throwable, HTTP_BAD_GATEWAY)) {
                             builder = builder
-                                    .withTitle(R.string.verification_bad_gateway_title)
-                                    .withDescription(R.string.verification_bad_gateway_description);
+                                    .withTitle(R.string.error_http_server_error_title)
+                                    .withDescription(R.string.error_http_server_error_description);
                         }
                     }
 

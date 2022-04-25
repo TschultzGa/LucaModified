@@ -87,4 +87,13 @@ sealed class MessageListItem : Serializable {
             isNew = !item.read
         )
     }
+
+    data class MissingConsentItem(
+        override val id: String,
+        override val title: String,
+        override val message: String,
+        override val detailedMessage: String,
+        override val timestamp: Long,
+        override val isNew: Boolean
+    ) : MessageListItem()
 }

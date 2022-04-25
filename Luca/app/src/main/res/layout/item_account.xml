@@ -4,13 +4,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground">
+    android:background="?attr/selectableItemBackground"
+    tools:ignore="Overdraw">
 
     <ImageView
         android:id="@+id/itemStartIconImageView"
         android:layout_width="30dp"
         android:layout_height="0dp"
         android:layout_marginStart="@dimen/spacing_default"
+        android:importantForAccessibility="no"
         android:padding="4dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_help_outline_24"
@@ -44,6 +46,7 @@
         android:layout_width="30dp"
         android:layout_height="0dp"
         android:layout_marginEnd="@dimen/spacing_default"
+        android:contentDescription="@string/account_tab_item_arrow_content_description"
         android:padding="6dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_arrow"

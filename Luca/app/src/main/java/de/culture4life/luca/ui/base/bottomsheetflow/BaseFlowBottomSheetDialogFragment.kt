@@ -1,5 +1,6 @@
 package de.culture4life.luca.ui.base.bottomsheetflow
 
+import android.annotation.SuppressLint
 import android.content.DialogInterface
 import android.view.View
 import androidx.fragment.app.Fragment
@@ -10,14 +11,17 @@ import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.databinding.BottomSheetFlowBinding
 import de.culture4life.luca.ui.base.BaseBottomSheetDialogFragment
 
-abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewModel> : BaseBottomSheetDialogFragment<ViewModelType>() {
+abstract class BaseFlowBottomSheetDialogFragment<PageType : BaseFlowPage, ViewModelType : BaseFlowViewModel> :
+    BaseBottomSheetDialogFragment<ViewModelType>() {
 
-    lateinit var binding: BottomSheetFlowBinding
-    lateinit var pagerAdapter: FlowPageAdapter
+    protected lateinit var binding: BottomSheetFlowBinding
+    protected lateinit var pagerAdapter: FlowPageAdapter<PageType>
     override var fixedHeight = true
 
     // Disable animations for automatic tests to avoid flakiness. Espresso does not always wait until all animations are done.
     private val useSmoothScrollAnimation = !LucaApplication.isRunningInstrumentationTests()
+
+    protected abstract fun mapPageToFragment(page: PageType): Fragment
 
     abstract fun lastPageHasBackButton(): Boolean
 
@@ -33,7 +37,7 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
     }
 
     private fun initializeViewPager() {
-        pagerAdapter = FlowPageAdapter(this)
+        pagerAdapter = FlowPageAdapter(this, ::mapPageToFragment)
 
         binding.confirmationStepViewPager.apply {
             adapter = pagerAdapter
@@ -55,20 +59,20 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
         binding.backButton.setOnClickListener { navigateToPrevious() }
         binding.cancelButton.setOnClickListener { dismiss() }
 
-        viewModel.onPagesUpdated.observe(viewLifecycleOwner, {
-            if (!it.hasBeenHandled()) {
-                pagerAdapter.setPages(it.valueAndMarkAsHandled)
+        viewModel.onPagesUpdated.observe(viewLifecycleOwner) {
+            if (it.isNotHandled) {
+                pagerAdapter.setPages(it.valueAndMarkAsHandled as List<PageType>)
             }
-        })
+        }
 
-        viewModel.pagerNavigation.observe(viewLifecycleOwner, {
-            if (!it.hasBeenHandled()) {
+        viewModel.pagerNavigation.observe(viewLifecycleOwner) {
+            if (it.isNotHandled) {
                 when (it.valueAndMarkAsHandled) {
                     BaseFlowViewModel.PagerNavigate.NEXT -> navigateToNext()
                     BaseFlowViewModel.PagerNavigate.PREVIOUS -> navigateToPrevious()
                 }
             }
-        })
+        }
     }
 
     private fun navigateToPrevious() {
@@ -110,15 +114,15 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
         }
     }
 
-    class FlowPageAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
-        private val pages: MutableList<BaseFlowChildFragment<*, *>> = mutableListOf()
+    fun showsLastPage(): Boolean = binding.confirmationStepViewPager.currentItem == pagerAdapter.itemCount - 1
 
-        fun addPage(fragment: BaseFlowChildFragment<*, *>) {
-            pages.add(fragment)
-            notifyItemInserted(pages.indexOf(fragment))
-        }
+    class FlowPageAdapter<in PageType : BaseFlowPage>(fragment: Fragment, private val mapper: (PageType) -> Fragment) :
+        FragmentStateAdapter(fragment) {
+        private val pages: MutableList<PageType> = mutableListOf()
 
-        fun setPages(pages: List<BaseFlowChildFragment<*, *>>) {
+        // TODO Here we change the whole dataset, could be replaced by DiffUtil in the future
+        @SuppressLint("NotifyDataSetChanged")
+        fun setPages(pages: List<PageType>) {
             this.pages.apply {
                 clear()
                 addAll(pages)
@@ -131,28 +135,15 @@ abstract class BaseFlowBottomSheetDialogFragment<ViewModelType : BaseFlowViewMod
             notifyItemRemoved(index)
         }
 
-        fun addPageAtIndex(index: Int, page: BaseFlowChildFragment<*, *>) {
-            pages.add(index, page)
-            notifyItemInserted(index)
-        }
-
-        fun clearPages() {
-            pages.clear()
-            notifyDataSetChanged()
-        }
-
         fun hasItemAt(position: Int) = position >= 0 && position <= pages.lastIndex
 
         override fun getItemCount(): Int = pages.size
-        override fun createFragment(position: Int): Fragment = pages[position]
 
-        override fun getItemId(position: Int): Long {
-            return pages[position].hashCode().toLong()
-        }
+        override fun createFragment(position: Int): Fragment = mapper.invoke(pages[position])
 
-        override fun containsItem(itemId: Long): Boolean {
-            return pages.any { it.hashCode().toLong() == itemId }
-        }
+        override fun getItemId(position: Int): Long = pages[position].hashCode().toLong()
+
+        override fun containsItem(itemId: Long): Boolean = pages.any { it.hashCode().toLong() == itemId }
     }
 
     override fun onDismiss(dialog: DialogInterface) {

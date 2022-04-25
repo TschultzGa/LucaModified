@@ -6,6 +6,7 @@ import de.culture4life.luca.document.DocumentManager;
 import de.culture4life.luca.document.DocumentParsingException;
 import de.culture4life.luca.document.provider.DocumentProvider;
 import de.culture4life.luca.registration.Person;
+import de.culture4life.luca.util.LucaUrlUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -13,7 +14,7 @@ public class AppointmentProvider extends DocumentProvider<Appointment> {
 
     @Override
     public Single<Boolean> canParse(@NonNull String encodedData) {
-        return Single.fromCallable(() -> DocumentManager.isAppointment(encodedData))
+        return Single.fromCallable(() -> LucaUrlUtil.isAppointment(encodedData))
                 .onErrorReturnItem(false);
     }
 

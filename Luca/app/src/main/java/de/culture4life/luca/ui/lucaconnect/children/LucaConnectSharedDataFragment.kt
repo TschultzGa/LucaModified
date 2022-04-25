@@ -35,6 +35,7 @@ class LucaConnectSharedDataFragment : BaseFlowChildFragment<LucaConnectSharedDat
         observe(viewModel.additionalTransferData, ::showData)
     }
 
+    // Does not make a difference in our case since we don't concatenate anything that could be localized here
     @SuppressLint("SetTextI18n")
     private fun showData(transferData: AdditionalTransferData) {
         binding.apply {

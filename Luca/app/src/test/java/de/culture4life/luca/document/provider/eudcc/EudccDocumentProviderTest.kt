@@ -1,6 +1,5 @@
 package de.culture4life.luca.document.provider.eudcc
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.document.DocumentParsingException
@@ -13,14 +12,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.`when`
-import org.robolectric.annotation.Config
 
 @ExperimentalUnsignedTypes
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class EudccDocumentProviderTest : LucaUnitTest() {
 
     private lateinit var provider: EudccDocumentProvider
@@ -46,25 +41,29 @@ class EudccDocumentProviderTest : LucaUnitTest() {
     @Test
     fun canParse_validData_emitsTrue() {
         provider.canParse(EUDCC_TEST_RESULT)
-            .test().assertValue(true)
+            .test()
+            .assertValue(true)
     }
 
     @Test
     fun canParse_invalidData_emitsFalse() {
         provider.canParse("anything")
-            .test().assertValue(false)
+            .test()
+            .assertValue(false)
     }
 
     @Test
     fun canParse_ticketIoDocument_emitsFalse() {
         provider.canParse(OpenTestCheckDocumentProviderTest.VALID_TEST_RESULT_TICKET_IO)
-            .test().assertValue(false)
+            .test()
+            .assertValue(false)
     }
 
     @Test
     fun canParse_baercodeDocument_emitsFalse() {
         provider.canParse(BaercodeTestResultProviderTest.TEST_QR_CODE)
-            .test().assertValue(false)
+            .test()
+            .assertValue(false)
     }
 
     @Test
@@ -165,7 +164,8 @@ class EudccDocumentProviderTest : LucaUnitTest() {
         val person = Person("Erika", "Mustermann")
         provider.parse(EUDCC_TEST_RESULT)
             .flatMapCompletable { result -> provider.validate(result, person) }
-            .test().assertComplete()
+            .test()
+            .assertComplete()
     }
 
     @Test
@@ -173,13 +173,15 @@ class EudccDocumentProviderTest : LucaUnitTest() {
         val person = Person("Hans", "Wurst")
         provider.parse(EUDCC_TEST_RESULT)
             .flatMapCompletable { result -> provider.validate(result, person) }
-            .test().assertError(DocumentVerificationException::class.java)
+            .test()
+            .assertError(DocumentVerificationException::class.java)
     }
 
     @Test
     fun validate_fakedDocument_fails() {
         provider.parse(EUDCC_FAKED_VACCINATION)
-            .test().assertError(DocumentParsingException::class.java)
+            .test()
+            .assertError(DocumentParsingException::class.java)
     }
 
     @Ignore("Missing test data")

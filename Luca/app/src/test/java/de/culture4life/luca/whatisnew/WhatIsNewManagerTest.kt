@@ -1,6 +1,5 @@
 package de.culture4life.luca.whatisnew
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.testtools.rxjava.SubscriptionRecorder
 import io.reactivex.rxjava3.core.Completable
@@ -9,23 +8,19 @@ import io.reactivex.rxjava3.core.Single
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mockito.doAnswer
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.whenever
-import org.robolectric.annotation.Config
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class WhatIsNewManagerTest : LucaUnitTest() {
 
     private val notificationManagerSpy = spy(application.notificationManager)
     private val registrationManagerSpy = spy(application.registrationManager)
     private val whatIsNewManager = spy(
         getInitializedManager(
-            WhatIsNewManager(application.preferencesManager, notificationManagerSpy, registrationManagerSpy)
+            WhatIsNewManager(application.preferencesManager, notificationManagerSpy, registrationManagerSpy, application.rolloutManager)
         )
     )
 

@@ -1,15 +1,10 @@
 package de.culture4life.luca.network.pojo
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.crypto.KeyIssuerData
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class KeyIssuerResponseDataTest : LucaUnitTest() {
 
     private val keyIssuerResponseData = KeyIssuerResponseData(

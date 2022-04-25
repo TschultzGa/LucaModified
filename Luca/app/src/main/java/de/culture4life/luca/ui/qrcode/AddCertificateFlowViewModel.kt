@@ -15,6 +15,25 @@ class AddCertificateFlowViewModel(app: Application) : BaseFlowViewModel(app) {
     val addedDocument = MutableLiveData<ViewEvent<Boolean>>()
     val documentAddedOnViewDismissed = MutableLiveData<ViewEvent<Boolean>>()
 
+    override fun initialize(): Completable {
+        return super.initialize()
+            .andThen(updatePages())
+    }
+
+    private fun updatePages(): Completable {
+        return Completable.fromCallable {
+            pages.apply {
+                clear()
+                add(AddCertificateFlowPage.SelectInputPage)
+                add(AddCertificateFlowPage.ScanQrCodePage)
+                add(AddCertificateFlowPage.DocumentAddedSuccessPage)
+            }
+        }
+            .doOnComplete {
+                updateAsSideEffect(onPagesUpdated, ViewEvent(pages))
+            }
+    }
+
     fun process(barcodeData: String): Completable {
         return documentBarcodeProcessor.process(barcodeData)
             .andThen(update(addedDocument, ViewEvent(true)))

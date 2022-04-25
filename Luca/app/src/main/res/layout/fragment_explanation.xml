@@ -35,6 +35,14 @@
             android:text="@string/luca_connect_intro_description"
             app:layout_constraintTop_toBottomOf="@id/inputHeaderTextView" />
 
+        <ImageView
+            android:id="@+id/inputDescriptionImageView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:layout_marginTop="@dimen/spacing_default"
+            app:layout_constraintTop_toBottomOf="@id/inputDescriptionTextView" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/actionButton"
             style="@style/Widget.Luca.Button.PrimaryActionButton"
@@ -43,7 +51,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/inputDescriptionTextView"
+            app:layout_constraintTop_toBottomOf="@id/inputDescriptionImageView"
             app:layout_constraintVertical_bias="1" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,7 +6,10 @@ import de.culture4life.luca.network.pojo.LocationResponseData
 import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowViewModel
 import de.culture4life.luca.ui.checkin.CheckInViewModel
-import de.culture4life.luca.util.addTo
+import de.culture4life.luca.ui.checkin.flow.children.ConfirmCheckInFragment
+import de.culture4life.luca.ui.checkin.flow.children.ConfirmCheckInViewModel
+import de.culture4life.luca.ui.checkin.flow.children.EntryPolicyViewModel
+import de.culture4life.luca.ui.checkin.flow.children.VoluntaryCheckInViewModel
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Single
@@ -23,14 +26,8 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
 
     override fun initialize(): Completable {
         return super.initialize()
-    }
-
-    fun initializeViewModel() {
-        return initializeUserSetting()
+            .andThen(initializeUserSetting())
             .andThen(updatePages())
-            .onErrorComplete()
-            .subscribe()
-            .addTo(modelDisposable)
     }
 
     private fun updatePages(): Completable {
@@ -58,12 +55,12 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
         ).ignoreElements()
     }
 
-    private fun createConfirmCheckInPageIfRequired(): Maybe<BaseCheckInFlowFragment<*, *>> {
+    private fun createConfirmCheckInPageIfRequired(): Maybe<CheckInFlowPage.ConfirmCheckInPage> {
         return preferencesManager.restoreOrDefault(ConfirmCheckInViewModel.KEY_SKIP_CHECK_IN_CONFIRMATION, false)
             .flatMapMaybe { skipCheckInConfirm ->
                 Maybe.fromCallable {
                     if ((locationResponseData?.isContactDataMandatory == true || CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED) && !skipCheckInConfirm) {
-                        ConfirmCheckInFragment.newInstance(locationResponseData?.groupName)
+                        CheckInFlowPage.ConfirmCheckInPage(ConfirmCheckInFragment.createArguments(locationResponseData!!.groupName!!))
                     } else {
                         null
                     }
@@ -71,14 +68,14 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
             }
     }
 
-    private fun createVoluntaryCheckInPageIfRequired(): Maybe<BaseCheckInFlowFragment<*, *>> {
+    private fun createVoluntaryCheckInPageIfRequired(): Maybe<CheckInFlowPage.VoluntaryCheckInPage> {
         return preferencesManager.restoreOrDefault(VoluntaryCheckInViewModel.KEY_ALWAYS_CHECK_IN_VOLUNTARY, false)
             .flatMapMaybe { alwaysCheckInVoluntary ->
                 Maybe.fromCallable {
                     if ((locationResponseData?.isContactDataMandatory == false && !alwaysCheckInVoluntary) &&
                         !CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED
                     ) {
-                        VoluntaryCheckInFragment.newInstance()
+                        CheckInFlowPage.VoluntaryCheckInPage
                     } else {
                         null
                     }
@@ -86,14 +83,14 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
             }
     }
 
-    private fun createEntryPolicyPageIfRequired(): Maybe<BaseCheckInFlowFragment<*, *>> {
+    private fun createEntryPolicyPageIfRequired(): Maybe<CheckInFlowPage.EntryPolicyPage> {
         return preferencesManager.restoreOrDefault(EntryPolicyViewModel.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS, false)
             .flatMapMaybe { alwaysShareEntryPolicyStatus ->
                 Maybe.fromCallable {
                     if ((locationResponseData?.entryPolicy != null && !alwaysShareEntryPolicyStatus) &&
                         !CheckInViewModel.FEATURE_ENTRY_POLICY_CHECKIN_DISABLED
                     ) {
-                        EntryPolicyFragment.newInstance()
+                        CheckInFlowPage.EntryPolicyPage
                     } else {
                         null
                     }
@@ -101,7 +98,7 @@ class CheckInFlowViewModel(app: Application) : BaseFlowViewModel(app) {
             }
     }
 
-    fun requestCheckIn() {
+    private fun requestCheckIn() {
         val checkInRequest = CheckInRequest(
             url = url!!,
             isAnonymous = checkInAnonymously && !CheckInViewModel.FEATURE_ANONYMOUS_CHECKIN_DISABLED,

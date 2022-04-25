@@ -14,7 +14,7 @@ public class DocumentImportedItem extends HistoryItem {
     private Document document;
 
     public DocumentImportedItem() {
-        super(HistoryItem.TYPE_TEST_RESULT_IMPORTED);
+        super(HistoryItem.TYPE_DOCUMENT_IMPORTED);
     }
 
     public DocumentImportedItem(@NonNull Document document) {

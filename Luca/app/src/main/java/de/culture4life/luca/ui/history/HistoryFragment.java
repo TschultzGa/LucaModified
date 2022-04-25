@@ -1,8 +1,5 @@
 package de.culture4life.luca.ui.history;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +23,7 @@ import de.culture4life.luca.databinding.FragmentHistoryBinding;
 import de.culture4life.luca.history.HistoryManager;
 import de.culture4life.luca.ui.BaseFragment;
 import de.culture4life.luca.ui.dialog.BaseDialogFragment;
+import de.culture4life.luca.util.ClipboardUtil;
 import io.reactivex.rxjava3.core.Observable;
 
 public class HistoryFragment extends BaseFragment<HistoryViewModel> {
@@ -74,12 +72,12 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
 
     private void initializeHistoryItemsViews() {
         binding.actionBarTitleTextView.setText(getTitleFor(warningLevelFilter));
-        historyListAdapter = new HistoryListAdapter(getContext(), binding.historyListView.getId(), warningLevelFilter == NO_WARNING_LEVEL_FILTER);
+        historyListAdapter = new HistoryListAdapter(requireContext(), binding.historyListView.getId(), warningLevelFilter == NO_WARNING_LEVEL_FILTER);
         historyListAdapter.setItemClickHandler(new HistoryListAdapter.ItemClickHandler() {
             @Override
             public void showPrivateMeetingDetails(@NonNull HistoryListItem.MeetingEndedListItem item) {
                 Bundle bundle = new Bundle();
-                MeetingHistoryItem dataListItem = MeetingHistoryItem.from(getContext(), item);
+                MeetingHistoryItem dataListItem = MeetingHistoryItem.from(requireContext(), item);
                 bundle.putSerializable(MeetingHistoryDetailFragment.KEY_PRIVATE_MEETING_ITEM, dataListItem);
                 safeNavigateFromNavController(R.id.action_historyFragment_to_meetingHistoryDetailFragment, bundle);
             }
@@ -108,7 +106,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
             }
         });
         binding.historyListView.setAdapter(historyListAdapter);
-        observe(viewModel.getHistoryItems(), items -> historyListAdapter.setHistoryItems(HistoryViewModel.Companion.filterHistoryListItems(items, warningLevelFilter)));
+        observe(viewModel.getHistoryItems(), items -> historyListAdapter.setHistoryItems(HistoryViewModel.filterHistoryListItems(items, warningLevelFilter)));
     }
 
     private int getTitleFor(int warningLevelFilter) {
@@ -128,12 +126,12 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
 
     private void initializeShareHistoryViews() {
         binding.primaryActionButton.setOnClickListener(button -> showShareHistorySelectionDialog());
-        observe(viewModel.getHistoryItems(), items -> {
-            boolean hideButton = items.isEmpty() || warningLevelFilter != NO_WARNING_LEVEL_FILTER;
+        observe(viewModel.canHistoryBeShared(), historyCanBeShared -> {
+            boolean hideButton = !historyCanBeShared || warningLevelFilter != NO_WARNING_LEVEL_FILTER;
             binding.primaryActionButton.setVisibility(hideButton ? View.GONE : View.VISIBLE);
         });
         observe(viewModel.getTracingTanEvent(), tracingTanEvent -> {
-            if (!tracingTanEvent.hasBeenHandled()) {
+            if (tracingTanEvent.isNotHandled()) {
                 showShareHistoryTanDialog(tracingTanEvent.getValueAndMarkAsHandled());
             }
         });
@@ -141,7 +139,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
 
     private void initializeAccessedDataViews() {
         observe(viewModel.getNewAccessedData(), accessedDataEvent -> {
-            if (!accessedDataEvent.hasBeenHandled()) {
+            if (accessedDataEvent.isNotHandled()) {
                 showAccessedDataDialog(accessedDataEvent.getValueAndMarkAsHandled());
             }
         });
@@ -159,21 +157,19 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     }
 
     protected void showHistoryItemDetailsDialog(@NonNull HistoryListItem item, String additionalDetails) {
-        new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
+        new BaseDialogFragment(new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(item.getTitle())
                 .setMessage(additionalDetails)
                 .setPositiveButton(R.string.action_ok, (dialogInterface, i) -> dialogInterface.cancel())
                 .setNeutralButton(R.string.action_copy, (dialogInterface, i) -> {
                     String content = item.getTitle() + "\n" + item.getTime() + "\n" + additionalDetails;
-                    ClipboardManager clipboard = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-                    ClipData clip = ClipData.newPlainText("luca", content);
-                    clipboard.setPrimaryClip(clip);
+                    ClipboardUtil.copy(requireContext(), "luca", content);
                 }))
                 .show();
     }
 
     private void showShareHistorySelectionDialog() {
-        ViewGroup viewGroup = getActivity().findViewById(android.R.id.content);
+        ViewGroup viewGroup = requireActivity().findViewById(android.R.id.content);
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_select_days, viewGroup, false);
 
         int maximumDays = (int) TimeUnit.MILLISECONDS.toDays(HistoryManager.SHARE_DATA_DURATION);
@@ -189,7 +185,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
         autoCompleteTextView.setAdapter(adapter);
         autoCompleteTextView.setText(String.valueOf(maximumDays), false);
 
-        new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
+        new BaseDialogFragment(new MaterialAlertDialogBuilder(requireContext())
                 .setView(dialogView)
                 .setTitle(getString(R.string.history_share_selection_title))
                 .setPositiveButton(R.string.history_share_selection_action, (dialogInterface, i) -> {
@@ -201,7 +197,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     }
 
     private void showShareHistoryConfirmationDialog(int days) {
-        new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
+        new BaseDialogFragment(new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.history_share_confirmation_title))
                 .setMessage(getFormattedString(R.string.history_share_confirmation_description, days))
                 .setPositiveButton(R.string.history_share_confirmation_action, (dialogInterface, i) -> viewModel.onShareHistoryRequested(days))
@@ -210,7 +206,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
     }
 
     private void showShareHistoryTanDialog(@NonNull String tracingTan) {
-        BaseDialogFragment dialogFragment = new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
+        BaseDialogFragment dialogFragment = new BaseDialogFragment(new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.history_share_tan_title))
                 .setMessage(getString(R.string.history_share_tan_description, tracingTan))
                 .setPositiveButton(R.string.action_ok, (dialogInterface, i) -> dialogInterface.dismiss()));
@@ -222,7 +218,7 @@ public class HistoryFragment extends BaseFragment<HistoryViewModel> {
         if (accessedTraceDataList.isEmpty() || !hasWarningLevel1(accessedTraceDataList)) {
             return;
         }
-        BaseDialogFragment dialogFragment = new BaseDialogFragment(new MaterialAlertDialogBuilder(getContext())
+        BaseDialogFragment dialogFragment = new BaseDialogFragment(new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.accessed_data_dialog_title)
                 .setMessage(R.string.accessed_data_dialog_description)
                 .setPositiveButton(R.string.accessed_data_dialog_action_show, (dialog, which) -> viewModel.onShowAccessedDataRequested())

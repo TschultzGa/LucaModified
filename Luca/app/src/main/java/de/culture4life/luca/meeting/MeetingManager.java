@@ -299,9 +299,4 @@ public class MeetingManager extends Manager {
         }
         return name;
     }
-
-    public static boolean isPrivateMeeting(@NonNull String url) {
-        return url.contains("luca-app.de/webapp/meeting");
-    }
-
 }

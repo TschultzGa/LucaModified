@@ -1,18 +1,13 @@
 package de.culture4life.luca.consent
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import io.reactivex.rxjava3.core.Completable
 import org.junit.Assert
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mockito.spy
 import org.mockito.kotlin.whenever
-import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [28])
 class ConsentManagerTest : LucaUnitTest() {
 
     private val consentManager = spy(getInitializedManager(application.consentManager))

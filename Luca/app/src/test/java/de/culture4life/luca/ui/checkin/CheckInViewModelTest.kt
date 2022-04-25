@@ -5,14 +5,21 @@ import androidx.navigation.NavDestination
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.R
 import de.culture4life.luca.checkin.CheckInManager
+import de.culture4life.luca.crypto.CryptoManager
+import de.culture4life.luca.crypto.CryptoManagerTest
+import de.culture4life.luca.crypto.DailyKeyUnavailableException
+import de.culture4life.luca.crypto.DailyPublicKeyData
+import de.culture4life.luca.document.Document
+import de.culture4life.luca.document.DocumentManager
 import de.culture4life.luca.meeting.MeetingManager
+import de.culture4life.luca.network.pojo.LocationResponseData
 import de.culture4life.luca.registration.RegistrationManager
+import de.culture4life.luca.testtools.samples.SampleDocuments
 import de.culture4life.luca.ui.ViewEvent
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Single
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.*
@@ -25,6 +32,8 @@ class CheckInViewModelTest : LucaUnitTest() {
     private lateinit var registrationManager: RegistrationManager
     private lateinit var meetingManager: MeetingManager
     private lateinit var checkInManager: CheckInManager
+    private lateinit var cryptoManager: CryptoManager
+    private lateinit var documentManager: DocumentManager
 
     @Before
     fun before() {
@@ -32,13 +41,43 @@ class CheckInViewModelTest : LucaUnitTest() {
         registrationManager = spy(application.registrationManager)
         meetingManager = spy(application.meetingManager)
         checkInManager = spy(application.checkInManager)
+        cryptoManager = spy(application.cryptoManager)
+        documentManager = spy(application.documentManager)
         doReturn(registrationManager).`when`(applicationSpy).registrationManager
         doReturn(meetingManager).`when`(applicationSpy).meetingManager
         doReturn(checkInManager).`when`(applicationSpy).checkInManager
+        doReturn(cryptoManager).`when`(applicationSpy).cryptoManager
+        doReturn(documentManager).`when`(applicationSpy).documentManager
 
         doReturn(Maybe.just(UUID.randomUUID())).`when`(registrationManager).getUserIdIfAvailable()
         application.preferencesManager.initialize(application).blockingAwait()
         viewModel = spy(CheckInViewModel(applicationSpy))
+    }
+
+    @Test
+    fun `If no daily public key is available then isDailyPublicKeyAvailable returns false`() {
+        // Given
+        doReturn(Single.error<DailyPublicKeyData>(DailyKeyUnavailableException(Throwable()))).`when`(cryptoManager).getDailyPublicKey()
+
+        // When
+        viewModel.initialize().test()
+        rxSchedulersRule.testScheduler.triggerActions()
+
+        // Then
+        assertFalse(viewModel.isDailyPublicKeyAvailable.value!!)
+    }
+
+    @Test
+    fun `If a daily public key is available then isDailyPublicKeyAvailable returns true`() {
+        // Given
+        doReturn(Single.just(CryptoManagerTest.DAILY_KEY_NOT_EXPIRED)).`when`(cryptoManager).getDailyPublicKey()
+
+        // When
+        viewModel.initialize().test()
+        rxSchedulersRule.testScheduler.triggerActions()
+
+        // Then
+        assertTrue(viewModel.isDailyPublicKeyAvailable.value!!)
     }
 
     @Test
@@ -250,6 +289,37 @@ class CheckInViewModelTest : LucaUnitTest() {
 
         // Then
         assertEquals(ViewEvent(true), viewModel.showCameraPreview.value)
+    }
+
+    @Test
+    fun `Calling processBarcode with location url emits correct event`() {
+        // Given
+        val locationData = mock<LocationResponseData>()
+        doReturn(Single.just(locationData)).`when`(checkInManager).getLocationDataFromScannerId(SCANNER_ID)
+
+        // When
+        val observer = viewModel.processBarcode(CHECK_IN_URL_WITH_LUCA_DATA).test()
+        rxSchedulersRule.testScheduler.triggerActions()
+
+        // Then
+        observer.await().assertNoErrors()
+        assertEquals(ViewEvent(androidx.core.util.Pair(CHECK_IN_URL_WITH_LUCA_DATA, locationData)), viewModel.checkInMultiConfirm.value)
+    }
+
+    @Test
+    fun `Calling processBarcode with document content emits correct event`() {
+        // Given
+        val document = SampleDocuments.ErikaMustermann.EudccFullyVaccinated()
+        val documentQrCodeContent = document.qrCodeContent
+        doReturn(Single.just(mock<Document>())).`when`(documentManager).parseAndValidateEncodedDocument(documentQrCodeContent)
+
+        // When
+        val observer = viewModel.processBarcode(documentQrCodeContent).test()
+        rxSchedulersRule.testScheduler.triggerActions()
+
+        // Then
+        observer.await().assertNoErrors()
+        assertEquals(ViewEvent(documentQrCodeContent), viewModel.possibleDocumentData.value)
     }
 
     companion object {

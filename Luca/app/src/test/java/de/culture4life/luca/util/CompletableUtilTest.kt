@@ -1,21 +1,16 @@
 package de.culture4life.luca.util
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.schedulers.TestScheduler
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
-import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [28])
 class CompletableUtilTest : LucaUnitTest() {
 
     private val testScheduler = TestScheduler(0, TimeUnit.SECONDS)
@@ -31,8 +26,7 @@ class CompletableUtilTest : LucaUnitTest() {
     fun `RxJava chain with retryWhenWithDelay is successful no retry is triggered`() {
         whenever(mockList.size).then { 0 }
 
-        retryWhenWithDelayTest
-            .test()
+        retryWhenWithDelayTest.test()
 
         val maxInvokeTime = MAX_RETRIES * MAX_DELAY_IN_SECONDS
         val maxInvocations = 1
@@ -48,8 +42,7 @@ class CompletableUtilTest : LucaUnitTest() {
     fun `retryWhenWithDelay will retry MAX_RETRIES when predicate is true`() {
         whenever(mockList.size).then { throw IllegalStateException() }
 
-        retryWhenWithDelayTest
-            .test()
+        retryWhenWithDelayTest.test()
 
         val maxInvokeTime = MAX_RETRIES * MAX_DELAY_IN_SECONDS
         val maxInvocations = MAX_RETRIES + 1
@@ -65,8 +58,7 @@ class CompletableUtilTest : LucaUnitTest() {
     fun `retryWhenWithDelay will not retry when predicate is false`() {
         whenever(mockList.size).then { throw RuntimeException() }
 
-        retryWhenWithDelayTest
-            .test()
+        retryWhenWithDelayTest.test()
 
         val maxInvokeTime = MAX_RETRIES * MAX_DELAY_IN_SECONDS
         val maxInvocations = 1

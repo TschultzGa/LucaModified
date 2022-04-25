@@ -2,6 +2,7 @@ package de.culture4life.luca.ui.messages
 
 import android.view.View
 import androidx.core.os.bundleOf
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentMessagesBinding
@@ -23,6 +24,10 @@ class MessagesFragment : BaseFragment<MessagesViewModel>() {
 
     override fun getViewModelClass(): Class<MessagesViewModel> {
         return MessagesViewModel::class.java
+    }
+
+    override fun getViewModelStoreOwner(): ViewModelStoreOwner {
+        return requireActivity()
     }
 
     override fun initializeViews() {
@@ -63,11 +68,17 @@ class MessagesFragment : BaseFragment<MessagesViewModel>() {
             messageListView.adapter = messagesListAdapter
             messageListView.setOnItemClickListener { _, _, position, _ ->
                 val item = messagesListAdapter.getItem(position - messageListView.headerViewsCount)
-                if (item is MessageListItem.NewsListItem) {
-                    safeNavigateFromNavController(item.destination)
-                } else {
-                    val bundle = bundleOf(Pair(KEY_MESSAGE_LIST_ITEM, item))
-                    safeNavigateFromNavController(R.id.action_messagesFragment_to_messageDetailFragment, bundle)
+                when (item) {
+                    is MessageListItem.NewsListItem -> {
+                        safeNavigateFromNavController(item.destination)
+                    }
+                    is MessageListItem.MissingConsentItem -> {
+                        viewModel.onMissingConsentItemClicked(item.id)
+                    }
+                    else -> {
+                        val bundle = bundleOf(Pair(KEY_MESSAGE_LIST_ITEM, item))
+                        safeNavigateFromNavController(R.id.action_messagesFragment_to_messageDetailFragment, bundle)
+                    }
                 }
             }
             observe(viewModel.messageItems) { allItems ->

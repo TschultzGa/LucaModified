@@ -11,14 +11,15 @@ import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.navigation.fragment.NavHostFragment
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
+import de.culture4life.luca.ui.SharedViewModelScopeProvider
 import de.culture4life.luca.ui.ViewError
-import de.culture4life.luca.ui.ViewEvent
-import de.culture4life.luca.ui.dialog.BaseDialogContent
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -26,17 +27,24 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import timber.log.Timber
 
-abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetViewModel> : BottomSheetDialogFragment() {
+abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetViewModel> : BottomSheetDialogFragment(), SharedViewModelScopeProvider {
 
     val viewDisposable = CompositeDisposable()
 
-    protected val viewModel: ViewModelType by lazy { ViewModelProvider(requireActivity())[getViewModelClass()] }
+    protected val viewModel: ViewModelType by lazy { ViewModelProvider(sharedViewModelStoreOwner)[getViewModelClass()] }
 
     protected var initialized = false
     protected open var fixedHeight = false
 
     abstract fun getViewBinding(): ViewBinding
     abstract fun getViewModelClass(): Class<ViewModelType>
+
+    override val sharedViewModelStoreOwner: ViewModelStoreOwner
+        get() {
+            val parentFragment = parentFragment
+            // use parent as view model scope if available, otherwise scope to the fragment itself
+            return if (parentFragment == null || parentFragment is NavHostFragment) this else parentFragment
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -153,7 +161,7 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
 
     private fun observeOnDismissBottomSheet() {
         viewModel.dismissBottomSheetRequests.observe(viewLifecycleOwner) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 if (it.valueAndMarkAsHandled) {
                     dismiss()
                 }
@@ -162,9 +170,9 @@ abstract class BaseBottomSheetDialogFragment<ViewModelType : BaseBottomSheetView
     }
 
     protected open fun observeDialogRequests() {
-        viewModel.dialogRequestViewEvent.observe(viewLifecycleOwner) { dialogRequest: ViewEvent<BaseDialogContent?> ->
-            if (!dialogRequest.hasBeenHandled()) {
-                BaseDialogFragment(requireContext(), dialogRequest.valueAndMarkAsHandled).show()
+        viewModel.dialogRequestViewEvent.observe(viewLifecycleOwner) {
+            if (it.isNotHandled) {
+                BaseDialogFragment(requireContext(), it.valueAndMarkAsHandled).show()
             }
         }
     }

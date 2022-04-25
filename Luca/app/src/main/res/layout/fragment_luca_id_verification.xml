@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.MainActivity">
+
+    <ImageView
+        android:id="@+id/actionBarBackButtonImageView"
+        style="@style/ActionBarBackButtonImageView"
+        tools:ignore="ContentDescription,MissingConstraints" />
+
+    <TextView
+        android:id="@+id/actionBarTitleTextView"
+        style="@style/ActionBarTitleTextView"
+        android:text="@string/luca_id_verification_title"
+        tools:ignore="MissingConstraints" />
+
+    <View
+        android:id="@+id/actionBarSeparatorView"
+        style="@style/ActionBarSeparatorView"
+        tools:ignore="MissingConstraints" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_default">
+
+            <TextView
+                style="@style/TextAppearance.Luca.Body1.Bold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_default"
+                android:text="@string/luca_id_verification_success_title_sub" />
+
+            <TextView
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_default"
+                android:text="@string/luca_id_verification_success_description_my_luca" />
+
+            <TextView
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_default"
+                android:text="@string/luca_id_verification_success_description_lock_advice" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/revocationCodeTextView"
+                    style="@style/TextAppearance.Luca.Headline2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/spacing_default"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:ignore="SelectableText"
+                    tools:text="0000-0000-0000" />
+
+                <ImageView
+                    android:id="@+id/copyCodeImageView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/spacing_default"
+                    android:layout_marginEnd="@dimen/spacing_default"
+                    android:contentDescription="@string/luca_id_verification_message_action_copy"
+                    android:src="@drawable/ic_copy"
+                    app:layout_constraintBottom_toBottomOf="@id/revocationCodeTextView"
+                    app:layout_constraintLeft_toRightOf="@id/revocationCodeTextView"
+                    app:layout_constraintTop_toTopOf="@id/revocationCodeTextView"
+                    app:tint="?attr/colorPrimary" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                style="@style/TextAppearance.Luca.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_default"
+                android:text="@string/luca_id_verification_success_description_lock_explanation" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

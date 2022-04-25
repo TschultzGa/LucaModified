@@ -49,12 +49,12 @@
     <ImageView
         android:id="@+id/emptyImageView"
         style="@style/EmptyStateImageView"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintEnd_toEndOf="@id/emptyDescriptionTextView"
         app:layout_constraintStart_toStartOf="@id/emptyDescriptionTextView"
         app:layout_constraintTop_toBottomOf="@id/emptyDescriptionTextView"
-        app:layout_constraintVertical_bias="0.35"
-        tools:ignore="ContentDescription" />
+        app:layout_constraintVertical_bias="0.35" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/emptyStateGroup"
@@ -91,6 +91,6 @@
         android:id="@+id/historyContentGroup"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:constraint_referenced_ids="historyListView, primaryActionButton, editHistoryActionBarMenuImageView" />
+        app:constraint_referenced_ids="historyListView, editHistoryActionBarMenuImageView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

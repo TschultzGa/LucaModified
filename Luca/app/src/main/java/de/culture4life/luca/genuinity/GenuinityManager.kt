@@ -79,7 +79,7 @@ open class GenuinityManager(
     }
 
     open fun fetchServerTime(): Single<Long> {
-        return networkManager.lucaEndpointsV3
+        return networkManager.getLucaEndpointsV3()
             .flatMap { it.serverTime }
             .map { it["unix"].asLong }
             .flatMap { TimeUtil.convertFromUnixTimestamp(it) }

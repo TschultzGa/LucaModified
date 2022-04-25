@@ -139,6 +139,7 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         binding.registrationHeading.setText(getString(R.string.navigation_contact_data));
         binding.registrationActionButton.setText(R.string.action_update);
 
+
         binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(Completable.mergeArray(
                 viewModel.updatePhoneNumberVerificationStatus(),
                 viewModel.updateShouldReImportingTestData(),
@@ -193,8 +194,9 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         addConfirmationAction(binding.emailLayout);
         if (!viewModel.isInEditMode()) {
             addConfirmationAction(binding.emailLayout);
-            binding.phoneNumberLayout.setVisibility(View.GONE);
-            binding.emailLayout.setVisibility(View.GONE);
+        } else {
+            binding.phoneNumberLayout.setVisibility(View.VISIBLE);
+            binding.emailLayout.setVisibility(View.VISIBLE);
         }
     }
 
@@ -207,12 +209,12 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         bindToLiveData(binding.cityNameLayout, viewModel.getCity());
         addConfirmationAction(binding.cityNameLayout);
 
-        if (!viewModel.isInEditMode()) {
-            binding.addressLayout.streetLayout.setVisibility(View.GONE);
-            binding.addressLayout.houseNumberLayout.setVisibility(View.GONE);
-            binding.postalCodeLayout.setVisibility(View.GONE);
-            binding.cityNameLayout.setVisibility(View.GONE);
-        } else {
+        if (viewModel.isInEditMode()) {
+            binding.addressLayout.getRoot().setVisibility(View.VISIBLE);
+            binding.addressLayout.streetLayout.setVisibility(View.VISIBLE);
+            binding.addressLayout.houseNumberLayout.setVisibility(View.VISIBLE);
+            binding.postalCodeLayout.setVisibility(View.VISIBLE);
+            binding.cityNameLayout.setVisibility(View.VISIBLE);
             binding.addressLayout.streetLayout.setRequired(true);
             binding.addressLayout.houseNumberLayout.setRequired(true);
             binding.postalCodeLayout.setRequired(true);
@@ -461,6 +463,7 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         binding.contactInfoTextView.setVisibility(View.GONE);
 
         binding.addressInfoTextView.setVisibility(View.VISIBLE);
+        binding.addressLayout.getRoot().setVisibility(View.VISIBLE);
         binding.addressLayout.streetLayout.setVisibility(View.VISIBLE);
         binding.addressLayout.houseNumberLayout.setVisibility(View.VISIBLE);
         binding.postalCodeLayout.setVisibility(View.VISIBLE);

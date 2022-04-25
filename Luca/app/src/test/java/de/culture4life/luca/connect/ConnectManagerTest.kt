@@ -1,6 +1,5 @@
 package de.culture4life.luca.connect
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.connect.ConnectManager.Companion.KEY_ARCHIVED_CONTACT_DATA
 import de.culture4life.luca.connect.ConnectManager.Companion.ROUNDED_TIMESTAMP_ACCURACY
@@ -29,20 +28,16 @@ import org.joda.time.DateTime
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.Mockito.doReturn
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
-import org.robolectric.annotation.Config
 import java.security.interfaces.ECPublicKey
 import java.time.*
 import java.util.*
 import kotlin.math.floor
 import kotlin.random.Random
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class ConnectManagerTest : LucaUnitTest() {
 
     private lateinit var connectManager: ConnectManager
@@ -98,7 +93,7 @@ class ConnectManagerTest : LucaUnitTest() {
     }
 
     private fun setupNetworkManager() {
-        whenever(networkManager.lucaEndpointsV4).thenReturn(Single.just(lucaEndpointsV4))
+        whenever(networkManager.getLucaEndpointsV4()).thenReturn(Single.just(lucaEndpointsV4))
     }
 
     @Test
@@ -301,6 +296,8 @@ class ConnectManagerTest : LucaUnitTest() {
 
         // Then
         fetching.await().assertNoErrors()
+
+        // TODO: test for subscription
         verify(connectManager, atLeast(1)).addToMessageArchive(message)
         verify(connectManager, atLeast(1)).showNewMessageNotification(message)
         verify(connectManager, atLeast(1)).persistLastUpdateTimestamp(now)
@@ -422,7 +419,7 @@ class ConnectManagerTest : LucaUnitTest() {
         // Then
         showingNotification.await().assertComplete()
         val expectedId = LucaNotificationManager.getNotificationId(LucaNotificationManager.NOTIFICATION_ID_CONNECT_MESSAGE, message.id)
-        verify(notificationManager, times(1)).showNotification(eq(expectedId), any())
+        verify(notificationManager, times(1)).showNotification(eq(expectedId), any()) // TODO: test for subscription
     }
 
     @Test
@@ -430,7 +427,7 @@ class ConnectManagerTest : LucaUnitTest() {
         // Given
         val vaccination = mock<Document> { whenever(it.isValidVaccination).thenReturn(true) }
         val recovery = mock<Document> { whenever(it.isValidRecovery).thenReturn(true) }
-        whenever(documentManager.orRestoreDocuments).thenReturn(Observable.just(vaccination, recovery))
+        whenever(documentManager.getOrRestoreDocuments()).thenReturn(Observable.just(vaccination, recovery))
 
         // When
         val latestCertificates = connectManager.getLatestCovidCertificates().test()

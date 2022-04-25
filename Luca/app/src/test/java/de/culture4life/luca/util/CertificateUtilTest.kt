@@ -1,15 +1,10 @@
 package de.culture4life.luca.util
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.security.cert.CertPathValidatorException
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class CertificateUtilTest : LucaUnitTest() {
 
     @Test

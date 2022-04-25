@@ -31,6 +31,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.navigation.NavAction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -175,6 +176,11 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     protected abstract Class<ViewModelType> getViewModelClass();
 
+    @NonNull
+    protected ViewModelStoreOwner getViewModelStoreOwner() {
+        return this;
+    }
+
     private Completable waitUntilInitializationCompleted() {
         return Observable.interval(0, 50, TimeUnit.MILLISECONDS)
                 .filter(tick -> initialized)
@@ -184,7 +190,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     @CallSuper
     protected Completable initializeViewModel() {
-        return Single.fromCallable(() -> new ViewModelProvider(getActivity()).get(getViewModelClass()))
+        return Single.fromCallable(() -> new ViewModelProvider(getViewModelStoreOwner()).get(getViewModelClass()))
                 .doOnSuccess(createdViewModel -> {
                     viewModel = createdViewModel;
                     viewModel.setNavigationController(navigationController);
@@ -225,7 +231,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
     protected void observeRequiredPermissions() {
         observe(viewModel.getRequiredPermissionsViewEvent(), permissionsViewEvent -> {
             Set<String> permissions = permissionsViewEvent.getValue();
-            if (permissionsViewEvent.hasBeenHandled() || permissions.isEmpty()) {
+            if (permissionsViewEvent.isHandled() || permissions.isEmpty()) {
                 return;
             }
             permissionsViewEvent.setHandled(true);
@@ -430,7 +436,7 @@ public abstract class BaseFragment<ViewModelType extends BaseViewModel> extends 
 
     protected void observeDialogRequests() {
         observe(viewModel.getDialogRequestViewEvent(), dialogRequest -> {
-            if (!dialogRequest.hasBeenHandled()) {
+            if (dialogRequest.isNotHandled()) {
                 new BaseDialogFragment(requireContext(), dialogRequest.getValueAndMarkAsHandled()).show();
             }
         });

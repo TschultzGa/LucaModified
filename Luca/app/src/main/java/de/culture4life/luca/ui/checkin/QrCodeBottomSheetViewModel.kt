@@ -5,17 +5,16 @@ import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.checkin.CheckInManager.KEY_INCLUDE_ENTRY_POLICY
 import de.culture4life.luca.document.DocumentManager
 import de.culture4life.luca.document.DocumentManager.HasDocumentCheckResult.*
-import de.culture4life.luca.ui.BaseViewModel
 import de.culture4life.luca.ui.ViewEvent
+import de.culture4life.luca.ui.base.BaseBottomSheetViewModel
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 
-class QrCodeBottomSheetViewModel(app: Application) : BaseViewModel(app) {
+class QrCodeBottomSheetViewModel(app: Application) : BaseBottomSheetViewModel(app) {
 
     private var documentManager: DocumentManager = application.documentManager
 
-    val onBottomSheetClosed: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
     val onDebuggingCheckInRequested: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
     val includeEntryPolicy: MutableLiveData<Boolean> = MutableLiveData()
     val onDocumentsUnavailable: MutableLiveData<ViewEvent<Boolean>> = MutableLiveData()
@@ -40,10 +39,6 @@ class QrCodeBottomSheetViewModel(app: Application) : BaseViewModel(app) {
         )
     }
     */
-
-    fun onQrCodeBottomSheetClosed() {
-        updateAsSideEffect(onBottomSheetClosed, ViewEvent(true))
-    }
 
     fun onDebuggingCheckInRequested() {
         updateAsSideEffect(onDebuggingCheckInRequested, ViewEvent(true))

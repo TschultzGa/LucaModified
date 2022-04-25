@@ -10,6 +10,7 @@ import de.culture4life.luca.R
 import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.registration.RegistrationManager
+import de.culture4life.luca.rollout.RolloutManager
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -21,7 +22,8 @@ import java.util.concurrent.TimeUnit
 class WhatIsNewManager(
     private val preferencesManager: PreferencesManager,
     private val notificationManager: LucaNotificationManager,
-    private val registrationManager: RegistrationManager
+    private val registrationManager: RegistrationManager,
+    private val rolloutManager: RolloutManager
 ) : Manager() {
 
     private var cachedContentPages: Observable<WhatIsNewPage>? = null
@@ -33,17 +35,18 @@ class WhatIsNewManager(
         return Completable.mergeArray(
             preferencesManager.initialize(context),
             notificationManager.initialize(context),
-            registrationManager.initialize(context)
+            registrationManager.initialize(context),
+            rolloutManager.initialize(context)
         )
             .andThen(
                 invoke(
                     Completable.defer {
                         if (LucaApplication.isRunningUnitTests() || LucaApplication.isRunningInstrumentationTests()) {
+                            Completable.complete()
+                        } else {
                             checkAndUpdateLastUsedVersionNumber()
                                 .delay(1, TimeUnit.SECONDS)
                                 .andThen(showNotificationsForUnseenMessagesIfRequired())
-                        } else {
-                            Completable.complete()
                         }
                     }
                 )
@@ -60,8 +63,9 @@ class WhatIsNewManager(
     fun shouldWhatIsNewBeShown(): Single<Boolean> {
         return Single.zip(
             getIndexOfLastSeenPage(),
-            getIndexOfMostRecentPage()
-        ) { lastSeen, mostRecent -> lastSeen < mostRecent }
+            getIndexOfMostRecentPage(),
+            hasEnabledUnseenPages()
+        ) { lastSeen, mostRecent, hasEnabledPagesVisible -> (lastSeen < mostRecent) && hasEnabledPagesVisible }
     }
 
     fun disableWhatIsNewScreenForCurrentVersion(): Completable {
@@ -103,11 +107,7 @@ class WhatIsNewManager(
      * Contains the intro page, all content pages and the outro page.
      */
     fun getAllPages(): Observable<WhatIsNewPage> {
-        return Observable.merge(
-            Observable.just(getIntroPage()),
-            getOrLoadContentPages(),
-            Observable.just(getOutroPage())
-        )
+        return getOrLoadContentPages()
     }
 
     /**
@@ -117,14 +117,10 @@ class WhatIsNewManager(
         val unseenContentPages = getIndexOfLastSeenPage()
             .flatMapObservable { lastSeenIndex ->
                 getOrLoadContentPages()
-                    .filter { it.index > lastSeenIndex }
+                    .filter { (it.index > lastSeenIndex) && it.isEnabled }
             }
 
-        return Observable.merge(
-            Observable.just(getIntroPage()),
-            unseenContentPages,
-            Observable.just(getOutroPage())
-        )
+        return unseenContentPages
     }
 
     private fun getIntroPage(): WhatIsNewPage {
@@ -180,13 +176,39 @@ class WhatIsNewManager(
                         index = indicesArray[i],
                         image = imageResIdArray[i],
                         heading = headings[i],
-                        description = descriptions[i]
+                        description = descriptions[i],
                     )
                 )
             }
 
             Observable.fromIterable(pages)
+                .flatMapSingle { page ->
+                    checkIfFeatureEnabled(page.index)
+                        .map { page.copy(isEnabled = it) }
+                }
         }
+    }
+
+    private fun checkIfFeatureEnabled(index: Int): Single<Boolean> {
+        return getRolloutFeatureIdFromIndexIfAvailable(index)
+            .flatMapSingle(rolloutManager::isRolledOutToThisDevice)
+            .defaultIfEmpty(true)
+    }
+
+    private fun getRolloutFeatureIdFromIndexIfAvailable(index: Int): Maybe<String> {
+        return Maybe.fromCallable {
+            RolloutFeatureGroup.values().find { it.value.indices.contains(index) }?.value?.rolloutFeatureId
+        }
+    }
+
+    private fun hasEnabledUnseenPages(): Single<Boolean> {
+        return getIndexOfLastSeenPage()
+            .flatMapObservable { lastSeenIndex ->
+                getOrLoadContentPages()
+                    .filter { (it.index > lastSeenIndex) && it.isEnabled }
+            }
+            .isEmpty
+            .map { !it }
     }
 
     enum class PageGroup(val value: PageGroupContent) {
@@ -210,6 +232,13 @@ class WhatIsNewManager(
                 startIndex = 8,
                 size = 1
             )
+        ),
+        LUCA_2_5(
+            PageGroupContent(
+                titleRes = R.string.what_is_new_series_luca_id,
+                startIndex = 9,
+                size = 1
+            )
         )
     }
 
@@ -217,6 +246,20 @@ class WhatIsNewManager(
         val titleRes: Int,
         val startIndex: Int,
         val size: Int
+    )
+
+    enum class RolloutFeatureGroup(val value: RolloutFeatureGroupContent) {
+        LUCA_ID(
+            RolloutFeatureGroupContent(
+                indices = listOf(9),
+                rolloutFeatureId = RolloutManager.ID_LUCA_ID_ENROLLMENT
+            )
+        )
+    }
+
+    data class RolloutFeatureGroupContent(
+        val indices: List<Int>,
+        val rolloutFeatureId: String
     )
 
     /*
@@ -229,7 +272,7 @@ class WhatIsNewManager(
             .filter { hasCompletedRegistration -> isFirstSessionAfterAppUpdate == true && hasCompletedRegistration }
             .flatMapObservable { getAllMessages() }
             .filter { message -> !message.notified && !message.seen && message.enabled }
-            .flatMapCompletable { showNotificationForMessage(it) }
+            .flatMapCompletable(::showNotificationForMessage)
     }
 
     fun showNotificationForMessage(message: WhatIsNewMessage): Completable {
@@ -270,7 +313,10 @@ class WhatIsNewManager(
             if (cachedMessages == null) {
                 cachedMessages = Single.mergeArray(
                     restoreOrCreatePostalCodeMessage(),
-                    restoreOrCreateLucaConnectMessage()
+                    restoreOrCreateLucaConnectMessage(),
+                    restoreOrCreateLucaIdEnrollmentTokenMessage(),
+                    restoreOrCreateLucaIdEnrollmentErrorMessage(),
+                    restoreOrCreateLucaIdVerificationSuccessfulMessage()
                 ).toObservable().cache()
             }
             cachedMessages!!
@@ -308,6 +354,39 @@ class WhatIsNewManager(
                     title = context.getString(R.string.notification_luca_connect_supported_title),
                     content = context.getString(R.string.notification_luca_connect_supported_description),
                     destination = Uri.parse(context.getString(R.string.deeplink_connect))
+                )
+            }
+    }
+
+    private fun restoreOrCreateLucaIdEnrollmentTokenMessage(): Single<WhatIsNewMessage> {
+        return restoreOrCreateMessage(ID_LUCA_ID_ENROLLMENT_TOKEN_MESSAGE, enabledByDefault = false)
+            .map {
+                it.copy(
+                    title = context.getString(R.string.notification_luca_id_enrollment_token_title),
+                    content = context.getString(R.string.notification_luca_id_enrollment_token_description),
+                    destination = Uri.parse(context.getString(R.string.deeplink_id_verification_token))
+                )
+            }
+    }
+
+    private fun restoreOrCreateLucaIdEnrollmentErrorMessage(): Single<WhatIsNewMessage> {
+        return restoreOrCreateMessage(ID_LUCA_ID_ENROLLMENT_ERROR_MESSAGE, enabledByDefault = false)
+            .map {
+                it.copy(
+                    title = context.getString(R.string.notification_luca_id_enrollment_error_title),
+                    content = context.getString(R.string.notification_luca_id_enrollment_error_description),
+                    destination = Uri.parse(context.getString(R.string.deeplink_id_verification_error))
+                )
+            }
+    }
+
+    private fun restoreOrCreateLucaIdVerificationSuccessfulMessage(): Single<WhatIsNewMessage> {
+        return restoreOrCreateMessage(ID_LUCA_ID_VERIFICATION_SUCCESSFUL_MESSAGE, enabledByDefault = false)
+            .map {
+                it.copy(
+                    title = context.getString(R.string.notification_luca_id_verification_success_title),
+                    content = context.getString(R.string.notification_luca_id_verification_success_description),
+                    destination = Uri.parse(context.getString(R.string.deeplink_id_verification_success))
                 )
             }
     }
@@ -364,5 +443,8 @@ class WhatIsNewManager(
         private const val KEY_LAST_WHAT_IS_NEW_PAGE_SEEN_INDEX = "key_last_what_is_new_page_seen_index"
         const val ID_POSTAL_CODE_MESSAGE = "news_message_postal_code"
         const val ID_LUCA_CONNECT_MESSAGE = "news_message_luca_connect"
+        const val ID_LUCA_ID_ENROLLMENT_TOKEN_MESSAGE = "news_message_luca_id_enrollment_token"
+        const val ID_LUCA_ID_ENROLLMENT_ERROR_MESSAGE = "news_message_luca_id_enrollment_error"
+        const val ID_LUCA_ID_VERIFICATION_SUCCESSFUL_MESSAGE = "news_message_luca_id_verification_successful"
     }
 }

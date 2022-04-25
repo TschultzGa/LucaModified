@@ -1,3 +1,9 @@
+# Release 2.5.0
+
+- Account deletion bug fix
+
+This update includes a bug fix related to the deletion of accounts.
+
 # Release 2.4.2
 
 - UX Improvements 

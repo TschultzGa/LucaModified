@@ -1,23 +1,19 @@
 package de.culture4life.luca.pow
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.internal.schedulers.ComputationScheduler
 import io.reactivex.rxjava3.internal.schedulers.IoScheduler
 import io.reactivex.rxjava3.plugins.RxJavaPlugins
+import io.reactivex.rxjava3.schedulers.Schedulers
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.kotlin.*
-import org.robolectric.annotation.Config
 import java.math.BigInteger
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class PowManagerTest : LucaUnitTest() {
 
     private val powManager = getInitializedManager(application.powManager)
@@ -54,16 +50,22 @@ class PowManagerTest : LucaUnitTest() {
 
         // start solving very hard challenge
         val firstSolve = powManager.solveChallenge(challenge)
-            .delaySubscription(10, TimeUnit.MILLISECONDS)
+            .subscribeOn(Schedulers.io())
             .test()
+
+        // wait for a moment to ensure solving has been started (short delay until io thread is started)
+        Thread.sleep(100)
+
+        // solving has been started
+        verify(challenge, times(1)).w
 
         // start solving the same challenge a second time, while the first time is still in progress
         val simultaneousSecondSolve = powManager.solveChallenge(challenge)
-            .delaySubscription(100, TimeUnit.MILLISECONDS)
+            .subscribeOn(Schedulers.io())
             .test()
 
-        // wait for delayed subscriptions
-        Thread.sleep(150)
+        // wait for a moment to ensure solving has been started (short delay until io thread is started)
+        Thread.sleep(100)
 
         firstSolve.assertNotComplete()
         simultaneousSecondSolve.assertNotComplete()
@@ -71,28 +73,23 @@ class PowManagerTest : LucaUnitTest() {
         // solving has been started only once
         verify(challenge, times(1)).w
 
-        // wait for the first solving to time out
+        // simulate for the first solving to have an error (e.g. time out)
         firstSolve.onError(TimeoutException())
         firstSolve.await().assertError(TimeoutException::class.java)
 
         // disposed first solving doesn't affect second
         simultaneousSecondSolve.assertNoErrors()
 
-        // wait for the first solving to time out
+        // simulate for the second solving an error (e.g. time out)
         simultaneousSecondSolve.onError(TimeoutException())
         simultaneousSecondSolve.await().assertError(TimeoutException::class.java)
 
         // TODO: 23.12.21 assert that actual solving has been stopped
-        //  Bug? Solving still runs until done (unexpected?), but next steps show that we do not reconnect (expected!).
-        //  Same effect also without [ControllableEndingChallenge].
+        //  Bug? Solving still runs until done (unexpected?), but next steps show that we do not reconnect (expected!)
 
         // start solving the same challenge a third time, after previous solving has been disposed
         val separateThirdSolve = powManager.solveChallenge(challenge)
-            .delaySubscription(10, TimeUnit.MILLISECONDS)
             .test()
-
-        // wait for delayed subscriptions
-        Thread.sleep(50)
 
         // disposed connected solving doesn't affect subsequent attempts
         separateThirdSolve.assertNoErrors()

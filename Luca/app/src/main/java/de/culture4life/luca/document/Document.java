@@ -10,12 +10,13 @@ import com.google.gson.annotations.SerializedName;
 
 import org.joda.time.Months;
 import org.joda.time.Period;
-import org.joda.time.Years;
 
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import de.culture4life.luca.BuildConfig;
+import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.registration.Person;
 import de.culture4life.luca.util.TimeUtil;
 
@@ -80,13 +81,12 @@ public class Document {
     public static final long MAXIMUM_APPOINTMENT_VALIDITY = TimeUnit.HOURS.toMillis(2);
     public static final long TIME_UNTIL_VACCINATION_IS_VALID = TimeUnit.DAYS.toMillis(15);
     public static final Period MAXIMUM_VACCINATION_VAILIDITY = Months.NINE.toPeriod();
-    public static final Period TIME_UNTIL_VACCINATION_IS_DELETED = Years.ONE.toPeriod();
     public static final long TIME_UNTIL_RECOVERY_IS_VALID = TimeUnit.DAYS.toMillis(15);
     public static final long MAXIMUM_FAST_TEST_VALIDITY = TimeUnit.DAYS.toMillis(2);
     public static final long MAXIMUM_NEGATIVE_PCR_TEST_VALIDITY = TimeUnit.DAYS.toMillis(3);
     public static final long MAXIMUM_POSITIVE_PCR_TEST_VALIDITY = MAXIMUM_RECOVERY_VALIDITY;
 
-    @IntDef({TYPE_UNKNOWN, TYPE_FAST, TYPE_PCR, TYPE_VACCINATION, TYPE_APPOINTMENT, TYPE_GREEN_PASS, TYPE_RECOVERY})
+    @IntDef({TYPE_UNKNOWN, TYPE_FAST, TYPE_PCR, TYPE_VACCINATION, TYPE_APPOINTMENT, TYPE_RECOVERY})
     @Retention(SOURCE)
     public @interface Type {
 
@@ -97,8 +97,6 @@ public class Document {
     public static final int TYPE_PCR = 2;
     public static final int TYPE_VACCINATION = 3;
     public static final int TYPE_APPOINTMENT = 4;
-    @Deprecated
-    public static final int TYPE_GREEN_PASS = 5;
     public static final int TYPE_RECOVERY = 6;
 
     @IntDef({OUTCOME_UNKNOWN, OUTCOME_POSITIVE, OUTCOME_NEGATIVE, OUTCOME_PARTIALLY_IMMUNE, OUTCOME_FULLY_IMMUNE})
@@ -365,15 +363,42 @@ public class Document {
         }
     }
 
+    public boolean deleteWhenExpired() {
+        if (skipExpirationCheck()) {
+            return false;
+        }
+
+        switch (type) {
+            case TYPE_UNKNOWN:
+            case TYPE_FAST:
+            case TYPE_APPOINTMENT:
+                return true;
+            case TYPE_PCR:
+                // keep positive as recovery proof
+                return outcome != OUTCOME_POSITIVE;
+            case TYPE_VACCINATION:
+            case TYPE_RECOVERY:
+            default:
+                return false;
+        }
+    }
+
+    private boolean skipExpirationCheck() {
+        // - skip for manuel testing, so we don't have to generate new test data
+        // - skip for appium ui tests, so we don't have to generate new test data, could be adjusted by manipulating device datetime
+        // - keep check for unit and instrumentation tests, so we can write the required tests, works through fixed time
+        return BuildConfig.DEBUG && !LucaApplication.isRunningTests();
+    }
+
     /**
      * The timestamp after which the document should be deleted. Depends on {@link #type}
      * and {@link #testingTimestamp} or the values set directly from a certificate.
      */
     public long getDeletionTimestamp() {
-        if (type == TYPE_VACCINATION) {
-            return getTestingTimestamp() + TimeUtil.calculateHumanLikeDuration(getTestingTimestamp(), TIME_UNTIL_VACCINATION_IS_DELETED);
-        } else {
+        if (deleteWhenExpired()) {
             return getExpirationTimestamp();
+        } else {
+            throw new IllegalStateException("automatic deletion not allowed");
         }
     }
 
@@ -408,6 +433,7 @@ public class Document {
                 return MAXIMUM_RECOVERY_VALIDITY;
             case TYPE_APPOINTMENT:
                 return MAXIMUM_APPOINTMENT_VALIDITY;
+            case TYPE_UNKNOWN:
             default:
                 return -1;
         }
@@ -428,12 +454,16 @@ public class Document {
         return false;
     }
 
+    public boolean isRecovery() {
+        return type == TYPE_RECOVERY || (type == TYPE_PCR && outcome == OUTCOME_POSITIVE);
+    }
+
     /**
      * @return true if this document is a valid recovery certificate. This is the case when it is a
      * positive PCR test older than 14 days but no more than 6 months.
      */
     public boolean isValidRecovery() {
-        if (type == TYPE_RECOVERY || (type == TYPE_PCR && outcome == OUTCOME_POSITIVE)) {
+        if (isRecovery()) {
             return isValid();
         }
         return false;

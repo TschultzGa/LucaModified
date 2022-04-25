@@ -1,6 +1,5 @@
 package de.culture4life.luca.ui.history
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.dataaccess.AccessedTraceData
 import de.culture4life.luca.dataaccess.DataAccessManager
@@ -8,14 +7,10 @@ import de.culture4life.luca.history.CheckOutItem
 import io.reactivex.rxjava3.core.Observable
 import org.junit.Assert
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.robolectric.annotation.Config
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class HistoryViewModelTest : LucaUnitTest() {
 
     private val checkOutItem = mock<CheckOutItem> {

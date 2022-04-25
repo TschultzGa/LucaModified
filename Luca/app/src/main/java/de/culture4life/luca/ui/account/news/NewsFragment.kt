@@ -2,6 +2,7 @@ package de.culture4life.luca.ui.account.news
 
 import android.content.Intent
 import androidx.core.os.bundleOf
+import androidx.core.view.isVisible
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.databinding.FragmentNewsBinding
 import de.culture4life.luca.ui.BaseFragment
@@ -29,6 +30,17 @@ class NewsFragment : BaseFragment<NewsViewModel>() {
         binding.pageGroup1.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_0) }
         binding.pageGroup2.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_2) }
         binding.pageGroup3.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_4) }
+        binding.pageGroup4.setOnClickListener { showPageGroup(WhatIsNewManager.PageGroup.LUCA_2_5) }
+
+        observe(viewModel.lucaIdEnabledStatus) { statusEvent ->
+            if (statusEvent.isNotHandled) {
+                showLucaIdPageGroup(statusEvent.valueAndMarkAsHandled)
+            }
+        }
+    }
+
+    private fun showLucaIdPageGroup(visible: Boolean) {
+        binding.pageGroup4.isVisible = visible
     }
 
     private fun showPageGroup(pageGroup: WhatIsNewManager.PageGroup) {

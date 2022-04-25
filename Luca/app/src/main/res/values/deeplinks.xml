@@ -4,5 +4,8 @@
     <string name="deeplink_messages" translatable="false">luca://messages</string>
     <string name="deeplink_messages_detail" translatable="false">luca://messages/{id}</string>
     <string name="deeplink_connect" translatable="false">luca://connect</string>
+    <string name="deeplink_id_verification_token" translatable="false">luca://id/verification/token</string>
+    <string name="deeplink_id_verification_success" translatable="false">luca://id/verification/success</string>
+    <string name="deeplink_id_verification_error" translatable="false">luca://id/verification/error</string>
     <string name="deeplink_postal_code" translatable="false">luca://postal-code</string>
 </resources>

@@ -3,28 +3,14 @@
     android:height="16dp"
     android:viewportWidth="16"
     android:viewportHeight="16">
-  <path
-      android:pathData="M8,8m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
-  <path
-      android:pathData="M1,5C4.1111,5.6667 6.4444,6 8,6C9.5556,6 11.8889,5.6667 15,5"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
-  <path
-      android:pathData="M1,11C4.1111,10.3333 6.4444,10 8,10C9.5556,10 11.8889,10.3333 15,11"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
-  <path
-      android:pathData="M8,15L8,1"
-      android:strokeWidth="2"
-      android:fillColor="#00000000"
-      android:strokeColor="#000000"
-      android:fillType="evenOdd"/>
+    <path
+        android:fillType="evenOdd"
+        android:pathData="M1 8a7 7 0 1 1 14 0A7 7 0 1 1 1 8"
+        android:strokeWidth="2"
+        android:strokeColor="#000000" />
+    <path
+        android:fillType="evenOdd"
+        android:pathData="M1 5c3.111 0.667 5.444 1 7 1s3.889-0.333 7-1M1 11c3.111-0.667 5.444-1 7-1s3.889 0.333 7 1m-7 4V1"
+        android:strokeWidth="2"
+        android:strokeColor="#000000" />
 </vector>

@@ -2,23 +2,19 @@ package de.culture4life.luca.crypto;
 
 import android.util.Base64;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.util.RxBase64;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
 import java.math.BigInteger;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class AsymmetricCipherProviderTest {
+import de.culture4life.luca.LucaUnitTest;
+
+public class AsymmetricCipherProviderTest extends LucaUnitTest {
 
     private static final String ENCODED_UNCOMPRESSED_PUBLIC_KEY = "BAIDQ7/zTOcV+XXX5io9XZn1t4MUOAswVfZKd6Fpup/MwlNssx4mCEPcO34AIiV0TbL2ywOP3QoHs41cfvv7uTo=";
     private static final String ENCODED_COMPRESSED_PUBLIC_KEY = "AgIDQ7/zTOcV+XXX5io9XZn1t4MUOAswVfZKd6Fpup/M";

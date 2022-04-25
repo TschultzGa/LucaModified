@@ -1,6 +1,5 @@
 package de.culture4life.luca.crypto
 
-import androidx.test.runner.AndroidJUnit4
 import com.nexenio.rxkeystore.provider.mac.RxMacException
 import com.nexenio.rxkeystore.provider.signature.RxSignatureException
 import de.culture4life.luca.LucaUnitTest
@@ -22,17 +21,13 @@ import io.reactivex.rxjava3.core.Single
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.robolectric.annotation.Config
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.util.concurrent.TimeUnit
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class CryptoManagerTest : LucaUnitTest() {
 
     private lateinit var cryptoManager: CryptoManager
@@ -128,12 +123,8 @@ class CryptoManagerTest : LucaUnitTest() {
 
     @Test
     fun assertKeyNotExpired_expiredKeyWithoutExpiryTimestamp_emitsError() {
-        val key = DailyPublicKeyData(
-            id = 0,
-            creationTimestamp = TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(8), // older than 7 days
-            encodedPublicKey = ENCODED_DAILY_KEY_PAIR_PUBLIC_KEY,
-            issuerId = ""
-        )
+        val key = DAILY_KEY_NOT_EXPIRED
+
         cryptoManager.assertKeyNotExpired(key)
             .test()
             .assertError(DailyKeyExpiredException::class.java)
@@ -428,7 +419,7 @@ class CryptoManagerTest : LucaUnitTest() {
         val lucaEndpointsV4 = Mockito.mock(LucaEndpointsV4::class.java)
         Mockito.doReturn(Single.just(dailyPublicKeyResponseData)).`when`(lucaEndpointsV4).dailyPublicKey
         Mockito.doReturn(Single.just(keyIssuerResponseData)).`when`(lucaEndpointsV4).getKeyIssuer(Mockito.anyString())
-        Mockito.doReturn(Single.just(lucaEndpointsV4)).`when`(networkManager).lucaEndpointsV4
+        Mockito.doReturn(Single.just(lucaEndpointsV4)).`when`(networkManager).getLucaEndpointsV4()
     }
 
     companion object {
@@ -450,6 +441,12 @@ class CryptoManagerTest : LucaUnitTest() {
         )
         private const val ENCODED_PUBLIC_KEY = "035ddf3ad7348a3b98024261a5a9888e2b9636d1b1d16efef01ad485e5f9248157"
         private const val ENCODED_PRIVATE_KEY = "57a7ab110b33b40996c09fc1d14ea55901831e9926d66b22ded4676e16e93fd0"
+        val DAILY_KEY_NOT_EXPIRED = DailyPublicKeyData(
+            id = 0,
+            creationTimestamp = TimeUtil.getCurrentMillis() - TimeUnit.DAYS.toMillis(8), // older than 7 days
+            encodedPublicKey = ENCODED_DAILY_KEY_PAIR_PUBLIC_KEY,
+            issuerId = ""
+        )
 
         @JvmStatic
         fun decodeSecret(encodedSecret: String): ByteArray {

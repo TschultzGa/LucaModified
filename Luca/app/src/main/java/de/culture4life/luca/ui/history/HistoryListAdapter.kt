@@ -11,8 +11,7 @@ import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ItemHistoryBinding
 import de.culture4life.luca.ui.history.HistoryListItem.*
 
-class HistoryListAdapter(context: Context, resource: Int, private val showTimeLine: Boolean) :
-    ArrayAdapter<HistoryListItem>(context, resource) {
+class HistoryListAdapter(context: Context, resource: Int, private val showTimeLine: Boolean) : ArrayAdapter<HistoryListItem>(context, resource) {
 
     private var isInEditMode = false
     var itemClickHandler: ItemClickHandler? = null

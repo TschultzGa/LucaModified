@@ -6,6 +6,10 @@ import android.os.Build
 import com.nexenio.rxkeystore.RxKeyStore
 import com.nexenio.rxkeystore.provider.mac.RxMacException
 import com.nexenio.rxkeystore.provider.signature.RxSignatureException
+import com.nimbusds.jose.*
+import com.nimbusds.jose.crypto.ECDHDecrypter
+import com.nimbusds.jose.crypto.ECDHEncrypter
+import com.nimbusds.jose.jwk.JWK
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
 import de.culture4life.luca.genuinity.GenuinityManager
@@ -39,13 +43,13 @@ import javax.crypto.spec.SecretKeySpec
  * Provides access to all cryptographic methods, handles Bouncy-Castle key store persistence.
  */
 @SuppressLint("NewApi")
-open class CryptoManager constructor(
+class CryptoManager constructor(
     private val preferencesManager: PreferencesManager,
     private val networkManager: NetworkManager,
     private val genuinityManager: GenuinityManager
 ) : Manager() {
 
-    private val androidKeyStore: RxKeyStore
+    val androidKeyStore: RxKeyStore
     private val bouncyCastleKeyStore: RxKeyStore
 
     private val secureRandom: SecureRandom
@@ -55,6 +59,10 @@ open class CryptoManager constructor(
     private val wrappingCipherProvider: WrappingCipherProvider
     val symmetricCipherProvider: SymmetricCipherProvider
     val asymmetricCipherProvider: AsymmetricCipherProvider
+    val attestationCipherProvider: AttestationCipherProvider
+    val attestationSignatureProvider: SignatureProvider
+    val authenticationCipherProvider: AuthenticationCipherProvider
+    val authenticationSignatureProvider: AuthenticationSignatureProvider
 
     private var dailyPublicKeyData: DailyPublicKeyData? = null
 
@@ -68,6 +76,10 @@ open class CryptoManager constructor(
         wrappingCipherProvider = WrappingCipherProvider(androidKeyStore)
         symmetricCipherProvider = SymmetricCipherProvider(bouncyCastleKeyStore)
         asymmetricCipherProvider = AsymmetricCipherProvider(bouncyCastleKeyStore)
+        attestationCipherProvider = AttestationCipherProvider(androidKeyStore)
+        attestationSignatureProvider = SignatureProvider(androidKeyStore)
+        authenticationCipherProvider = AuthenticationCipherProvider(androidKeyStore)
+        authenticationSignatureProvider = AuthenticationSignatureProvider(androidKeyStore)
     }
 
     /**
@@ -263,7 +275,7 @@ open class CryptoManager constructor(
      * Can be used instead of signatures if a shared secret is available.
      */
     fun hmac(data: ByteArray, secretKey: SecretKey): Single<ByteArray> {
-        return macProvider.sign(data, secretKey)
+        return Single.defer { macProvider.sign(data, secretKey) }
     }
 
     fun verifyHmac(data: ByteArray, mac: ByteArray, secret: ByteArray): Completable {
@@ -275,7 +287,7 @@ open class CryptoManager constructor(
      * Verifies a hash-based message authentication code. See [hmac] fore reference.
      */
     fun verifyHmac(data: ByteArray, mac: ByteArray, secretKey: SecretKey): Completable {
-        return macProvider.verify(data, mac, secretKey)
+        return Completable.defer { macProvider.verify(data, mac, secretKey) }
     }
 
     /*
@@ -314,8 +326,10 @@ open class CryptoManager constructor(
      * Convenience method for [eciesEncrypt] that uses a new generated ephemeral key pair.
      */
     fun eciesEncrypt(data: ByteArray, receiverPublicKey: PublicKey): Single<EciesResult> {
-        return asymmetricCipherProvider.generateKeyPair("ecies_ephemeral", context)
-            .flatMap { eciesEncrypt(data, it, receiverPublicKey) }
+        return Single.defer {
+            asymmetricCipherProvider.generateKeyPair("ecies_ephemeral", context)
+                .flatMap { eciesEncrypt(data, it, receiverPublicKey) }
+        }
     }
 
     /**
@@ -368,9 +382,8 @@ open class CryptoManager constructor(
     private fun generateEncryptionAndAuthenticationKeys(baseSecret: ByteArray): Single<Pair<SecretKey, SecretKey>> {
         return Single.zip(
             generateDataEncryptionSecret(baseSecret).map { it.toSecretKey() },
-            generateDataAuthenticationSecret(baseSecret).map { it.toSecretKey() },
-            { encryptionKey, authenticationKey -> Pair(encryptionKey, authenticationKey) }
-        )
+            generateDataAuthenticationSecret(baseSecret).map { it.toSecretKey() }
+        ) { encryptionKey, authenticationKey -> Pair(encryptionKey, authenticationKey) }
     }
 
     /**
@@ -409,7 +422,7 @@ open class CryptoManager constructor(
      * Note that the private and public keys should belong to different key pairs.
      */
     fun ecdh(privateKey: PrivateKey, publicKey: PublicKey): Single<ByteArray> {
-        return asymmetricCipherProvider.generateSecret(privateKey, publicKey)
+        return Single.defer { asymmetricCipherProvider.generateSecret(privateKey, publicKey) }
     }
 
     /*
@@ -427,7 +440,7 @@ open class CryptoManager constructor(
      * @return The signature in IEEE P.1363 format (binary concatenation of r and s)
      */
     fun ecdsa(data: ByteArray, privateKey: PrivateKey): Single<ByteArray> {
-        return signatureProvider.sign(data, privateKey)
+        return Single.defer { signatureProvider.sign(data, privateKey) }
     }
 
     /**
@@ -438,7 +451,7 @@ open class CryptoManager constructor(
      * @param [publicKey] The public key
      */
     fun verifyEcdsa(data: ByteArray, signature: ByteArray, publicKey: PublicKey): Completable {
-        return signatureProvider.verify(data, signature, publicKey)
+        return Completable.defer { signatureProvider.verify(data, signature, publicKey) }
     }
 
     /*
@@ -475,34 +488,40 @@ open class CryptoManager constructor(
      * Existing key store entries with the specified alias will be overwritten.
      */
     fun generateKeyPair(alias: String = "ephemeral"): Single<KeyPair> {
-        return asymmetricCipherProvider.generateKeyPair(alias, context)
-            .flatMap { persistKeyPair(alias, it).andThen(Single.just(it)) }
-            .doOnSuccess { Timber.d("Generated new key pair for alias: %s", alias) }
+        return Single.defer {
+            asymmetricCipherProvider.generateKeyPair(alias, context)
+                .flatMap { persistKeyPair(alias, it).andThen(Single.just(it)) }
+                .doOnSuccess { Timber.d("Generated new key pair for alias: %s", alias) }
+        }
     }
 
     /**
      * Will attempt to restore a key pair that has previously been persisted with the specified alias.
      */
     fun restoreKeyPair(alias: String = "ephemeral"): Maybe<KeyPair> {
-        return asymmetricCipherProvider.getKeyPairIfAvailable(alias)
+        return Maybe.defer { asymmetricCipherProvider.getKeyPairIfAvailable(alias) }
     }
 
     /**
      * Will persist the specified key pair using the specified alias at the [.bouncyCastleKeyStore].
      */
     fun persistKeyPair(alias: String = "ephemeral", keyPair: KeyPair): Completable {
-        return asymmetricCipherProvider.setKeyPair(alias, keyPair)
-            .andThen(persistKeyStoreToFile())
-            .doOnComplete { Timber.d("Persisted key pair for alias: %s", alias) }
+        return Completable.defer {
+            asymmetricCipherProvider.setKeyPair(alias, keyPair)
+                .andThen(persistKeyStoreToFile())
+                .doOnComplete { Timber.d("Persisted key pair for alias: %s", alias) }
+        }
     }
 
     /**
      * Will delete the key store entry with the specified alias from the [.bouncyCastleKeyStore].
      */
     fun deleteKeyPair(alias: String = "ephemeral"): Completable {
-        return bouncyCastleKeyStore.deleteEntry(alias)
-            .andThen(persistKeyStoreToFile())
-            .doOnComplete { Timber.d("Deleted key pair for alias: %s", alias) }
+        return Completable.defer {
+            bouncyCastleKeyStore.deleteEntry(alias)
+                .andThen(persistKeyStoreToFile())
+                .doOnComplete { Timber.d("Deleted key pair for alias: %s", alias) }
+        }
     }
 
     /*
@@ -528,7 +547,7 @@ open class CryptoManager constructor(
      * Get [DailyPublicKeyData], restore it if available or attempt fetching it
      * otherwise using [.updateDailyKeyPairPublicKey].
      */
-    open fun getDailyPublicKey(): Single<DailyPublicKeyData> {
+    fun getDailyPublicKey(): Single<DailyPublicKeyData> {
         return Maybe.fromCallable<DailyPublicKeyData> { dailyPublicKeyData }
             .switchIfEmpty(
                 restoreDailyPublicKey()
@@ -540,47 +559,56 @@ open class CryptoManager constructor(
             ).onErrorResumeNext { Single.error(DailyKeyUnavailableException(it)) }
     }
 
+    fun hasDailyPublicKey(): Single<Boolean> {
+        return getDailyPublicKey()
+            .map { true }
+            .onErrorReturnItem(false)
+    }
+
     /**
      * Fetch [DailyPublicKeyData] from API, verify its authenticity and ensure
      * its less than 7 days old.
      */
     private fun fetchDailyPublicKeyData(): Single<DailyPublicKeyData> {
-        return networkManager.lucaEndpointsV4
-            .flatMap { it.dailyPublicKey }
-            .map { it.dailyPublicKeyData }
-            .flatMap { dailyPublicKeyData ->
-                verifyDailyPublicKeyData(dailyPublicKeyData)
-                    .andThen(Single.just(dailyPublicKeyData))
-            }
+        return Single.defer {
+            networkManager.getLucaEndpointsV4()
+                .flatMap { it.dailyPublicKey }
+                .map { it.dailyPublicKeyData }
+                .flatMap { dailyPublicKeyData ->
+                    verifyDailyPublicKeyData(dailyPublicKeyData)
+                        .andThen(Single.just(dailyPublicKeyData))
+                }
+        }
     }
 
     fun getAndVerifyIssuerCertificate(issuerId: String): Single<KeyIssuerResponseData> {
-        return networkManager
-            .lucaEndpointsV4
-            .flatMap { it.getKeyIssuer(issuerId) }
-            .flatMap { keyIssuerResponseData ->
-                Single.fromCallable {
-                    // verify issuer certificate using luca intermediate and root CA
-                    val issuerCertificate = keyIssuerResponseData.certificate
-                    verifyKeyIssuerCertificate(issuerCertificate).blockingAwait()
+        return Single.defer {
+            networkManager.getLucaEndpointsV4()
+                .flatMap { it.getKeyIssuer(issuerId) }
+                .flatMap { keyIssuerResponseData ->
+                    Single.fromCallable {
+                        // verify issuer certificate using luca intermediate and root CA
+                        val issuerCertificate = keyIssuerResponseData.certificate
+                        verifyKeyIssuerCertificate(issuerCertificate).blockingAwait()
 
-                    // verify issuer signing key JWT signature using issuer certificate
-                    val signingKeyData = keyIssuerResponseData.signingKeyData
-                    signingKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
+                        // verify issuer signing key JWT signature using issuer certificate
+                        val signingKeyData = keyIssuerResponseData.signingKeyData
+                        signingKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
 
-                    // verify issuer encryption key JWT signature using issuer certificate
-                    val encryptionKeyData = keyIssuerResponseData.encryptionKeyData
-                    encryptionKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
+                        // verify issuer encryption key JWT signature using issuer certificate
+                        val encryptionKeyData = keyIssuerResponseData.encryptionKeyData
+                        encryptionKeyData.signedJwt!!.verifyJwt(issuerCertificate.publicKey)
 
-                    // verify signing key JWT subject matches issuer ID
-                    require(signingKeyData.id == issuerId)
+                        // verify signing key JWT subject matches issuer ID
+                        require(signingKeyData.id == issuerId)
 
-                    // verify encryption key JWT subject matches issuer ID
-                    require(encryptionKeyData.id == issuerId)
+                        // verify encryption key JWT subject matches issuer ID
+                        require(encryptionKeyData.id == issuerId)
 
-                    keyIssuerResponseData
+                        keyIssuerResponseData
+                    }
                 }
-            }
+        }
     }
 
     fun verifyDailyPublicKeyData(dailyPublicKeyData: DailyPublicKeyData): Completable {
@@ -597,15 +625,17 @@ open class CryptoManager constructor(
      * Restore [DailyPublicKeyData] from preferences if available.
      */
     private fun restoreDailyPublicKey(): Maybe<DailyPublicKeyData> {
-        return preferencesManager.restoreIfAvailable(DAILY_PUBLIC_KEY_DATA_KEY, DailyPublicKeyData::class.java)
-            .flatMapSingle { assertKeyNotExpired(it).andThen(Single.just(it)) }
+        return Maybe.defer {
+            preferencesManager.restoreIfAvailable(DAILY_PUBLIC_KEY_DATA_KEY, DailyPublicKeyData::class.java)
+                .flatMapSingle { assertKeyNotExpired(it).andThen(Single.just(it)) }
+        }
     }
 
     /**
      * Persist given [DailyPublicKeyData] to preferences.
      */
     private fun persistDailyPublicKey(dailyPublicKeyData: DailyPublicKeyData): Completable {
-        return preferencesManager.persist(DAILY_PUBLIC_KEY_DATA_KEY, dailyPublicKeyData)
+        return Completable.defer { preferencesManager.persist(DAILY_PUBLIC_KEY_DATA_KEY, dailyPublicKeyData) }
     }
 
     /**
@@ -614,14 +644,16 @@ open class CryptoManager constructor(
      * Uses the [.genuinityManager] to make sure the system time is valid.
      */
     fun assertKeyNotExpired(dailyPublicKeyData: DailyPublicKeyData): Completable {
-        return genuinityManager.assertIsGenuineTime()
-            .andThen(
-                Completable.fromAction {
-                    if (TimeUtil.getCurrentMillis() > dailyPublicKeyData.expirationTimestampOrDefault) {
-                        throw DailyKeyExpiredException("Daily public key expired at ${dailyPublicKeyData.expirationTimestampOrDefault.toDateTime()}")
+        return Completable.defer {
+            genuinityManager.assertIsGenuineTime()
+                .andThen(
+                    Completable.fromAction {
+                        if (TimeUtil.getCurrentMillis() > dailyPublicKeyData.expirationTimestampOrDefault) {
+                            throw DailyKeyExpiredException("Daily public key expired at ${dailyPublicKeyData.expirationTimestampOrDefault.toDateTime()}")
+                        }
                     }
-                }
-            )
+                )
+        }
     }
 
     /*
@@ -662,14 +694,14 @@ open class CryptoManager constructor(
      * Restore [KeyIssuerData] from preferences if available.
      */
     fun restoreDailyPublicKeyIssuerData(): Maybe<KeyIssuerData> {
-        return preferencesManager.restoreIfAvailable(DAILY_PUBLIC_KEY_ISSUER_DATA_KEY, KeyIssuerData::class.java)
+        return Maybe.defer { preferencesManager.restoreIfAvailable(DAILY_PUBLIC_KEY_ISSUER_DATA_KEY, KeyIssuerData::class.java) }
     }
 
     /**
      * Persist given [KeyIssuerData] to preferences.
      */
     private fun persistDailyPublicKeyIssuerData(keyIssuerData: KeyIssuerData): Completable {
-        return preferencesManager.persist(DAILY_PUBLIC_KEY_ISSUER_DATA_KEY, keyIssuerData)
+        return Completable.defer { preferencesManager.persist(DAILY_PUBLIC_KEY_ISSUER_DATA_KEY, keyIssuerData) }
     }
 
     /*
@@ -720,8 +752,10 @@ open class CryptoManager constructor(
      * Delete data stored in the [.androidKeyStore] and [.bouncyCastleKeyStore].
      */
     fun deleteAllKeyStoreEntries(): Completable {
-        return androidKeyStore.deleteAllEntries()
-            .andThen(bouncyCastleKeyStore.deleteAllEntries())
+        return Completable.defer {
+            androidKeyStore.deleteAllEntries()
+                .andThen(bouncyCastleKeyStore.deleteAllEntries())
+        }
     }
 
     companion object {
@@ -791,6 +825,22 @@ open class CryptoManager constructor(
                 outputStream.toByteArray()
             }
         }
+
+        @JvmStatic
+        fun decryptJwe(encrypted: String, privateKey: ECPrivateKey): JWEObject {
+            val jwe = JWEObject.parse(encrypted)
+            jwe.decrypt(ECDHDecrypter(privateKey))
+            return jwe
+        }
+
+        fun convertPublicKeyToJWE(key: String, jwk: JWK): String {
+            val encrypter = ECDHEncrypter(jwk.toECKey())
+            val header = JWEHeader(JWEAlgorithm.ECDH_ES_A256KW, EncryptionMethod.A256CBC_HS512)
+            val payload = Payload(key)
+            val jweObject = JWEObject(header, payload)
+            jweObject.encrypt(encrypter)
+            return jweObject.serialize()
+        }
     }
 }
 
@@ -824,6 +874,6 @@ fun ECPublicKey.toByteArray(compressed: Boolean = false): ByteArray {
     return AsymmetricCipherProvider.encode(this, compressed).blockingGet()
 }
 
-fun ECPublicKey.toCompressedBase64String(): String {
-    return this.toByteArray(true).encodeToBase64()
+fun ECPublicKey.toBase64String(compressed: Boolean = true): String {
+    return this.toByteArray(compressed).encodeToBase64()
 }

@@ -5,7 +5,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.testing.FragmentScenario
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
-import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.R
 import de.culture4life.luca.testtools.FixRobolectricIdlingResource
 import java.lang.reflect.Field
@@ -27,18 +26,23 @@ class LucaFragmentScenarioRule<FRAGMENT : Fragment> @Deprecated("Use LucaFragmen
         get() = _scenario!!
 
     fun launch(bundle: Bundle? = null, initialState: Lifecycle.State = Lifecycle.State.RESUMED) {
+        waitForIdle()
         _scenario = FragmentScenario.launchInContainer(fragmentClass, bundle, lucaAppDefaultTheme, initialState)
-        waitForIdleAfterStateMove()
+        waitForIdle()
     }
 
-    private fun waitForIdleAfterStateMove() {
-        // With instrumentation tests not necessary, because IdlingResources is working as expected.
-        // Usually FragmentScenario.launch... does wait for idle already.
-        if (LucaApplication.isRunningUnitTests()) {
-            // TODO Feels like it still behaves differently compared to Espresso.onIdle()
-            //  Currently only saw tests stop finishing when fix is enabled for instrumentation tests too.
-            FixRobolectricIdlingResource.waitForIdle()
-        }
+    fun launch(bundle: Bundle? = null, onCreated: (FRAGMENT) -> Unit = {}, onStarted: (FRAGMENT) -> Unit = {}) {
+        launch(bundle, Lifecycle.State.CREATED)
+        scenario.onFragment { onCreated(it) }
+        scenario.moveToState(Lifecycle.State.STARTED)
+        waitForIdle()
+        scenario.onFragment { onStarted(it) }
+        scenario.moveToState(Lifecycle.State.RESUMED)
+        waitForIdle()
+    }
+
+    private fun waitForIdle() {
+        FixRobolectricIdlingResource.waitForIdle()
     }
 
     /**
@@ -55,7 +59,7 @@ class LucaFragmentScenarioRule<FRAGMENT : Fragment> @Deprecated("Use LucaFragmen
             it.arguments = bundleOf
         }
         scenario.moveToState(Lifecycle.State.RESUMED)
-        waitForIdleAfterStateMove()
+        waitForIdle()
     }
 
     override fun beforeTest() {}

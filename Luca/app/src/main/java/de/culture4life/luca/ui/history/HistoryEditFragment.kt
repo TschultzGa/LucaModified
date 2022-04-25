@@ -1,5 +1,6 @@
 package de.culture4life.luca.ui.history
 
+import androidx.core.view.isVisible
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import de.culture4life.luca.R
@@ -36,6 +37,7 @@ open class HistoryEditFragment : BaseFragment<HistoryViewModel>() {
         binding.editHistoryActionBarMenuImageView.setImageResource(R.drawable.ic_bin)
         binding.editHistoryActionBarMenuImageView.contentDescription = getString(R.string.history_clear_content_description)
         binding.editHistoryActionBarMenuImageView.setOnClickListener { showClearHistoryConfirmationDialog() }
+        binding.primaryActionButton.isVisible = true
         binding.primaryActionButton.isEnabled = false
         binding.primaryActionButton.text = getString(R.string.action_delete_selected)
         binding.primaryActionButton.setOnClickListener { showDeletedSelectedHistoryItemsDialog() }

@@ -13,10 +13,7 @@ import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.network.endpoints.LucaEndpointsV3
 import de.culture4life.luca.network.pojo.*
 import de.culture4life.luca.preference.PreferencesManager
-import de.culture4life.luca.util.SerializationUtil
-import de.culture4life.luca.util.TimeUtil
-import de.culture4life.luca.util.encodeToBase64
-import de.culture4life.luca.util.toUnixTimestamp
+import de.culture4life.luca.util.*
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -79,16 +76,18 @@ class RegistrationManager(
             .flatMapCompletable { userId ->
                 createDeletionData(userId)
                     .flatMapCompletable { deletionRequestData ->
-                        networkManager.lucaEndpointsV3
+                        networkManager.getLucaEndpointsV3()
                             .flatMapCompletable { endpoint: LucaEndpointsV3 -> endpoint.deleteUser(userId.toString(), deletionRequestData) }
                             .onErrorResumeNext {
-                                if (NetworkManager.isHttpException(it, HttpURLConnection.HTTP_FORBIDDEN) &&
+                                if (it.isHttpException(HttpURLConnection.HTTP_FORBIDDEN) &&
                                     !LucaApplication.IS_USING_STAGING_ENVIRONMENT
                                 ) {
                                     // The deletion failed because the signature verification failed.
                                     // However, this is an unrecoverable error that prevents the user
                                     // from deleting the account manually, thus we treat it as success.
                                     Completable.complete()
+                                } else if (it.isHttpException(HttpURLConnection.HTTP_NOT_FOUND)) {
+                                    Completable.complete() // already deleted
                                 } else {
                                     Completable.error(it)
                                 }
@@ -97,7 +96,7 @@ class RegistrationManager(
             }
     }
 
-    private fun createDeletionData(userIdParam: UUID): Single<UserDeletionRequestData> {
+    fun createDeletionData(userIdParam: UUID): Single<UserDeletionRequestData> {
         return cryptoManager.initialize(context)
             .andThen(Single.just(userIdParam))
             .map(UUID::toByteArray)
@@ -178,7 +177,7 @@ class RegistrationManager(
     fun requestPhoneNumberVerificationTan(formattedPhoneNumber: String): Single<String> {
         return Single.defer {
             val requestData = JsonObject().apply { addProperty("phone", formattedPhoneNumber) }
-            networkManager.lucaEndpointsV3
+            networkManager.getLucaEndpointsV3()
                 .flatMap { lucaEndpointsV3 -> lucaEndpointsV3.requestPhoneNumberVerificationTan(requestData) }
                 .doOnSubscribe { Timber.i("Requesting TAN for %s", formattedPhoneNumber) }
                 .map { jsonObject -> jsonObject["challengeId"].asString }
@@ -195,7 +194,7 @@ class RegistrationManager(
                 add("challengeIds", challengeIdArray)
                 addProperty("tan", verificationTan)
             }
-            networkManager.lucaEndpointsV3
+            networkManager.getLucaEndpointsV3()
                 .flatMapCompletable { lucaEndpointsV3 -> lucaEndpointsV3.verifyPhoneNumberBulk(requestData) }
         }
     }
@@ -208,7 +207,7 @@ class RegistrationManager(
         return createUserRegistrationRequestData()
             .doOnSuccess { data -> Timber.d("User registration request data: %s", data) }
             .flatMap { registrationRequestData ->
-                networkManager.lucaEndpointsV3
+                networkManager.getLucaEndpointsV3()
                     .flatMap { lucaEndpointsV3 -> lucaEndpointsV3.registerUser(registrationRequestData) }
                     .map { it["userId"].asString }
                     .map(UUID::fromString)
@@ -254,7 +253,7 @@ class RegistrationManager(
             .flatMapCompletable { registrationRequestData ->
                 getUserIdIfAvailable()
                     .flatMapCompletable { userId ->
-                        networkManager.lucaEndpointsV3
+                        networkManager.getLucaEndpointsV3()
                             .flatMapCompletable { lucaEndpointsV3 ->
                                 lucaEndpointsV3.updateUser(userId.toString(), registrationRequestData)
                             }
@@ -403,7 +402,7 @@ class RegistrationManager(
         return createDataTransferRequestData(days)
             .doOnSuccess { Timber.d("User data transfer request data: %s", it) }
             .flatMap { transferRequestData ->
-                networkManager.lucaEndpointsV3
+                networkManager.getLucaEndpointsV3()
                     .flatMap { lucaEndpointsV3 -> lucaEndpointsV3.getTracingTan(transferRequestData) }
             }
             .map { it["tan"].asString }

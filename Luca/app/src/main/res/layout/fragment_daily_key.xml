@@ -8,7 +8,7 @@
     <ImageView
         android:id="@+id/actionBarBackButtonImageView"
         style="@style/ActionBarBackButtonImageView"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints,ContentDescription" />
 
     <TextView
         android:id="@+id/actionBarTitleTextView"
@@ -52,10 +52,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/spacing_default"
+                android:text="@string/daily_key_no_data"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/propertyBarrier"
-                app:layout_constraintTop_toTopOf="@id/dateTextView"
-                tools:text="@string/date_format" />
+                app:layout_constraintTop_toTopOf="@id/dateTextView" />
 
             <!-- issuer -->
             <TextView
@@ -75,10 +75,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/spacing_default"
+                android:text="@string/daily_key_no_data"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/propertyBarrier"
-                app:layout_constraintTop_toTopOf="@id/issuerTextView"
-                tools:text="@string/dummy_heading" />
+                app:layout_constraintTop_toTopOf="@id/issuerTextView" />
 
             <!-- signed -->
             <TextView
@@ -117,6 +117,7 @@
                 android:layout_width="wrap_content"
                 android:layout_marginTop="@dimen/spacing_large"
                 android:text="@string/daily_key_download_action"
+                android:visibility="gone"
                 app:layout_constrainedWidth="true"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -127,7 +128,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:visibility="visible"
-                app:constraint_referenced_ids="descriptionTextView,dateTextView,dateValueTextView,issuerTextView,issuerValueTextView,signedTextView,signedImageView,downloadCertificateButton" />
+                app:constraint_referenced_ids="descriptionTextView,dateTextView,dateValueTextView,issuerTextView,issuerValueTextView,signedTextView,signedImageView" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

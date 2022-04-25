@@ -41,38 +41,22 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <LinearLayout
-                    android:id="@+id/startCameraLinearLayout"
+                <TextView
+                    android:id="@+id/startCameraTextView"
+                    style="@style/TextAppearance.Luca.Body2"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:contentDescription="@string/check_in_activate_camera_action"
+                    android:drawablePadding="@dimen/spacing_default"
                     android:gravity="center"
                     android:orientation="vertical"
+                    android:text="@string/check_in_activate_camera_action"
+                    app:drawableTopCompat="@drawable/ic_camera"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintWidth_percent="0.6"
-                    tools:ignore="UseCompoundDrawables">
-
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/check_in_activate_camera_action"
-                        android:src="@drawable/ic_camera" />
-
-                    <TextView
-                        style="@style/TextAppearance.Luca.Body2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/spacing_default"
-                        android:text="@string/check_in_activate_camera_action"
-                        android:textAlignment="center"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                </LinearLayout>
+                    app:layout_constraintWidth_percent="0.6" />
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/loadingOverlayLayout"

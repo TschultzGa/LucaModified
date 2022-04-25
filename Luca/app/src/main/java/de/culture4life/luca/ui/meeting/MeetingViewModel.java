@@ -99,7 +99,7 @@ public class MeetingViewModel extends BaseViewModel {
                 .flatMapMaybe(tick -> meetingManager.getCurrentMeetingDataIfAvailable())
                 .map(meetingData -> TimeUtil.getCurrentMillis() - meetingData.getCreationTimestamp())
                 .defaultIfEmpty(0L)
-                .map(VenueDetailsViewModel::getReadableDuration)
+                .map(TimeUtil::getReadableTimeDuration)
                 .flatMapCompletable(readableDuration -> update(duration, readableDuration));
     }
 
@@ -218,7 +218,7 @@ public class MeetingViewModel extends BaseViewModel {
         return allGuests;
     }
 
-    public LiveData<Bundle> getBundle() {
+    public LiveData<Bundle> getBundleLiveData() {
         return bundle;
     }
 

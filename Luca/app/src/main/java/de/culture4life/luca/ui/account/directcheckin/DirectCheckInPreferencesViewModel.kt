@@ -3,7 +3,7 @@ package de.culture4life.luca.ui.account.directcheckin
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.ui.BaseViewModel
-import de.culture4life.luca.ui.checkin.flow.ConfirmCheckInViewModel.Companion.KEY_SKIP_CHECK_IN_CONFIRMATION
+import de.culture4life.luca.ui.checkin.flow.children.ConfirmCheckInViewModel.Companion.KEY_SKIP_CHECK_IN_CONFIRMATION
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 

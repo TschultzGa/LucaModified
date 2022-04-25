@@ -1,6 +1,8 @@
 package de.culture4life.luca.ui.myluca
 
 import de.culture4life.luca.R
+import de.culture4life.luca.ui.myluca.listitems.DocumentItem
+import de.culture4life.luca.ui.myluca.listitems.MyLucaListItem
 
 data class MyLucaListItemsWrapper(
     val items: List<MyLucaListItem>,
@@ -9,24 +11,26 @@ data class MyLucaListItemsWrapper(
     var isChildSection: Boolean = false
 ) {
 
-    constructor(sectionHeader: String, isChildSection: Boolean) : this(
+    constructor(sectionHeader: String) : this(
         listOf(),
         0,
         sectionHeader,
-        isChildSection
+        true
     )
 
-    constructor(item: MyLucaListItem, isChildSection: Boolean) : this(
+    constructor(item: MyLucaListItem, isChildSection: Boolean = false) : this(
         listOf(item),
         item.timestamp,
         isChildSection = isChildSection
     )
 
     constructor(items: List<MyLucaListItem>, isChildSection: Boolean) : this(
-        items.sortedBy { it.resultTimestamp },
+        items.sortedBy { it.timestamp },
         if (items.isEmpty()) 0 else items.sortedByDescending { it.timestamp }[0].timestamp,
         isChildSection = isChildSection
     )
+
+    fun documentItems(): List<DocumentItem> = items.filterIsInstance<DocumentItem>()
 
     fun hasMultipleItems(): Boolean = items.size > 1
 

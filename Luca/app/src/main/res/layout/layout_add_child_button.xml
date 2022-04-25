@@ -16,6 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_marginStart="8dp"
+            android:contentDescription="@string/add_children_title"
             android:src="@drawable/ic_circle_with_plus"
             app:layout_constraintStart_toStartOf="parent" />
 

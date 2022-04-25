@@ -14,6 +14,7 @@ import de.culture4life.luca.network.pojo.HealthDepartment;
 import de.culture4life.luca.network.pojo.KeyIssuerResponseData;
 import de.culture4life.luca.network.pojo.PowChallengeRequestData;
 import de.culture4life.luca.network.pojo.PowChallengeResponseData;
+import de.culture4life.luca.network.pojo.RolloutRatioResponseData;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import okhttp3.ResponseBody;
@@ -83,5 +84,12 @@ public interface LucaEndpointsV4 {
 
     @GET("zipCodes/connect")
     Single<List<HealthDepartment>> getResponsibleHealthDepartment();
+
+    /*
+        Feature rollouts
+     */
+
+    @GET("features")
+    Single<List<RolloutRatioResponseData>> getRolloutRatios();
 
 }

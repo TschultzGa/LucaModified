@@ -3,8 +3,8 @@ package de.culture4life.luca.ui.account.voluntarycheckin
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.ui.BaseViewModel
-import de.culture4life.luca.ui.checkin.flow.VoluntaryCheckInViewModel.Companion.KEY_ALWAYS_CHECK_IN_ANONYMOUSLY
-import de.culture4life.luca.ui.checkin.flow.VoluntaryCheckInViewModel.Companion.KEY_ALWAYS_CHECK_IN_VOLUNTARY
+import de.culture4life.luca.ui.checkin.flow.children.VoluntaryCheckInViewModel.Companion.KEY_ALWAYS_CHECK_IN_ANONYMOUSLY
+import de.culture4life.luca.ui.checkin.flow.children.VoluntaryCheckInViewModel.Companion.KEY_ALWAYS_CHECK_IN_VOLUNTARY
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 

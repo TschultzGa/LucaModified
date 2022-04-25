@@ -20,7 +20,6 @@ import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
 import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.R;
-import de.culture4life.luca.ui.consent.ConsentBottomSheetFragment;
 import de.culture4life.luca.ui.consent.ConsentUiExtension;
 import de.culture4life.luca.ui.registration.RegistrationActivity;
 import de.culture4life.luca.util.AccessibilityServiceUtil;
@@ -44,6 +43,7 @@ public class MainActivity extends BaseActivity {
         initializeNavigation();
         hideActionBar();
         setupKeyboardListener();
+        initializeConsentRequests();
 
         viewModel = new ViewModelProvider(this).get(MainViewModel.class);
         viewModel.initialize()
@@ -52,8 +52,6 @@ public class MainActivity extends BaseActivity {
                     viewModel.onNewIntent(getIntent());
                 })
                 .subscribe();
-
-        initializeConsentRequests();
 
         Completable.fromAction(() -> FiveStarMe.with(this)
                 .setInstallDays(2)

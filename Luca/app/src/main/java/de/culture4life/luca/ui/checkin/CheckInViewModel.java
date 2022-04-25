@@ -13,16 +13,13 @@ import android.app.Application;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.webkit.URLUtil;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
-import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -57,10 +54,10 @@ import de.culture4life.luca.ui.BaseQrCodeCallback;
 import de.culture4life.luca.ui.BaseViewModel;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.ViewEvent;
-import de.culture4life.luca.ui.checkin.flow.ConfirmCheckInViewModel;
-import de.culture4life.luca.ui.checkin.flow.EntryPolicyViewModel;
-import de.culture4life.luca.ui.checkin.flow.VoluntaryCheckInViewModel;
-import de.culture4life.luca.ui.myluca.MyLucaViewModel;
+import de.culture4life.luca.ui.checkin.flow.children.ConfirmCheckInViewModel;
+import de.culture4life.luca.ui.checkin.flow.children.EntryPolicyViewModel;
+import de.culture4life.luca.ui.checkin.flow.children.VoluntaryCheckInViewModel;
+import de.culture4life.luca.util.LucaUrlUtil;
 import de.culture4life.luca.util.SerializationUtil;
 import de.culture4life.luca.util.ThrowableUtil;
 import de.culture4life.luca.util.TimeUtil;
@@ -95,8 +92,7 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
     private final MutableLiveData<ViewEvent<String>> privateMeetingUrl = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<Pair<String, LocationResponseData>>> checkInMultiConfirm = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<Boolean>> showCameraPreview = new MutableLiveData<>();
-
-    private MyLucaViewModel myLucaViewModel;
+    private final MutableLiveData<Boolean> dailyPublicKeyAvailable = new MutableLiveData<>();
 
     private UUID userId;
 
@@ -113,13 +109,6 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
         this.documentManager = this.application.getDocumentManager();
     }
 
-    public void setupViewModelReference(FragmentActivity activity) {
-        if (myLucaViewModel == null) {
-            myLucaViewModel = new ViewModelProvider(activity).get(MyLucaViewModel.class);
-            myLucaViewModel.setupViewModelReference(activity);
-        }
-    }
-
     @Override
     public Completable initialize() {
         return super.initialize()
@@ -134,8 +123,15 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                 .andThen(registrationManager.getUserIdIfAvailable()
                         .doOnSuccess(uuid -> this.userId = uuid)
                         .ignoreElement())
+                .andThen(invoke(updateDailyKeyAvailability()))
                 .andThen(invokeHandleDeepLinkIfAvailable())
                 .andThen(invokeShowCameraPreviewInitialization());
+    }
+
+    private Completable updateDailyKeyAvailability() {
+        return cryptoManager.initialize(application)
+                .andThen(cryptoManager.hasDailyPublicKey())
+                .flatMapCompletable(hasDailyPublicKey -> update(dailyPublicKeyAvailable, hasDailyPublicKey));
     }
 
     @NonNull
@@ -384,26 +380,40 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
     */
 
     public boolean canProcessBarcode(@NonNull String url) {
-        return isDeepLink(url) && (CheckInManager.isSelfCheckInUrl(url) || MeetingManager.isPrivateMeeting(url));
+        return LucaUrlUtil.isSelfCheckIn(url) || LucaUrlUtil.isPrivateMeeting(url);
     }
 
     @Override
     @NonNull
     public Completable processBarcode(@NonNull String barcodeData) {
-        return Completable.defer(() -> {
-            if (myLucaViewModel.canProcessBarcode(barcodeData)) {
-                ViewEvent<String> barcodeDataEvent = new ViewEvent<>(barcodeData);
-                return update(possibleDocumentData, barcodeDataEvent);
+        return isDocument(barcodeData)
+                .flatMapCompletable(isDocument -> {
+                            if (isDocument) {
+                                return update(possibleDocumentData, new ViewEvent<>(barcodeData));
+                            } else {
+                                return process(barcodeData);
+                            }
+                        }
+                ).doOnSubscribe(disposable -> {
+                    removeError(deepLinkError);
+                    updateAsSideEffect(showCameraPreview, new ViewEvent<>(false));
+                    updateAsSideEffect(isLoading, true);
+                }).doFinally(() -> {
+                    updateAsSideEffect(isLoading, false);
+                });
+    }
+
+    private Single<Boolean> isDocument(@NonNull String barcodeData) {
+        return Single.defer(() -> {
+            if (LucaUrlUtil.isTestResult(barcodeData)) {
+                return DocumentManager.getEncodedDocumentFromDeepLink(barcodeData);
             } else {
-                return process(barcodeData);
+                return Single.just(barcodeData);
             }
-        }).doOnSubscribe(disposable -> {
-            removeError(deepLinkError);
-            updateAsSideEffect(showCameraPreview, new ViewEvent<>(false));
-            updateAsSideEffect(isLoading, true);
-        }).doFinally(() -> {
-            updateAsSideEffect(isLoading, false);
-        });
+        })
+                .flatMap(documentManager::parseAndValidateEncodedDocument)
+                .map(document -> true)
+                .onErrorReturnItem(false);
     }
 
     public Completable process(@NonNull String barcodeData) {
@@ -423,9 +433,9 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
 
     private Completable handleDeepLink(@NonNull String url) {
         return Completable.defer(() -> {
-            if (MeetingManager.isPrivateMeeting(url)) {
+            if (LucaUrlUtil.isPrivateMeeting(url)) {
                 return handleMeetingCheckInDeepLink(url);
-            } else if (CheckInManager.isSelfCheckInUrl(url)) {
+            } else if (LucaUrlUtil.isSelfCheckIn(url)) {
                 return processConfirmCheckInFlow(url);
             } else {
                 return Completable.error(new InvalidCheckInLinkException());
@@ -698,7 +708,13 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
     }
 
     public static Single<UUID> getScannerIdFromUrl(@NonNull String url) {
-        return Single.fromCallable(() -> UUID.fromString(Uri.parse(url).getLastPathSegment()));
+        return Single.fromCallable(() -> {
+                    if (!LucaUrlUtil.isSelfCheckIn(url)) {
+                        throw new IllegalArgumentException("Not a valid check-in URL: " + url);
+                    }
+                    return UUID.fromString(Uri.parse(url).getLastPathSegment());
+                }
+        );
     }
 
     public static Maybe<String> getEncodedAdditionalDataFromUrlIfAvailable(@NonNull String url) {
@@ -722,11 +738,7 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                 .map(String::new);
     }
 
-    private static boolean isDeepLink(@NonNull String data) {
-        return URLUtil.isHttpsUrl(data) && data.contains("luca-app.de");
-    }
-
-    public LiveData<Bundle> getBundle() {
+    public LiveData<Bundle> getBundleLiveData() {
         return bundle;
     }
 
@@ -766,5 +778,10 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
     @NonNull
     public LiveData<ViewEvent<Boolean>> getShowCameraPreview() {
         return showCameraPreview;
+    }
+
+    @NonNull
+    public LiveData<Boolean> isDailyPublicKeyAvailable() {
+        return dailyPublicKeyAvailable;
     }
 }

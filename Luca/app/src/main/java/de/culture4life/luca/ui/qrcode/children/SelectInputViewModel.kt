@@ -3,9 +3,9 @@ package de.culture4life.luca.ui.qrcode.children
 import android.app.Application
 import android.net.Uri
 import de.culture4life.luca.R
-import de.culture4life.luca.ui.BaseQrCodeViewModel
 import de.culture4life.luca.ui.UserCancelledException
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildViewModel
+import de.culture4life.luca.ui.common.LucaBarcodeScanner
 import de.culture4life.luca.ui.qrcode.AddCertificateFlowViewModel
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
@@ -13,7 +13,7 @@ import timber.log.Timber
 
 class SelectInputViewModel(app: Application) : BaseFlowChildViewModel(app) {
 
-    private val scanner = BaseQrCodeViewModel(app)
+    private val scanner by lazy { LucaBarcodeScanner() }
 
     private fun processBarcode(barcodeData: String): Completable {
         return (sharedViewModel as AddCertificateFlowViewModel).process(barcodeData)
@@ -21,7 +21,7 @@ class SelectInputViewModel(app: Application) : BaseFlowChildViewModel(app) {
 
     fun importImage(uriSingle: Single<Uri>) {
         val importImageProcess = uriSingle
-            .flatMapObservable(scanner::detectBarcodes)
+            .flatMapObservable { scanner.detectBarcodes(application, it) }
             .firstOrError()
             .doOnError {
                 val errorBuilder = createErrorBuilder(it)
@@ -47,5 +47,10 @@ class SelectInputViewModel(app: Application) : BaseFlowChildViewModel(app) {
 
     fun onScanQrCodeSelected() {
         sharedViewModel?.navigateToNext()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        scanner.dispose()
     }
 }

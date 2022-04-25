@@ -1,11 +1,12 @@
 package de.culture4life.luca.children
 
+import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.registration.Person
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
-class ChildTest {
+class ChildTest : LucaUnitTest() {
 
     private fun createChildFrom(name: String, adultLastName: String): Child {
         return Child.from(name, adultLastName)

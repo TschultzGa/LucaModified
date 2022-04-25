@@ -3,7 +3,7 @@ package de.culture4life.luca.ui.account.entrypolicy
 import android.app.Application
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.ui.BaseViewModel
-import de.culture4life.luca.ui.checkin.flow.EntryPolicyViewModel.Companion.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS
+import de.culture4life.luca.ui.checkin.flow.children.EntryPolicyViewModel.Companion.KEY_ALWAYS_SHARE_ENTRY_POLICY_STATUS
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 

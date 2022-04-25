@@ -66,7 +66,7 @@ class BaseQrCodeFragment : BaseFragment<BaseQrCodeViewModel>() {
     @CallSuper
     protected open fun initializeCameraPreview() {
         observe(viewModel!!.shouldShowCameraPreview()) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 with(it.valueAndMarkAsHandled) {
                     if (showCamera) {
                         val requestMissingStuff = !onlyIfPossible
@@ -166,7 +166,7 @@ class BaseQrCodeFragment : BaseFragment<BaseQrCodeViewModel>() {
     @CallSuper
     protected open fun setCameraPreviewVisible(isVisible: Boolean) {
         binding.cameraPreviewView.isVisible = isVisible
-        binding.startCameraLinearLayout.isVisible = !isVisible
+        binding.startCameraTextView.isVisible = !isVisible
         binding.cameraContainerConstraintLayout.background = ContextCompat.getDrawable(
             requireContext(),
             if (isVisible) {
@@ -333,7 +333,6 @@ class BaseQrCodeFragment : BaseFragment<BaseQrCodeViewModel>() {
         }
 
         companion object {
-
             val IMAGE_ANALYSIS_RESOLUTION = Size(1920, 1080) // maximum resolution is 1080p
         }
     }

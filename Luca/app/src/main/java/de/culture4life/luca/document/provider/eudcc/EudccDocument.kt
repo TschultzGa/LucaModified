@@ -20,7 +20,6 @@ import java.util.*
 /**
  * Result from a scan or deep link of a EU Digital COVID Certificate (EUDCC)
  */
-@ExperimentalUnsignedTypes
 class EudccDocument(
     encodedData: String,
     val result: CertificateDecodingResult

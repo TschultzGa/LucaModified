@@ -5,31 +5,42 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModelProvider;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nonnull;
 
 import de.culture4life.luca.R;
 import de.culture4life.luca.children.Children;
 import de.culture4life.luca.children.ChildrenManager;
+import de.culture4life.luca.consent.ConsentManager;
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.DocumentManager;
 import de.culture4life.luca.document.Documents;
 import de.culture4life.luca.genuinity.GenuinityManager;
+import de.culture4life.luca.idnow.IdNowManager;
+import de.culture4life.luca.idnow.LucaIdData;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.registration.Person;
 import de.culture4life.luca.registration.RegistrationManager;
 import de.culture4life.luca.ui.BaseViewModel;
 import de.culture4life.luca.ui.ViewError;
 import de.culture4life.luca.ui.ViewEvent;
-import de.culture4life.luca.ui.checkin.CheckInViewModel;
+import de.culture4life.luca.ui.myluca.listitems.AppointmentItem;
+import de.culture4life.luca.ui.myluca.listitems.DocumentItem;
+import de.culture4life.luca.ui.myluca.listitems.IdentityEmptyItem;
+import de.culture4life.luca.ui.myluca.listitems.IdentityItem;
+import de.culture4life.luca.ui.myluca.listitems.IdentityQueuedItem;
+import de.culture4life.luca.ui.myluca.listitems.IdentityRequestedItem;
+import de.culture4life.luca.ui.myluca.listitems.MyLucaListItem;
+import de.culture4life.luca.ui.myluca.listitems.RecoveryItem;
+import de.culture4life.luca.ui.myluca.listitems.TestResultItem;
+import de.culture4life.luca.ui.myluca.listitems.VaccinationItem;
 import de.culture4life.luca.ui.qrcode.DocumentBarcodeProcessor;
+import de.culture4life.luca.util.LucaUrlUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -44,21 +55,22 @@ public class MyLucaViewModel extends BaseViewModel {
     private final GenuinityManager genuinityManager;
     private final ChildrenManager childrenManager;
     private final LucaNotificationManager notificationManager;
+    private final IdNowManager idNowManager;
+    private final ConsentManager consentManager;
     private final DocumentBarcodeProcessor documentBarcodeProcessor;
 
     private final MutableLiveData<Bundle> bundle = new MutableLiveData<>();
     private final MutableLiveData<Person> user = new MutableLiveData<>();
     private final MutableLiveData<List<MyLucaListItem>> myLucaItems = new MutableLiveData<>();
-    private final MutableLiveData<ViewEvent<MyLucaListItem>> itemToDelete = new MutableLiveData<>();
+    private final MutableLiveData<ViewEvent<DocumentItem>> itemToDelete = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<MyLucaListItem>> itemToExpand = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<Boolean>> addedDocument = new MutableLiveData<>();
     private final MutableLiveData<ViewEvent<String>> possibleCheckInData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isGenuineTime = new MutableLiveData<>(true);
     private final MutableLiveData<Children> children = new MutableLiveData<>();
 
-    private CheckInViewModel checkInViewModel;
-
     private ViewError deleteError;
+    private ViewError deleteIdentityError;
 
     public MyLucaViewModel(@NonNull Application application) {
         super(application);
@@ -67,14 +79,9 @@ public class MyLucaViewModel extends BaseViewModel {
         this.genuinityManager = this.application.getGenuinityManager();
         this.childrenManager = this.application.getChildrenManager();
         this.notificationManager = this.application.getNotificationManager();
-        documentBarcodeProcessor = new DocumentBarcodeProcessor(this.application, this);
-    }
-
-    public void setupViewModelReference(FragmentActivity activity) {
-        if (checkInViewModel == null) {
-            checkInViewModel = new ViewModelProvider(activity).get(CheckInViewModel.class);
-            checkInViewModel.setupViewModelReference(activity);
-        }
+        this.idNowManager = this.application.getIdNowManager();
+        this.consentManager = this.application.getConsentManager();
+        this.documentBarcodeProcessor = new DocumentBarcodeProcessor(this.application, this);
     }
 
     @Override
@@ -84,11 +91,14 @@ public class MyLucaViewModel extends BaseViewModel {
                         documentManager.initialize(application),
                         registrationManager.initialize(application),
                         genuinityManager.initialize(application),
-                        childrenManager.initialize(application)
+                        childrenManager.initialize(application),
+                        idNowManager.initialize(application),
+                        consentManager.initialize(application)
                 ))
                 .andThen(updateUserName())
                 .andThen(invokeListUpdate())
                 .andThen(invokeIsGenuineTimeUpdate())
+                .andThen(invokeIdEnrollmentStatusUpdateIfRequired())
                 .andThen(updateChildCounter())
                 .doOnComplete(this::handleApplicationDeepLinkIfAvailable);
     }
@@ -98,7 +108,8 @@ public class MyLucaViewModel extends BaseViewModel {
         return Completable.mergeArray(
                 super.keepDataUpdated(),
                 keepIsGenuineTimeUpdated(),
-                keepDocumentsUpdated()
+                keepDocumentsUpdated(),
+                keepIdUpdated()
         );
     }
 
@@ -112,20 +123,17 @@ public class MyLucaViewModel extends BaseViewModel {
      */
 
     public Completable invokeListUpdate() {
-        return Completable.fromAction(() -> modelDisposable.add(updateListItems()
-                .doOnError(throwable -> Timber.w("Unable to load list items: %s", throwable.toString()))
-                .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .subscribe()));
+        return invoke(updateListItems());
     }
 
     private Completable updateListItems() {
-        return loadListItems()
+        return loadDocumentItems()
+                .mergeWith(loadIdentityItem())
                 .toList()
                 .flatMapCompletable(items -> update(myLucaItems, items));
     }
 
-    private Observable<MyLucaListItem> loadListItems() {
+    private Observable<MyLucaListItem> loadDocumentItems() {
         return documentManager.getOrRestoreDocuments()
                 .flatMapSingle(document -> documentManager.adjustValidityStartTimestampIfRequired(document)
                         .andThen(Single.just(document)))
@@ -148,11 +156,44 @@ public class MyLucaViewModel extends BaseViewModel {
         });
     }
 
-    public Completable deleteListItem(@NonNull MyLucaListItem myLucaListItem) {
+    public void onDeleteIdentityListItem(@Nonnull MyLucaListItem listItem) {
+        invoke(
+                deleteLucaIdentity()
+                        .andThen(resetIdentityItem(listItem))
+        ).subscribe();
+    }
+
+    @Nonnull
+    private Completable deleteLucaIdentity() {
+        return idNowManager.unEnroll()
+                .doOnSubscribe(disposable -> {
+                    removeError(deleteIdentityError);
+                    updateAsSideEffect(isLoading, true);
+                })
+                .doOnError(throwable -> {
+                    deleteIdentityError = new ViewError.Builder(application)
+                            .withCause(throwable)
+                            .removeWhenShown()
+                            .build();
+                    addError(deleteIdentityError);
+                })
+                .doFinally(() -> updateAsSideEffect(isLoading, false));
+    }
+
+    private Completable resetIdentityItem(MyLucaListItem listItem) {
+        return Completable.fromAction(() -> {
+            if (listItem instanceof IdentityItem) {
+                IdentityItem identityItem = (IdentityItem) listItem;
+                identityItem.setIdData(null);
+            }
+        });
+    }
+
+    public Completable deleteDocumentListItem(@NonNull DocumentItem documentItem) {
         return Completable.defer(() -> {
             Document document;
-            if (myLucaListItem instanceof TestResultItem) {
-                document = myLucaListItem.getDocument();
+            if (documentItem instanceof TestResultItem) {
+                document = documentItem.getDocument();
             } else {
                 return Completable.error(new IllegalArgumentException("Unable to delete item, unknown type"));
             }
@@ -174,33 +215,48 @@ public class MyLucaViewModel extends BaseViewModel {
         });
     }
 
-    public void onItemDeletionRequested(@NonNull MyLucaListItem item) {
+    public void onItemDeletionRequested(@NonNull DocumentItem item) {
         updateAsSideEffect(itemToDelete, new ViewEvent<>(item));
     }
 
-    public void onItemExpandToggleRequested(@NonNull MyLucaListItem item) {
+    public void onItemExpandToggleRequested(@NonNull DocumentItem item) {
         updateAsSideEffect(itemToExpand, new ViewEvent<>(item));
     }
 
-    public boolean canProcessBarcode(@NonNull String barcodeData) {
-        return Single.defer(() -> {
-            if (DocumentManager.isTestResult(barcodeData)) {
-                return getEncodedDocumentFromDeepLink(barcodeData);
-            } else {
-                return Single.just(barcodeData);
-            }
-        })
-                .flatMap(documentManager::parseAndValidateEncodedDocument)
-                .map(document -> true)
-                .onErrorReturnItem(false)
-                .blockingGet();
+    /*
+        ID
+     */
+
+    private Completable invokeIdEnrollmentStatusUpdateIfRequired() {
+        return invoke(idNowManager.updateEnrollmentStatusIfRequired());
     }
+
+    private Completable keepIdUpdated() {
+        Observable<Boolean> consentChanges = consentManager.getConsentAndChanges(ConsentManager.ID_TERMS_OF_SERVICE_LUCA_ID)
+                .map(consent -> true)
+                .skip(1); // we only care about changes
+
+        Observable<Boolean> statusChanges = idNowManager.getVerificationStatusAndChanges()
+                .map(verificationStatus -> true)
+                .skip(1); // we only care about changes
+
+        return Observable.mergeArray(consentChanges, statusChanges)
+                .flatMapCompletable(verificationStatus -> invokeListUpdate());
+    }
+
+    public Maybe<LucaIdData.DecryptedIdData> getIdDataIfAvailable() {
+        return idNowManager.getDecryptedIdDataIfAvailable();
+    }
+
+    /*
+        QR code scanning
+     */
 
     public Completable process(@NonNull String barcodeData) {
         // TODO: 21.09.21 better distinguish between processBarcode and process
         return Single.defer(() -> {
-            if (DocumentManager.isTestResult(barcodeData)) {
-                return getEncodedDocumentFromDeepLink(barcodeData);
+            if (LucaUrlUtil.isTestResult(barcodeData)) {
+                return DocumentManager.getEncodedDocumentFromDeepLink(barcodeData);
             } else {
                 return Single.just(barcodeData);
             }
@@ -243,29 +299,16 @@ public class MyLucaViewModel extends BaseViewModel {
 
     private Completable handleDeepLink(@NonNull String url) {
         return Completable.defer(() -> {
-            if (DocumentManager.isTestResult(url)) {
-                return getEncodedDocumentFromDeepLink(url)
+            if (LucaUrlUtil.isTestResult(url)) {
+                return DocumentManager.getEncodedDocumentFromDeepLink(url)
                         .flatMapCompletable(this::parseAndValidateDocument)
                         .doFinally(() -> application.onDeepLinkHandled(url));
-            } else if (DocumentManager.isAppointment(url)) {
+            } else if (LucaUrlUtil.isAppointment(url)) {
                 return parseAndValidateDocument(url)
                         .doFinally(() -> application.onDeepLinkHandled(url));
             }
             return Completable.error(IllegalStateException::new);
         }).doOnComplete(() -> Timber.d("Handled application deep link: %s", url));
-    }
-
-    private Single<String> getEncodedDocumentFromDeepLink(@NonNull String url) {
-        return Single.fromCallable(() -> {
-            if (!DocumentManager.isTestResult(url)) {
-                throw new IllegalArgumentException("Unable to get encoded document from URL");
-            }
-            String[] parts = url.split("#", 2);
-            if (parts.length != 2) {
-                throw new IllegalArgumentException("Unable to get encoded document from URL");
-            }
-            return URLDecoder.decode(parts[1], StandardCharsets.UTF_8.name());
-        });
     }
 
     /*
@@ -299,21 +342,50 @@ public class MyLucaViewModel extends BaseViewModel {
     }
 
     private Completable invokeIsGenuineTimeUpdate() {
-        return Completable.fromAction(() -> modelDisposable.add(genuinityManager.isGenuineTime()
-                .flatMapCompletable(genuineTime -> update(isGenuineTime, genuineTime))
-                .onErrorComplete()
-                .subscribe()));
+        return invoke(genuinityManager.isGenuineTime()
+                .flatMapCompletable(genuineTime -> update(isGenuineTime, genuineTime)));
     }
 
     public Completable invokeServerTimeOffsetUpdate() {
-        return Completable.fromAction(() -> modelDisposable.add(genuinityManager.invokeServerTimeOffsetUpdate()
-                .delaySubscription(1, TimeUnit.SECONDS)
-                .onErrorComplete()
-                .subscribeOn(Schedulers.io())
-                .subscribe()));
+        return invoke(genuinityManager.invokeServerTimeOffsetUpdate()
+                .delaySubscription(1, TimeUnit.SECONDS));
     }
 
-    public LiveData<Bundle> getBundle() {
+    /*
+        Id Ident
+     */
+    private Maybe<MyLucaListItem> loadIdentityItem() {
+        return idNowManager.isEnrollmentEnabled()
+                .flatMapMaybe(enabled -> {
+                    if (!enabled) {
+                        return Maybe.empty();
+                    } else {
+                        return idNowManager.getVerificationStatus()
+                                .map(status -> {
+                                    switch (status) {
+                                        case QUEUED: {
+                                            return new IdentityQueuedItem();
+                                        }
+                                        case PENDING: {
+                                            String token = idNowManager.getEnrollmentToken().blockingGet();
+                                            return new IdentityRequestedItem(token);
+                                        }
+                                        case SUCCESS: {
+                                            return new IdentityItem(null);
+                                        }
+                                        default: {
+                                            return new IdentityEmptyItem();
+                                        }
+                                    }
+                                }).toMaybe();
+                    }
+                });
+    }
+
+    /*
+        Getter & Setter
+     */
+    public LiveData<Bundle> getBundleLiveData() {
         return bundle;
     }
 
@@ -341,15 +413,16 @@ public class MyLucaViewModel extends BaseViewModel {
         return isGenuineTime;
     }
 
-    public MutableLiveData<Children> getChildren() {
+    public LiveData<Children> getChildren() {
         return children;
     }
 
-    public MutableLiveData<ViewEvent<MyLucaListItem>> getItemToDelete() {
+    public LiveData<ViewEvent<DocumentItem>> getItemToDelete() {
         return itemToDelete;
     }
 
-    public MutableLiveData<ViewEvent<MyLucaListItem>> getItemToExpand() {
+    @Nonnull
+    public LiveData<ViewEvent<MyLucaListItem>> getItemToExpand() {
         return itemToExpand;
     }
 

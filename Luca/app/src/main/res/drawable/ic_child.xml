@@ -4,15 +4,13 @@
     android:viewportWidth="16"
     android:viewportHeight="16">
     <path
-        android:pathData="M8,5m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0"
+        android:fillType="evenOdd"
+        android:pathData="M4 5a4 4 0 1 1 8 0 4 4 0 1 1-8 0"
         android:strokeWidth="2"
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:fillType="evenOdd"/>
+        android:strokeColor="#FFFFFF" />
     <path
-        android:pathData="M15,16C15,12.134 11.866,9 8,9C4.134,9 1,12.134 1,16"
+        android:fillType="evenOdd"
+        android:pathData="M15 16c0-3.866-3.134-7-7-7s-7 3.134-7 7"
         android:strokeWidth="2"
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:fillType="evenOdd"/>
+        android:strokeColor="#FFFFFF" />
 </vector>

@@ -1,21 +1,18 @@
 package de.culture4life.luca.ui.registration
 
+import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.network.NetworkManager
 import de.culture4life.luca.testtools.LucaFragmentTest
 import de.culture4life.luca.testtools.pages.RegistrationPage
+import de.culture4life.luca.testtools.preconditions.MockServerPreconditions
 import de.culture4life.luca.testtools.rules.LucaFragmentScenarioRule
 import org.junit.Test
-import java.net.HttpURLConnection
 
 class RegistrationFragmentVersionCheckTest : LucaFragmentTest<RegistrationFragment>(LucaFragmentScenarioRule.create()) {
 
     @Test
     fun showUpdateDialogFromStatusCode() {
-        // TODO improve mock response after merge with id-enrollment, there we have new test tools
-
-        mockWebServerRule.mockResponse.apply {
-            put("/api/v3/versions/apps/android") { setResponseCode(NetworkManager.HTTP_UPGRADE_REQUIRED) }
-        }
+        mockServerPreconditions.givenHttpError(MockServerPreconditions.Route.SupportedVersion, NetworkManager.HTTP_UPGRADE_REQUIRED)
 
         launchFragment()
         forceCheckUpdateRequired()
@@ -27,14 +24,7 @@ class RegistrationFragmentVersionCheckTest : LucaFragmentTest<RegistrationFragme
 
     @Test
     fun showUpdateDialogFromMinimumVersion() {
-        // TODO improve mock response after merge with id-enrollment, there we have new test tools
-
-        mockWebServerRule.mockResponse.apply {
-            put("/api/v3/versions/apps/android") {
-                setResponseCode(HttpURLConnection.HTTP_OK)
-                setBody("""{ "minimumVersion" = ${Int.MAX_VALUE} } """)
-            }
-        }
+        mockServerPreconditions.givenSupportedVersion(BuildConfig.VERSION_CODE + 1)
 
         launchFragment()
         forceCheckUpdateRequired()
@@ -53,10 +43,10 @@ class RegistrationFragmentVersionCheckTest : LucaFragmentTest<RegistrationFragme
 
         // LucaApplication needs to have access to a FragmentManager to show dialogs.
         fragmentScenarioRule.scenario.onFragment { fragment ->
-            applicationContext.onActivityStarted(fragment.requireActivity())
+            application.onActivityStarted(fragment.requireActivity())
         }
 
         // Currently all app initializations steps are skipped for faster test execution. So we have to force it for now.
-        applicationContext.checkUpdateRequired().blockingAwait()
+        application.checkUpdateRequired().blockingAwait()
     }
 }

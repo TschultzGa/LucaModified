@@ -6,13 +6,11 @@
     <path
         android:fillColor="#7CA5F6"
         android:fillType="evenOdd"
-        android:pathData="M8,14.4l-3.0615,0.991l-1.464,-2.8656l-2.8656,-1.464l0.991,-3.0615l-0.991,-3.0615l2.8656,-1.464l1.464,-2.8656l3.0615,0.991l3.0615,-0.991l1.464,2.8656l2.8656,1.464l-0.991,3.0615l0.991,3.0615l-2.8656,1.464l-1.464,2.8656z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M8 14.4l-3.062 0.991-1.464-2.866-2.865-1.464L1.599 8 0.61 4.938l2.865-1.464L4.938 0.61 8 1.599l3.062-0.99 1.464 2.865 2.865 1.464L14.401 8l0.99 3.061-2.865 1.464-1.464 2.866z"
+        android:strokeWidth="1" />
     <path
-        android:fillColor="#00000000"
         android:fillType="evenOdd"
-        android:pathData="M5,9l2,2l4,-6"
+        android:pathData="M5 9l2 2 4-6"
         android:strokeWidth="1"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"

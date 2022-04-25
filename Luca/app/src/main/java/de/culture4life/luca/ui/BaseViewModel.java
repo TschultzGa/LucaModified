@@ -29,12 +29,10 @@ import java.util.concurrent.TimeUnit;
 
 import de.culture4life.luca.LucaApplication;
 import de.culture4life.luca.R;
-import de.culture4life.luca.checkin.CheckInManager;
-import de.culture4life.luca.document.DocumentManager;
-import de.culture4life.luca.meeting.MeetingManager;
 import de.culture4life.luca.notification.LucaNotificationManager;
 import de.culture4life.luca.preference.PreferencesManager;
 import de.culture4life.luca.ui.dialog.BaseDialogContent;
+import de.culture4life.luca.util.LucaUrlUtil;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
@@ -129,7 +127,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
     protected void addPermissionToRequiredPermissions(Set<String> newlyRequiredPermissions) {
         Timber.v("Added permissions to be requested: %s", newlyRequiredPermissions);
         ViewEvent<? extends Set<String>> permissions = this.requiredPermissions.getValue();
-        if (permissions != null && !permissions.hasBeenHandled()) {
+        if (permissions != null && permissions.isNotHandled()) {
             newlyRequiredPermissions.addAll(permissions.getValueAndMarkAsHandled());
         }
         updateAsSideEffect(requiredPermissions, new ViewEvent<>(newlyRequiredPermissions));
@@ -156,7 +154,7 @@ public abstract class BaseViewModel extends AndroidViewModel {
                     if (viewError == null) {
                         return;
                     }
-                    if (!application.isUiCurrentlyVisible() && viewError.canBeShownAsNotification()) {
+                    if (!application.isUiCurrentlyVisible() && viewError.getCanBeShownAsNotification()) {
                         showErrorAsNotification(viewError);
                     } else {
                         synchronized (errors) {
@@ -233,9 +231,9 @@ public abstract class BaseViewModel extends AndroidViewModel {
     private Completable navigateForDeepLinkIfAvailable() {
         return application.getDeepLink()
                 .flatMap(url -> {
-                    if (CheckInManager.isSelfCheckInUrl(url) || MeetingManager.isPrivateMeeting(url)) {
+                    if (LucaUrlUtil.isSelfCheckIn(url) || LucaUrlUtil.isPrivateMeeting(url)) {
                         return Maybe.just(R.id.checkInFragment);
-                    } else if (DocumentManager.isTestResult(url) || DocumentManager.isAppointment(url)) {
+                    } else if (LucaUrlUtil.isTestResult(url) || LucaUrlUtil.isAppointment(url)) {
                         return Maybe.just(R.id.myLucaFragment);
                     } else {
                         return Maybe.empty();

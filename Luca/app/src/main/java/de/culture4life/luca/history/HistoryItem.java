@@ -21,7 +21,7 @@ import de.culture4life.luca.util.TimeUtil;
 public class HistoryItem {
 
     @IntDef({TYPE_CHECK_IN, TYPE_CHECK_OUT, TYPE_CONTACT_DATA_UPDATE, TYPE_CONTACT_DATA_REQUEST,
-            TYPE_MEETING_STARTED, TYPE_MEETING_ENDED, TYPE_DATA_DELETED, TYPE_TRACE_DATA_ACCESSED, TYPE_TEST_RESULT_IMPORTED})
+            TYPE_MEETING_STARTED, TYPE_MEETING_ENDED, TYPE_DATA_DELETED, TYPE_TRACE_DATA_ACCESSED, TYPE_DOCUMENT_IMPORTED})
     @Retention(SOURCE)
     public @interface Type {
 
@@ -35,7 +35,7 @@ public class HistoryItem {
     public final static int TYPE_DATA_DELETED = 6;
     public final static int TYPE_MEETING_STARTED = 7;
     public final static int TYPE_TRACE_DATA_ACCESSED = 8;
-    public final static int TYPE_TEST_RESULT_IMPORTED = 9;
+    public final static int TYPE_DOCUMENT_IMPORTED = 9;
 
     @SerializedName("type")
     @Expose
@@ -134,11 +134,14 @@ public class HistoryItem {
                     return TraceDataAccessedItem.class;
                 case TYPE_CONTACT_DATA_REQUEST:
                     return DataSharedItem.class;
+                case TYPE_CONTACT_DATA_UPDATE:
+                case TYPE_DATA_DELETED:
+                case TYPE_MEETING_STARTED:
+                case TYPE_DOCUMENT_IMPORTED:
                 default:
                     return HistoryItem.class;
+
             }
         }
-
     }
-
 }

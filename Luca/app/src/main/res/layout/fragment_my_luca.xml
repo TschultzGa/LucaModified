@@ -2,7 +2,6 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/fragmentConstraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:animateLayoutChanges="true"
@@ -14,38 +13,33 @@
         android:text="@string/navigation_my_luca"
         tools:ignore="MissingConstraints" />
 
-    <LinearLayout
-        android:id="@+id/childrenIconAndCounterLinearLayout"
+    <TextView
+        android:id="@+id/childrenCounterTextView"
+        style="@style/TextAppearance.Luca.Body1"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:id="@+id/childrenCounterTextView"
-            style="@style/TextAppearance.Luca.Body1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:textColor="?attr/colorPrimary"
-            tools:text="1" />
-
-        <ImageView
-            android:id="@+id/childrenActionBarMenuImageView"
-            style="@style/ActionBarMenuImageView"
-            android:contentDescription="@string/venue_children_add"
-            android:src="@drawable/ic_add_child" />
-    </LinearLayout>
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:contentDescription="@string/venue_children_add"
+        android:drawablePadding="8dp"
+        android:gravity="center"
+        android:paddingStart="0dp"
+        android:paddingEnd="@dimen/spacing_default"
+        android:textColor="?attr/colorPrimary"
+        app:drawableEndCompat="@drawable/ic_add_child"
+        app:drawableTint="@color/primaryColor"
+        tools:text="1" />
 
     <ImageView
         android:id="@+id/appointmentsActionBarMenuImageView"
         style="@style/ActionBarMenuImageView"
-        android:contentDescription="@string/appointment_action"
+        android:contentDescription="@string/my_luca_book_appointment_action"
         android:src="@drawable/ic_calendar" />
 
     <androidx.constraintlayout.helper.widget.Flow
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/spacing_default"
-        app:constraint_referenced_ids="childrenIconAndCounterLinearLayout,appointmentsActionBarMenuImageView"
+        app:constraint_referenced_ids="childrenCounterTextView,appointmentsActionBarMenuImageView"
         app:flow_horizontalAlign="center"
         app:flow_wrapMode="chain"
         app:layout_constraintBottom_toTopOf="@id/actionBarSeparatorView"
@@ -70,7 +64,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:requiresFadingEdge="vertical"
-        android:visibility="gone"
         app:layout_constrainedHeight="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -83,76 +76,21 @@
             android:orientation="vertical" />
 
     </ScrollView>
-
-    <ScrollView
-        android:id="@+id/emptyStateScrollView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:paddingBottom="@dimen/spacing_small"
-        android:requiresFadingEdge="vertical"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bannerScrollView">
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:id="@+id/emptyTitleTextView"
-                style="@style/EmptyStateTitleTextView"
-                android:text="@string/my_luca_empty_title"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/emptyDescriptionTextView"
-                style="@style/EmptyStateDescriptionTextView"
-                android:text="@string/my_luca_empty_description"
-                app:layout_constraintEnd_toEndOf="@id/emptyTitleTextView"
-                app:layout_constraintStart_toStartOf="@id/emptyTitleTextView"
-                app:layout_constraintTop_toBottomOf="@id/emptyTitleTextView" />
-
-            <ImageView
-                android:id="@+id/emptyImageView"
-                style="@style/EmptyStateImageView"
-                android:src="@drawable/g_my_luca_hello"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="@id/emptyDescriptionTextView"
-                app:layout_constraintStart_toStartOf="@id/emptyDescriptionTextView"
-                app:layout_constraintTop_toBottomOf="@id/emptyDescriptionTextView"
-                app:layout_constraintVertical_bias="0.25" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </ScrollView>
-
+    
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/myLucaRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:cacheColorHint="@android:color/transparent"
+        android:requiresFadingEdge="vertical"
         android:fadingEdgeLength="@dimen/spacing_large"
         android:listSelector="@android:color/transparent"
-        android:requiresFadingEdge="vertical"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
-        app:layout_constraintTop_toBottomOf="@id/bannerScrollView"
-        tools:listitem="@layout/item_my_luca" />
-
-    <View
-        android:id="@+id/surfaceBackground"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:background="?attr/colorSurface"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/actionBarSeparatorView" />
+        app:layout_constraintTop_toBottomOf="@id/bannerScrollView"
+        tools:listitem="@layout/item_my_luca_document" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/primaryActionButton"

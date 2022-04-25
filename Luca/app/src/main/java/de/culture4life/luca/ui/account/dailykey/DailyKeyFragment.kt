@@ -1,6 +1,7 @@
 package de.culture4life.luca.ui.account.dailykey
 
 import android.view.View
+import androidx.core.view.isVisible
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentDailyKeyBinding
@@ -25,10 +26,11 @@ class DailyKeyFragment : BaseFragment<DailyKeyViewModel>() {
     }
 
     private fun initializeObservers() {
-        viewModel.dailyPublicKeyLiveData.observe(viewLifecycleOwner, {
+        viewModel.dailyPublicKeyLiveData.observe(viewLifecycleOwner) {
             val readableDateFormat = DateTimeFormat.forPattern(application.getString(R.string.time_format))
             binding.dateValueTextView.text = readableDateFormat.print(it.creationTimestamp)
-        })
+            binding.downloadCertificateButton.isVisible = true
+        }
 
         viewModel.keyIssuerLiveData.observe(viewLifecycleOwner, {
             binding.issuerValueTextView.text = it.name

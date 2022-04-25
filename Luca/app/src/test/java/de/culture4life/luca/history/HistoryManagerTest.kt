@@ -1,6 +1,5 @@
 package de.culture4life.luca.history
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.checkin.CheckInData
 import de.culture4life.luca.children.ChildrenManager
@@ -12,13 +11,9 @@ import de.culture4life.luca.registration.RegistrationManager
 import de.culture4life.luca.util.TimeUtil
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [28])
 class HistoryManagerTest : LucaUnitTest() {
 
     private val preferencesManager = PreferencesManager()
@@ -29,7 +24,7 @@ class HistoryManagerTest : LucaUnitTest() {
     private val childrenManager = ChildrenManager(preferencesManager, registrationManager)
     private val historyManager = getInitializedManager(HistoryManager(preferencesManager, childrenManager))
     private val checkInData = CheckInData().apply {
-        traceId = "asdf"
+        traceId = "traceId"
         locationId = UUID.randomUUID()
     }
 

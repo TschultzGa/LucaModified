@@ -9,10 +9,10 @@
         style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:hint="@string/registration_street">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/streetEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:imeOptions="actionNext"
@@ -26,10 +26,10 @@
         style="@style/Widget.Luca.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:hint="@string/registration_house_number">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/houseNumberEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:imeOptions="actionNext"

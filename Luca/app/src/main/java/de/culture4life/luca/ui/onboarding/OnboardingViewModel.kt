@@ -3,12 +3,14 @@ package de.culture4life.luca.ui.onboarding
 import android.app.Application
 import androidx.core.os.ConfigurationCompat
 import androidx.lifecycle.MutableLiveData
+import de.culture4life.luca.consent.ConsentManager.Companion.ID_TERMS_OF_SERVICE_LUCA_ID
 import de.culture4life.luca.ui.BaseViewModel
 import de.culture4life.luca.ui.ViewEvent
 import de.culture4life.luca.ui.onboarding.OnboardingActivity.Companion.WELCOME_SCREEN_SEEN_KEY
-import de.culture4life.luca.ui.terms.UpdatedTermsUtil.Companion.markTermsAsAccepted
+import de.culture4life.luca.ui.terms.UpdatedTermsUtil
 import de.culture4life.luca.util.addTo
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.*
@@ -34,9 +36,7 @@ class OnboardingViewModel(app: Application) : BaseViewModel(app) {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .onErrorComplete()
-            .subscribe {
-                updateAsSideEffect(countryListLiveData, it)
-            }
+            .subscribe { updateAsSideEffect(countryListLiveData, it) }
             .addTo(modelDisposable)
     }
 
@@ -44,7 +44,8 @@ class OnboardingViewModel(app: Application) : BaseViewModel(app) {
         if (termsChecked && selectedCountryItem.countryCode == AVAILABLE_COUNTRY) {
             application.preferencesManager
                 .persist(WELCOME_SCREEN_SEEN_KEY, true)
-                .andThen(markTermsAsAccepted(application))
+                .andThen(UpdatedTermsUtil.markTermsAsAccepted(application))
+                .andThen(markTermsConsentAsGiven())
                 .onErrorComplete()
                 .subscribe {
                     updateAsSideEffect(showInfoScreenLiveData, ViewEvent(true))
@@ -80,10 +81,9 @@ class OnboardingViewModel(app: Application) : BaseViewModel(app) {
     }
 
     private fun getDefaultCountryViewItemByLocale(): CountryViewItem {
-        return if (getUserCountryCode() == AVAILABLE_COUNTRY) {
-            countryItems.first { it.countryCode == getUserCountryCode() }
-        } else {
-            countryItems[0]
+        return when {
+            getUserCountryCode() == AVAILABLE_COUNTRY -> countryItems.first { it.countryCode == getUserCountryCode() }
+            else -> countryItems[0]
         }
     }
 
@@ -96,8 +96,15 @@ class OnboardingViewModel(app: Application) : BaseViewModel(app) {
         }
     }
 
+    private fun markTermsConsentAsGiven(): Completable {
+        return with(application.consentManager) {
+            initialize(application)
+                .andThen(processConsentRequestResult(ID_TERMS_OF_SERVICE_LUCA_ID, true))
+        }
+    }
+
     companion object {
-        private const val AVAILABLE_COUNTRY = "DE"
+        const val AVAILABLE_COUNTRY = "DE"
         private const val COUNTRY_CODE_GERMANY = "DE"
         private const val COUNTRY_CODE_GB = "GB"
     }

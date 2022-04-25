@@ -1,5 +1,6 @@
 package de.culture4life.luca.ui.meeting
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,12 +24,15 @@ class GuestListAdapter(
     }
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
-        viewHolder.guestNumberTextView.text = (position + 1).toString()
+        val guestNumber = (position + 1).toString()
+        viewHolder.guestNumberTextView.text = guestNumber
         viewHolder.guestNameTextView.text = guestsList[position].name
     }
 
     override fun getItemCount(): Int = guestsList.size
 
+    // TODO Here we change the whole dataset, could be replaced by DiffUtil in the future
+    @SuppressLint("NotifyDataSetChanged")
     fun setGuests(list: List<Guest>) {
         if (shouldUpdateDataSet(list)) {
             guestsList = list

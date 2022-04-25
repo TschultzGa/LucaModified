@@ -53,7 +53,7 @@ public class Procedure {
 
         public static Type from(int typeId) {
             for (Type type : values()) {
-                if (type.value == typeId) {
+                if (type.getValue() == typeId) {
                     return type;
                 }
             }
@@ -80,7 +80,7 @@ public class Procedure {
      * @return true if the procedure is a vaccination, false otherwise
      */
     public boolean isVaccination() {
-        return type.value >= Type.VACCINATION_COMIRNATY.value;
+        return type.getValue() >= Type.VACCINATION_COMIRNATY.getValue();
     }
 
     /**

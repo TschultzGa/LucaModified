@@ -12,4 +12,9 @@
         android:title="@string/data_request_documents_title"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/lucaIdDataRequestMenuItem"
+        android:title="@string/data_request_luca_id_title"
+        app:showAsAction="never" />
+
 </menu>

@@ -5,6 +5,7 @@ import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Context.NOTIFICATION_SERVICE;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -346,6 +347,8 @@ public class LucaNotificationManager extends Manager {
      * Creates a pending intent that will start the specified activity when invoked.
      */
     @SuppressWarnings("rawtypes")
+    // Can be ignored because immutable flag is set correctly for Android M and upwards (it is not available below that)
+    @SuppressLint("UnspecifiedImmutableFlag")
     public PendingIntent createActivityIntent(Class intentClass, @Nullable Bundle notificationBundle) {
         Intent contentIntent = new Intent(context, intentClass);
         if (notificationBundle != null) {
@@ -365,6 +368,8 @@ public class LucaNotificationManager extends Manager {
     /**
      * Creates a pending intent that will start the luca service when invoked.
      */
+    // Can be ignored because immutable flag is set correctly for Android M and upwards (it is not available below that)
+    @SuppressLint("UnspecifiedImmutableFlag")
     public PendingIntent createServiceIntent(@Nullable Bundle notificationBundle) {
         Intent contentIntent = new Intent(context, LucaService.class);
         if (notificationBundle != null) {

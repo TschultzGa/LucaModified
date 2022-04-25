@@ -4,6 +4,7 @@ import static android.app.PendingIntent.FLAG_IMMUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.location.LocationManager.PROVIDERS_CHANGED_ACTION;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -298,6 +299,8 @@ public class GeofenceManager extends Manager {
         return publishProcessor != null && !publishProcessor.hasComplete() && !publishProcessor.hasThrowable();
     }
 
+    // Can be ignored because immutable flag is set correctly for Android M and upwards (it is not available below that)
+    @SuppressLint("UnspecifiedImmutableFlag")
     private PendingIntent getOrCreatePendingIntent(@NonNull GeofencingRequest geofencingRequest) {
         PendingIntent pendingIntent;
         synchronized (pendingIntentsMap) {

@@ -11,6 +11,7 @@ object JwtUtil {
     @JvmStatic
     fun parseJwt(signedJwt: String): Jwt<Header<*>, Claims> {
         return Jwts.parserBuilder()
+            .setClock { TimeUtil.getCurrentDate() }
             .build()
             .parseClaimsJwt(getUnsignedJwt(signedJwt))
     }

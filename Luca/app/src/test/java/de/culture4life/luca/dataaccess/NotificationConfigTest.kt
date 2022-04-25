@@ -1,20 +1,16 @@
 package de.culture4life.luca.dataaccess
 
-import androidx.test.runner.AndroidJUnit4
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import de.culture4life.luca.LucaUnitTest
 import junit.framework.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.util.*
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [28])
-class NotificationConfigTest {
+class NotificationConfigTest : LucaUnitTest() {
 
-    val response = """{
+    private val response = """{
         "default": {
             "1": {
                 "messages": {
@@ -107,8 +103,8 @@ class NotificationConfigTest {
         ]
     }"""
 
-    val responseJson: JsonObject = Gson().fromJson(response, JsonObject::class.java)
-    var notificationConfig = NotificationConfig(responseJson)
+    private val responseJson: JsonObject = Gson().fromJson(response, JsonObject::class.java)
+    private var notificationConfig = NotificationConfig(responseJson)
 
     @Before
     fun setUp() {

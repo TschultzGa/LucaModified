@@ -45,7 +45,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/spacing_default"
-                    android:text="@string/navigation_contact_data" />
+                    android:text="@string/registration_heading_name" />
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/firstNameLayout"
@@ -92,7 +92,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="24dp"
                     android:alpha="0.75"
-                    android:text="@string/registration_contact_info" />
+                    android:text="@string/registration_contact_info"
+                    android:visibility="gone" />
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/phoneNumberLayout"
@@ -100,6 +101,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_phone_number"
+                    android:visibility="gone"
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -118,6 +120,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_email"
+                    android:visibility="gone"
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -137,11 +140,13 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="24dp"
                     android:alpha="0.75"
-                    android:text="@string/registration_address_info" />
+                    android:text="@string/registration_address_info"
+                    android:visibility="gone" />
 
                 <include
                     android:id="@+id/addressLayout"
-                    layout="@layout/fragment_street_house_number" />
+                    layout="@layout/fragment_street_house_number"
+                    android:visibility="gone" />
 
                 <de.culture4life.luca.ui.registration.RegistrationTextInputLayout
                     android:id="@+id/postalCodeLayout"
@@ -149,6 +154,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_postal_code"
+                    android:visibility="gone"
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -167,6 +173,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/registration_city_name"
+                    android:visibility="gone"
                     tools:ignore="MissingConstraints">
 
                     <com.google.android.material.textfield.TextInputEditText

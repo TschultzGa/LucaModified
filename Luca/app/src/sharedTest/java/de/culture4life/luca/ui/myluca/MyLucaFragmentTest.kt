@@ -1,46 +1,41 @@
 package de.culture4life.luca.ui.myluca
 
 import androidx.core.os.bundleOf
-import androidx.test.espresso.Espresso
+import androidx.lifecycle.Lifecycle
 import de.culture4life.luca.R
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.testtools.LucaFragmentTest
 import de.culture4life.luca.testtools.pages.MyLucaPage
+import de.culture4life.luca.testtools.preconditions.DocumentPreconditions
+import de.culture4life.luca.testtools.preconditions.MockServerPreconditions
+import de.culture4life.luca.testtools.rules.FixedTimeRule
 import de.culture4life.luca.testtools.rules.LucaFragmentScenarioRule
 import de.culture4life.luca.testtools.samples.SampleDocuments
 import de.culture4life.luca.testtools.samples.SampleLocations
 import de.culture4life.luca.ui.BaseQrCodeViewModel
-import de.culture4life.luca.ui.consent.ConsentUiExtension
-import de.culture4life.luca.util.TimeUtil
-import org.junit.After
+import io.github.kakaocup.kakao.recycler.KRecyclerView
+import org.joda.time.DateTime
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
-import java.time.Clock
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenarioRule.create()) {
 
+    @get:Rule
+    val fixedTimeRule = FixedTimeRule()
+
+    val documentPreconditions = DocumentPreconditions()
+
     @Before
     fun setup() {
-        // TODO replace with configurable TestRule
-        val fixedDateTime = LocalDateTime.parse(SampleDocuments.referenceDateTime)
-        TimeUtil.clock = Clock.fixed(fixedDateTime.atZone(ZoneId.of("UTC")).toInstant(), ZoneId.of("UTC"))
-
         setupDefaultWebServerMockResponses()
 
         // Transitive used manager needs to be initialized before start.
         // A bug or just not possible, because usually initialization is already done before reaching MyLucaFragment?
-        getInitializedManager(applicationContext.consentManager)
+        getInitializedManager(application.consentManager)
         // NotificationManager is used to give feedback as vibration.
         // Vibration is not added to AddCertificateFlowPage scan process yet but will be.
-        getInitializedManager(applicationContext.notificationManager)
-    }
-
-    @After
-    fun cleanup() {
-        // TODO replace reset by TestRule
-        TimeUtil.clock = Clock.systemUTC()
+        getInitializedManager(application.notificationManager)
     }
 
     @Test
@@ -50,17 +45,24 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, document)
             documentList.run {
-                hasSize(1)
+                hasSize(2)
                 childAt<MyLucaPage.DocumentItem>(0) {
-                    title.hasText(applicationContext.getString(R.string.document_type_vaccination, "(2/2)"))
+                    title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+                    assertIsMarkedAsValid()
                 }
             }
         }
 
         assertDocumentRedeemRequest()
+
+        givenFarFuture(document.vaccinationDate)
+        MyLucaPage().documentList.childAt<MyLucaPage.DocumentItem>(0) {
+            title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+            assertIsMarkedAsExpired()
+        }
     }
 
     @Test
@@ -70,17 +72,24 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, document)
             documentList.run {
-                hasSize(1)
+                hasSize(2)
                 childAt<MyLucaPage.DocumentItem>(0) {
-                    title.hasText(applicationContext.getString(R.string.document_type_vaccination, "(1/2)"))
+                    title.hasText(application.getString(R.string.certificate_type_vaccination, "(1/2)"))
+                    assertIsMarkedAsPartially()
                 }
             }
         }
 
         assertDocumentRedeemRequest()
+
+        givenFarFuture(document.vaccinationDate)
+        MyLucaPage().documentList.childAt<MyLucaPage.DocumentItem>(0) {
+            title.hasText(application.getString(R.string.certificate_type_vaccination, "(1/2)"))
+            assertIsMarkedAsExpired()
+        }
     }
 
     @Test
@@ -90,37 +99,99 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, document)
             documentList.run {
-                hasSize(1)
+                hasSize(2)
                 childAt<MyLucaPage.DocumentItem>(0) {
-                    title.hasText(R.string.document_type_recovery)
+                    title.hasText(R.string.certificate_type_recovery)
+                    assertIsMarkedAsValid()
                 }
             }
         }
 
         assertDocumentRedeemRequest()
+
+        givenFarFuture(document.startDate)
+        MyLucaPage().documentList.childAt<MyLucaPage.DocumentItem>(0) {
+            title.hasText(R.string.certificate_type_recovery)
+            assertIsMarkedAsExpired()
+        }
     }
 
     @Test
     fun scanEudccTestFastNegative() {
+        val document = SampleDocuments.ErikaMustermann.EudccFastNegative()
+        givenRegisteredUser(document.person)
+        launchFragment()
+
+        MyLucaPage().run {
+            documentList.assertShowsOnlyDefaultEntries()
+            stepsScanValidDocument(fragmentScenarioRule.scenario, document)
+            documentList.run {
+                hasSize(2)
+                childAt<MyLucaPage.DocumentItem>(0) {
+                    title.containsText(application.getString(R.string.certificate_type_test_fast) + ": " + application.getString(R.string.certificate_test_outcome_negative))
+                    assertIsMarkedAsNegative()
+                }
+            }
+        }
+
+        assertDocumentRedeemRequest()
+
+        givenFarFuture(document.testingDateTime)
+        MyLucaPage().documentList.assertShowsOnlyDefaultEntries()
+    }
+
+    @Test
+    fun scanEudccTestPcrNegative() {
         val document = SampleDocuments.ErikaMustermann.EudccPcrNegative()
         givenRegisteredUser(document.person)
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, document)
             documentList.run {
-                hasSize(1)
+                hasSize(2)
                 childAt<MyLucaPage.DocumentItem>(0) {
-                    title.containsText(applicationContext.getString(R.string.document_type_fast) + ": " + applicationContext.getString(R.string.document_outcome_negative))
+                    title.containsText(application.getString(R.string.certificate_type_test_pcr) + ": " + application.getString(R.string.certificate_test_outcome_negative))
+                    assertIsMarkedAsNegative()
                 }
             }
         }
 
         assertDocumentRedeemRequest()
+
+        givenFarFuture(document.testingDateTime)
+        MyLucaPage().documentList.assertShowsOnlyDefaultEntries()
+    }
+
+    @Test
+    fun scanEudccTestPcrPositive() {
+        val document = SampleDocuments.ErikaMustermann.EudccPcrPositive()
+        givenRegisteredUser(document.person)
+        launchFragment()
+
+        MyLucaPage().run {
+            documentList.assertShowsOnlyDefaultEntries()
+            stepsScanValidDocument(fragmentScenarioRule.scenario, document)
+            documentList.run {
+                hasSize(2)
+                childAt<MyLucaPage.DocumentItem>(0) {
+                    title.containsText(application.getString(R.string.certificate_type_test_pcr) + ": " + application.getString(R.string.certificate_test_outcome_positive))
+                    assertIsMarkedAsPositive()
+                }
+            }
+        }
+
+        assertDocumentRedeemRequest()
+
+        givenFarFuture(document.testingDateTime)
+        MyLucaPage().documentList.childAt<MyLucaPage.DocumentItem>(0) {
+            title.containsText(application.getString(R.string.certificate_type_test_pcr) + ": " + application.getString(R.string.certificate_test_outcome_positive))
+            assertIsMarkedAsExpired()
+        }
     }
 
     @Test
@@ -163,14 +234,31 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         MyLucaPage().run {
             consentsDialog.acceptButton.click()
             documentList.run {
-                hasSize(1)
+                hasSize(2)
                 childAt<MyLucaPage.DocumentItem>(0) {
-                    title.hasText(applicationContext.getString(R.string.document_type_vaccination, "(2/2)"))
+                    title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+                    assertIsMarkedAsValid()
                 }
             }
         }
 
         assertDocumentRedeemRequest()
+
+        givenFarFuture(document.vaccinationDate)
+        MyLucaPage().documentList.childAt<MyLucaPage.DocumentItem>(0) {
+            title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+            assertIsMarkedAsExpired()
+        }
+    }
+
+    private fun KRecyclerView.assertShowsOnlyDefaultEntries() {
+        hasSize(2)
+        childAt<MyLucaPage.NoDocumentsItem>(0) {
+            // TODO no documents info item
+        }
+        childAt<MyLucaPage.CreateIdentityItem>(1) {
+            // TODO create luca id info item
+        }
     }
 
     @Test
@@ -183,17 +271,33 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, parentDocument)
             stepsScanValidDocument(fragmentScenarioRule.scenario, childDocument)
             documentList.run {
-                hasSize(3)
+                hasSize(4)
                 childAt<MyLucaPage.DocumentItem>(0) {
-                    title.hasText(applicationContext.getString(R.string.document_type_vaccination, "(2/2)"))
+                    title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+                    assertIsMarkedAsValid()
                 }
-                childAt<MyLucaPage.DocumentItem>(2) {
-                    title.hasText(applicationContext.getString(R.string.document_type_vaccination, "(2/2)"))
+                // pos 1 is id card
+                // pos 2 is child title
+                childAt<MyLucaPage.DocumentItem>(3) {
+                    title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+                    assertIsMarkedAsValid()
                 }
+            }
+        }
+
+        givenFarFuture(parentDocument.vaccinationDate)
+        MyLucaPage().documentList.run {
+            childAt<MyLucaPage.DocumentItem>(0) {
+                title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+                assertIsMarkedAsExpired()
+            }
+            childAt<MyLucaPage.DocumentItem>(3) {
+                title.hasText(application.getString(R.string.certificate_type_vaccination, "(2/2)"))
+                assertIsMarkedAsExpired()
             }
         }
     }
@@ -207,12 +311,12 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, documentFirst)
             stepsScanValidDocument(fragmentScenarioRule.scenario, documentSecond)
             stepsScanValidDocument(fragmentScenarioRule.scenario, documentThird)
             documentList.run {
-                hasSize(1)
+                hasSize(2)
                 // TODO check it shows the most recent scanned document
                 // TODO check item contains all documents
             }
@@ -221,14 +325,7 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         // Once for every document
         assertDocumentRedeemRequest()
         assertDocumentRedeemRequest()
-
-        // TODO Will be triggered after 3 seconds again which could be between the redeem calls
-        //  .delaySubscription(3, TimeUnit.SECONDS, Schedulers.io())
-        //  We need to improve how to check that our expected server calls are done and ignoring the common requests.
-        // assertTimeSyncRequest()
-
-        // TODO Is flaky at the moment
-        // assertDocumentRedeemRequest()
+        assertDocumentRedeemRequest()
     }
 
     @Test
@@ -236,14 +333,14 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         val documentFirst = SampleDocuments.ErikaMustermann.EudccPartiallyVaccinated()
         val documentSecond = SampleDocuments.ErikaMustermannDifferentBirthday.EudccFullyVaccinated()
         givenRegisteredUser(documentFirst.person)
-        givenAddedDocument(documentFirst)
+        documentPreconditions.givenAddedDocument(documentFirst)
 
         launchFragmentSimulatedRedirect(documentSecond)
 
         MyLucaPage().run {
             consentsDialog.acceptButton.click()
             birthdayNotMatchDialog.okButton.click()
-            documentList.hasSize(1)
+            documentList.hasSize(2)
         }
     }
 
@@ -255,9 +352,9 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         launchFragment()
 
         MyLucaPage().run {
-            documentList.hasSize(0)
+            documentList.assertShowsOnlyDefaultEntries()
             stepsScanValidDocument(fragmentScenarioRule.scenario, documentFirst)
-            documentList.hasSize(1)
+            documentList.hasSize(2)
             navigateToScanner()
             addCertificateFlowPage.qrCodeScannerPage.run {
                 scanQrCode(fragmentScenarioRule.scenario, documentSecond.qrCodeContent)
@@ -265,20 +362,34 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
                 birthdayNotMatchDialog.okButton.click()
                 cancelButton.click()
             }
-            documentList.hasSize(1)
+            documentList.hasSize(2)
+        }
+    }
+
+    @Test
+    fun cardStaysExpandedOnPauseAndResume() {
+        val document = SampleDocuments.ErikaMustermann.EudccFullyVaccinated()
+        givenRegisteredUser(document.person)
+        documentPreconditions.givenAddedDocument(document)
+        launchFragment()
+
+        MyLucaPage().documentList.childAt<MyLucaPage.DocumentItem>(0) {
+            assertIsExpectedItemType()
+
+            assertIsCollapsed()
+            click()
+            assertIsExpanded()
+
+            fragmentScenarioRule.scenario.moveToState(Lifecycle.State.STARTED)
+            fragmentScenarioRule.scenario.moveToState(Lifecycle.State.RESUMED)
+
+            assertIsExpanded()
         }
     }
 
     private fun launchFragment() {
         fragmentScenarioRule.launch()
         initializeConsentUiExtension()
-        assertSyncRequests()
-        try {
-            // TODO: flaky; sometimes both requests are made, sometimes not; should be fixed by better logic in 'id' branch
-            assertSyncRequests()
-        } catch (e: IllegalStateException) {
-            // ignore missing second call for now
-        }
     }
 
     private fun launchFragmentSimulatedRedirect(document: SampleDocuments) {
@@ -287,36 +398,16 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         ) {
             initializeConsentUiExtension()
         }
-        assertSyncRequests()
-    }
-
-    private fun initializeConsentUiExtension() {
-        fragmentScenarioRule.scenario.onFragment {
-            ConsentUiExtension(it.childFragmentManager, applicationContext.consentManager, testDisposable)
-        }
-    }
-
-    private fun assertSyncRequests() {
-        // TODO:  Adjusted to two paths due to race condition; better fix already exists on different branch
-        // Ensure initialization and following request are done.
-        Espresso.onIdle()
-        // Request done on fragment start through manager initialization process. Check is here to remove that call
-        // from the request queue to be able to assert expected calls for the current tested use case only.
-        mockWebServerRule.assertGetRequest("/api/v3/timesync", "/api/v3/versions/apps/android")
     }
 
     private fun assertDocumentRedeemRequest() {
-        mockWebServerRule.assertPostRequest("/api/v3/tests/redeem")
+        mockServerPreconditions.assert(MockServerPreconditions.Route.RedeemDocument)
     }
 
     private fun setupDefaultWebServerMockResponses() {
-        mockWebServerRule.mockResponse.apply {
-            put("/api/v3/timesync") {
-                setResponseCode(200)
-                setBody("{\"unix\":${TimeUtil.getCurrentUnixTimestamp().blockingGet()}}")
-            }
-            put("/api/v3/tests/redeem") { setResponseCode(200) }
-            put("/api/v3/versions/apps/android") { setResponseCode(200) }
+        with(mockServerPreconditions) {
+            givenTimeSync()
+            givenRedeemDocument()
         }
     }
 
@@ -324,9 +415,9 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
 
     private fun givenRegisteredUser(firstName: String, lastName: String) {
         // Transitive used PreferencesManager needs to be initialized before we can fake registered user.
-        getInitializedManager(applicationContext.preferencesManager)
+        getInitializedManager(application.preferencesManager)
 
-        val registrationManager = applicationContext.registrationManager
+        val registrationManager = application.registrationManager
         val registrationData = registrationManager.getRegistrationData().blockingGet()
 
         registrationData.firstName = firstName
@@ -335,16 +426,15 @@ class MyLucaFragmentTest : LucaFragmentTest<MyLucaFragment>(LucaFragmentScenario
         registrationManager.persistRegistrationData(registrationData).blockingAwait()
     }
 
-    private fun givenAddedDocument(document: SampleDocuments) {
-        getInitializedManager(applicationContext.documentManager)
-        applicationContext.documentManager.parseAndValidateEncodedDocument(document.qrCodeContent)
-            .flatMapCompletable { applicationContext.documentManager.addDocument(it) }
-            .blockingAwait()
-    }
-
     private fun givenAddedChild(person: SampleDocuments.Person) = givenAddedChild(person.firstName, person.lastName)
     private fun givenAddedChild(firstName: String, lastName: String) {
-        val childrenManager = applicationContext.childrenManager
+        val childrenManager = application.childrenManager
         childrenManager.addChild(Child(firstName, lastName)).blockingAwait()
+    }
+
+    private fun givenFarFuture(start: DateTime) {
+        fixedTimeRule.setCurrentDateTime(start.plusYears(100))
+        // Ensure we don't test entries which becomes deleted and triggers list update.
+        application.documentManager.deleteExpiredDocuments().blockingAwait()
     }
 }

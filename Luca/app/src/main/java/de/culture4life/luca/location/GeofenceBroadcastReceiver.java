@@ -1,5 +1,6 @@
 package de.culture4life.luca.location;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,9 +11,12 @@ import timber.log.Timber;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
+    // This case is already handled in handleBroadcastReceiverIntent
+    @SuppressLint("UnsafeProtectedBroadcastReceiver")
     @Override
     public void onReceive(Context context, Intent intent) {
         Timber.d("onReceive() called with: context = [%s], intent = [%s]", context, intent);
+
         LucaApplication application = (LucaApplication) context.getApplicationContext();
         GeofenceManager geofenceManager = application.getGeofenceManager();
         geofenceManager.initialize(context)

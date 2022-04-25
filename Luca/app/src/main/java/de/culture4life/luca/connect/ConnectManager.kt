@@ -217,7 +217,7 @@ open class ConnectManager(
         return cryptoManager.initialize(context)
             .andThen(generateEnrollmentRequestData())
             .flatMap { enrollmentRequestData ->
-                networkManager.lucaEndpointsV4
+                networkManager.getLucaEndpointsV4()
                     .flatMap { it.enrollToLucaConnect(enrollmentRequestData) }
                     .map { it["contactId"].asString }
             }
@@ -356,7 +356,7 @@ open class ConnectManager(
             .map { it.contactId }
             .flatMapSingle(this::generateUnEnrollmentRequestData)
             .map { requestData ->
-                networkManager.lucaEndpointsV4
+                networkManager.getLucaEndpointsV4()
                     .flatMapCompletable { it.unEnrollFromLucaConnect(requestData) }
                     .onErrorResumeNext { throwable ->
                         if (throwable.isHttpException(HttpURLConnection.HTTP_NOT_FOUND)) {
@@ -599,7 +599,7 @@ open class ConnectManager(
                     .doOnSuccess { Timber.v("Generated ${it.size} message IDs") }
                     .map(::ConnectMessageRequestData)
                     .flatMapObservable { requestData ->
-                        networkManager.lucaEndpointsV4
+                        networkManager.getLucaEndpointsV4()
                             .flatMap { it.getMessages(requestData) }
                             .doOnSuccess { Timber.v("${it.size} message IDs matched") }
                             .flattenAsObservable { it }
@@ -706,7 +706,7 @@ open class ConnectManager(
                 }
             )
             .flatMapCompletable { requestData ->
-                networkManager.lucaEndpointsV4
+                networkManager.getLucaEndpointsV4()
                     .flatMapCompletable { it.markMessageAsRead(requestData) }
             }
             .doOnComplete { message.read = true }
@@ -910,7 +910,7 @@ open class ConnectManager(
 
     private fun getCompressedPublicKey(alias: String): Single<String> =
         cryptoManager.getKeyPairPublicKey(alias)
-            .map(ECPublicKey::toCompressedBase64String)
+            .map(ECPublicKey::toBase64String)
 
     private fun getLastEnrollmentTimestampIfAvailable(): Maybe<Long> {
         return getLastContactArchiveEntryIfAvailable()

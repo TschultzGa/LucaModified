@@ -3,13 +3,12 @@ package de.culture4life.luca.ui.qrcode
 import android.webkit.URLUtil
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.R
-import de.culture4life.luca.checkin.CheckInManager
 import de.culture4life.luca.consent.ConsentManager
 import de.culture4life.luca.document.*
-import de.culture4life.luca.meeting.MeetingManager
 import de.culture4life.luca.ui.BaseViewModel
 import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.dialog.BaseDialogContent
+import de.culture4life.luca.util.LucaUrlUtil
 import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
@@ -47,11 +46,11 @@ class DocumentBarcodeProcessor(
                 val errorBuilder: ViewError.Builder = baseViewModel.createErrorBuilder(throwable)
                     .withTitle(R.string.document_import_error_title)
                 if (throwable is DocumentParsingException) {
-                    if (MeetingManager.isPrivateMeeting(encodedDocument) || CheckInManager.isSelfCheckInUrl(encodedDocument)) {
+                    if (LucaUrlUtil.isPrivateMeeting(encodedDocument) || LucaUrlUtil.isSelfCheckIn(encodedDocument)) {
                         // the user tried to check-in from the wrong tab
                         errorBuilder.withTitle(R.string.document_import_error_check_in_scanner_title)
                         errorBuilder.withDescription(R.string.document_import_error_check_in_scanner_description)
-                    } else if (URLUtil.isValidUrl(encodedDocument) && !DocumentManager.isTestResult(encodedDocument)) {
+                    } else if (URLUtil.isValidUrl(encodedDocument) && !LucaUrlUtil.isTestResult(encodedDocument)) {
                         // data is actually an URL that the user may want to open
                         errorBuilder.withDescription(R.string.document_import_error_unsupported_but_url_description)
                         errorBuilder.withResolveLabel(R.string.action_continue)

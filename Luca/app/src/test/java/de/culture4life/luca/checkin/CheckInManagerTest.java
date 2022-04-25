@@ -1,7 +1,5 @@
 package de.culture4life.luca.checkin;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -10,16 +8,12 @@ import static org.mockito.Mockito.when;
 import static de.culture4life.luca.crypto.CryptoManagerTest.decodeSecret;
 import static de.culture4life.luca.history.HistoryManager.SHARE_DATA_DURATION;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.robolectric.annotation.Config;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -39,8 +33,6 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.TestObserver;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
 public class CheckInManagerTest extends LucaUnitTest {
 
     private static final String ENCODED_TRACE_ID = "Z0aw+vjwazzQHj21PxmWTQ==";
@@ -153,19 +145,4 @@ public class CheckInManagerTest extends LucaUnitTest {
         getting.await().assertNoErrors().assertValue(expectedCheckinDuration);
         TimeUtil.setClock(Clock.systemUTC());
     }
-
-    @Test
-    public void isSelfCheckInUrl_validUrls_returnsTrue() {
-        assertTrue(CheckInManager.isSelfCheckInUrl("https://app.luca-app.de/webapp/512875cb-17e6-4dad-ac62-3e792d94e03f"));
-        assertTrue(CheckInManager.isSelfCheckInUrl("https://app.luca-app.de/webapp/512875cb-17e6-4dad-ac62-3e792d94e03f#e30"));
-        assertTrue(CheckInManager.isSelfCheckInUrl("https://app.luca-app.de/webapp/512875cb-17e6-4dad-ac62-3e792d94e03f#e30/CWA1/CiRmY2E..."));
-    }
-
-    @Test
-    public void isSelfCheckInUrl_invalidUrls_returnsFalse() {
-        assertFalse(CheckInManager.isSelfCheckInUrl("https://app.luca-app.de/webapp/"));
-        assertFalse(CheckInManager.isSelfCheckInUrl("https://app.luca-app.de/webapp/setup"));
-        assertFalse(CheckInManager.isSelfCheckInUrl("https://app.luca-app.de/webapp/testresult/#eyJ0eXAi..."));
-    }
-
 }

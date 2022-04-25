@@ -25,7 +25,7 @@ class PowManager(
      * Fetches a new challenge from the backend but doesn't solve it.
      */
     fun getChallenge(type: String): Single<PowChallenge> {
-        return networkManager.lucaEndpointsV4
+        return networkManager.getLucaEndpointsV4()
             .flatMap { it.getPowChallenge(PowChallengeRequestData(type)) }
             .map { it.powChallenge }
             .onErrorResumeNext { Single.error(PowException("Unable to fetch challenge", it)) }

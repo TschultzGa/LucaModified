@@ -1,6 +1,5 @@
 package de.culture4life.luca.archive
 
-import androidx.test.runner.AndroidJUnit4
 import com.google.gson.annotations.Expose
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.preference.PreferencesManager
@@ -8,12 +7,8 @@ import de.culture4life.luca.util.TimeUtil
 import io.reactivex.rxjava3.core.Completable
 import org.junit.After
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [28])
 class ArchiverTest : LucaUnitTest() {
 
     var preferencesManager: PreferencesManager = getInitializedManager(PreferencesManager())

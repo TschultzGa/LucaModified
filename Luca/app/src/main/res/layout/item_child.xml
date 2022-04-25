@@ -40,7 +40,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:contentDescription="@string/item_delete_action"
+            android:contentDescription="@string/document_delete_action"
             android:padding="@dimen/spacing_default"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_delete_item" />

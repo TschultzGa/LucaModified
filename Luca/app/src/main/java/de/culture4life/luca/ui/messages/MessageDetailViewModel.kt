@@ -35,6 +35,7 @@ class MessageDetailViewModel(application: Application) : BaseViewModel(applicati
             is MessageListItem.NewsListItem -> whatIsNewManager.markMessageAsSeen(item.id)
             is MessageListItem.AccessedDataListItem -> dataAccessManager.markAsNotNew(item.id, item.warningLevel)
             is MessageListItem.LucaConnectListItem -> connectManager.markMessageAsRead(item.id)
+            is MessageListItem.MissingConsentItem -> Completable.complete() // Never marked as seen, becomes removed when accepted.
         }
             .subscribeOn(Schedulers.io())
             .subscribe(

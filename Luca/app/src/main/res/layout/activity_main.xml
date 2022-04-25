@@ -31,7 +31,7 @@
             android:background="?attr/colorSurface"
             android:theme="@style/ThemeOverlay.Luca.BottomNavigationView"
             app:itemBackground="@drawable/selector_tab_indicator"
-            app:itemTextColor="@drawable/selector_navigation"
+            app:itemTextColor="@color/selector_navigation"
             app:labelVisibilityMode="labeled"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"

@@ -11,7 +11,7 @@ import org.junit.runners.model.Statement
 class LoggingRule : BaseHookingTestRule() {
 
     // Should NOT be enabled by default because it delays the test execution.
-    private val isEnabled = false
+    private val isEnabled = true
 
     // Prints extra stuff like FragmentManager logs.
     private val isEnabledForRobolectric = false

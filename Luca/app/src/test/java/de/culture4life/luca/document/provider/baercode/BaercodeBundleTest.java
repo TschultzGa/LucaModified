@@ -1,20 +1,15 @@
 package de.culture4life.luca.document.provider.baercode;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 
+import de.culture4life.luca.LucaUnitTest;
 import de.culture4life.luca.document.DocumentParsingException;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class BaercodeBundleTest {
+public class BaercodeBundleTest extends LucaUnitTest {
 
     @Test
     public void createPublicKey_fromBundleFile_isNotNull() throws Exception {

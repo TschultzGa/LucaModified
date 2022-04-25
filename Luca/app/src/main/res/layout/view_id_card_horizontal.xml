@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:ignore="UnusedIds">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/ic_identity_card_background_expanded"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/expanded_photo"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="@dimen/spacing_default"
+        android:layout_marginBottom="@dimen/spacing_default"
+        android:contentDescription="@string/luca_id_card_picture_content_description"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="242:354"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/expanded_icon" />
+
+    <TextView
+        android:id="@+id/expanded_name_label"
+        style="@style/TextAppearance.Luca.Body2.Bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/spacing_default"
+        android:text="@string/luca_id_card_name_label"
+        app:layout_constraintStart_toEndOf="@id/expanded_photo"
+        app:layout_constraintTop_toTopOf="@id/expanded_photo" />
+
+    <TextView
+        android:id="@+id/expanded_name"
+        style="@style/TextAppearance.Luca.Body1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_small"
+        android:textAllCaps="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/expanded_name_label"
+        app:layout_constraintTop_toBottomOf="@id/expanded_name_label"
+        tools:text="Christopher Maximilian Toni Krügelstein" />
+
+    <TextView
+        android:id="@+id/expanded_birthday_label"
+        style="@style/TextAppearance.Luca.Body2.Bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_default"
+        android:text="@string/luca_id_card_birthday_label"
+        app:layout_constraintStart_toStartOf="@id/expanded_name_label"
+        app:layout_constraintTop_toBottomOf="@id/expanded_name" />
+
+    <TextView
+        android:id="@+id/expanded_birthday"
+        style="@style/TextAppearance.Luca.Body1"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/spacing_small"
+        app:layout_constraintEnd_toStartOf="@id/expanded_date"
+        app:layout_constraintStart_toStartOf="@id/expanded_name_label"
+        app:layout_constraintTop_toBottomOf="@id/expanded_birthday_label"
+        tools:text="12.08.1998" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/expanded_delete_button"
+        style="@style/Widget.Luca.Button.TertiaryActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/spacing_default"
+        android:text="@string/luca_id_card_button"
+        app:layout_constraintBottom_toBottomOf="@id/expanded_photo"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <FrameLayout
+        android:id="@+id/expanded_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:foreground="?actionBarItemBackground"
+        android:padding="@dimen/spacing_default"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/additional_details_content_description"
+            android:src="@drawable/ic_verified" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/expanded_date"
+        style="@style/TextAppearance.Luca.Body2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/spacing_default"
+        app:layout_constraintBottom_toBottomOf="@id/expanded_icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/expanded_icon"
+        tools:text="03.02.22 – 14:54" />
+
+    <TextView
+        android:id="@+id/expanded_title"
+        style="@style/TextAppearance.Luca.Body1.Bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/luca_id_card_title"
+        app:layout_constraintBottom_toBottomOf="@id/expanded_icon"
+        app:layout_constraintStart_toEndOf="@id/expanded_icon"
+        app:layout_constraintTop_toTopOf="@id/expanded_icon" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,22 +1,27 @@
 package de.culture4life.luca.ui.lucaconnect.children
 
-import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.color.MaterialColors
 import de.culture4life.luca.R
 import de.culture4life.luca.databinding.FragmentProvideProofBinding
+import de.culture4life.luca.ui.SharedViewModelScopeProvider
 import de.culture4life.luca.ui.base.bottomsheetflow.BaseFlowChildFragment
 import de.culture4life.luca.ui.lucaconnect.LucaConnectBottomSheetViewModel
 import de.culture4life.luca.ui.qrcode.AddCertificateFlowFragment
 import de.culture4life.luca.ui.qrcode.AddCertificateFlowViewModel
 
-class ProvideProofFragment : BaseFlowChildFragment<ProvideProofViewModel, LucaConnectBottomSheetViewModel>() {
+class ProvideProofFragment : BaseFlowChildFragment<ProvideProofViewModel, LucaConnectBottomSheetViewModel>(), SharedViewModelScopeProvider {
 
-    private val addCertificateViewModel: AddCertificateFlowViewModel by activityViewModels()
+    private val addCertificateViewModel by lazy { ViewModelProvider(sharedViewModelStoreOwner)[AddCertificateFlowViewModel::class.java] }
     private lateinit var binding: FragmentProvideProofBinding
 
     override fun getViewModelClass(): Class<ProvideProofViewModel> = ProvideProofViewModel::class.java
     override fun getSharedViewModelClass(): Class<LucaConnectBottomSheetViewModel> = LucaConnectBottomSheetViewModel::class.java
+
+    override val sharedViewModelStoreOwner: ViewModelStoreOwner
+        get() = this
 
     override fun getViewBinding(): ViewBinding {
         binding = FragmentProvideProofBinding.inflate(layoutInflater)
@@ -34,7 +39,7 @@ class ProvideProofFragment : BaseFlowChildFragment<ProvideProofViewModel, LucaCo
         }
 
         observe(viewModel.validProofAvailable) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 if (it.valueAndMarkAsHandled) {
                     showProofAvailable()
                 } else {
@@ -44,14 +49,14 @@ class ProvideProofFragment : BaseFlowChildFragment<ProvideProofViewModel, LucaCo
         }
 
         observe(addCertificateViewModel.documentAddedOnViewDismissed) {
-            if (!it.hasBeenHandled() && it.valueAndMarkAsHandled) {
+            if (it.isNotHandled && it.valueAndMarkAsHandled) {
                 viewModel.onCertificateAdded()
             }
         }
     }
 
     private fun showAddCertificateFlow() {
-        AddCertificateFlowFragment.newInstance().show(parentFragmentManager, AddCertificateFlowFragment.TAG)
+        AddCertificateFlowFragment.newInstance().show(childFragmentManager, AddCertificateFlowFragment.TAG)
     }
 
     private fun showNoProofAvailable() {

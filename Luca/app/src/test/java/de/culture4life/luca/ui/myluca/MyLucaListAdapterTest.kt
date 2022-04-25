@@ -1,18 +1,15 @@
 package de.culture4life.luca.ui.myluca
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.registration.Person
+import de.culture4life.luca.ui.myluca.listitems.TestResultItem
 import org.junit.Assert.*
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class MyLucaListAdapterTest : LucaUnitTest() {
+
     private val document = Document().apply {
         firstName = "Erika"
         lastName = "Mustermann"
@@ -65,8 +62,7 @@ class MyLucaListAdapterTest : LucaUnitTest() {
 
     @Test
     fun sortAndPairItems_correctPerson_returnsItem() {
-        val items =
-            MyLucaListAdapter.sortAndPairItems(listOf(item), listOf(Person("Erika", "Mustermann")))
+        val items = MyLucaListAdapter.sortAndPairItems(listOf(item), listOf(Person("Erika", "Mustermann")))
         assertEquals(items[0].items[0], item)
     }
 
@@ -80,8 +76,7 @@ class MyLucaListAdapterTest : LucaUnitTest() {
 
     @Test
     fun sortAndPairItems_wrongPerson_returnsEmptyList() {
-        val items =
-            MyLucaListAdapter.sortAndPairItems(listOf(item), listOf(Person("Anyone", "Else")))
+        val items = MyLucaListAdapter.sortAndPairItems(listOf(item), listOf(Person("Anyone", "Else")))
         assertEquals(0, items.size)
     }
 }

@@ -1,6 +1,8 @@
 package de.culture4life.luca.ui.consent
 
+import android.text.method.LinkMovementMethod
 import androidx.core.os.bundleOf
+import androidx.core.text.HtmlCompat
 import androidx.viewbinding.ViewBinding
 import de.culture4life.luca.R
 import de.culture4life.luca.consent.ConsentManager
@@ -24,10 +26,11 @@ class ConsentBottomSheetFragment : BaseBottomSheetDialogFragment<ConsentViewMode
         super.initializeViews()
         binding.acceptButton.setOnClickListener { viewModel.onAcceptButtonClicked() }
         binding.cancelButton.setOnClickListener { viewModel.onCancelButtonClicked() }
+        binding.consentInfoTextView.movementMethod = LinkMovementMethod.getInstance()
         viewModel.consentId.observe(viewLifecycleOwner) {
             val texts = getConsentTexts(it)
             binding.consentHeaderTextView.text = texts.title
-            binding.consentInfoTextView.text = texts.description
+            binding.consentInfoTextView.text = HtmlCompat.fromHtml(texts.description, HtmlCompat.FROM_HTML_MODE_COMPACT)
             binding.acceptButton.text = texts.action
         }
     }
@@ -39,6 +42,10 @@ class ConsentBottomSheetFragment : BaseBottomSheetDialogFragment<ConsentViewMode
             action = getString(R.string.consent_accept_action)
         )
         when (consentId) {
+            ConsentManager.ID_TERMS_OF_SERVICE_LUCA_ID -> texts.apply {
+                title = getString(R.string.consent_terms_of_service_title)
+                description = getString(R.string.consent_terms_of_service_description)
+            }
             ConsentManager.ID_ENABLE_CAMERA -> texts.apply {
                 title = getString(R.string.consent_enable_camera_title)
                 description = getString(R.string.consent_enable_camera_description)

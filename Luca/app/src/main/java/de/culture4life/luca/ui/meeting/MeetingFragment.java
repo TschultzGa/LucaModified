@@ -63,7 +63,7 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
         observe(viewModel.getIsHostingMeeting(), isHostingMeeting -> {
             if (!isHostingMeeting) {
                 AccessibilityServiceUtil.speak(getContext(), getString(R.string.meeting_was_ended_hint));
-                safeNavigateFromNavController(R.id.action_meetingFragment_to_checkInFragment, viewModel.getBundle().getValue());
+                safeNavigateFromNavController(R.id.action_meetingFragment_to_checkInFragment, viewModel.getBundleLiveData().getValue());
             }
         });
         observe(viewModel.getQrCode(), value -> binding.qrCodeImageView.setImageBitmap(value));
@@ -78,7 +78,7 @@ public class MeetingFragment extends BaseFragment<MeetingViewModel> {
                 binding.slideToActView.resetSlider();
             }
         });
-        observe(viewModel.getBundle(), this::processBundle);
+        observe(viewModel.getBundleLiveData(), this::processBundle);
     }
 
     @Override

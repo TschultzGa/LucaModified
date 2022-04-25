@@ -2,21 +2,16 @@ package de.culture4life.luca.document.provider.ubirch;
 
 import static org.junit.Assert.assertEquals;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
+import de.culture4life.luca.LucaUnitTest;
 import de.culture4life.luca.document.DocumentParsingException;
 import de.culture4life.luca.document.DocumentVerificationException;
 import de.culture4life.luca.registration.Person;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class UbirchDocumentProviderTest {
+public class UbirchDocumentProviderTest extends LucaUnitTest {
 
     private static final String VALID_TEST_RESULT = "https://verify.govdigital.de/v/gd/#f=Tester;g=Tom;b=19671215;d=202104132336;r=n;t=PCR;s=TKH6M4I9pM8kQ5i1;i=12345;p=demodemo";
     private static final String UNVERIFIED_TEST_RESULT = "https://verify.govdigital.de/v/gd/#f=Mustermann;g=John;b=19640812;p=T01000322;i=3CF75K8D0L;d=202007011030;t=PCR;r=n;s=2fe00c151cb726bb9ed7";

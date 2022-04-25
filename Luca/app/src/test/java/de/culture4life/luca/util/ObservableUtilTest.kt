@@ -1,10 +1,11 @@
 package de.culture4life.luca.util
 
+import de.culture4life.luca.LucaUnitTest
 import io.reactivex.rxjava3.core.Observable
 import junit.framework.Assert.assertEquals
 import org.junit.Test
 
-class ObservableUtilTest {
+class ObservableUtilTest : LucaUnitTest() {
 
     @Test
     fun retryWhen_expectedAndRecoverableError_retries() {

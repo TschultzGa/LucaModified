@@ -22,12 +22,31 @@ pipeline {
     }
 
     parameters {
-        booleanParam(name: 'ReleaseToInternalTesting', defaultValue: false,
-            description: 'Release the bundle to internal testing track on Google Play Store. This only works on master or release/* branches.')
-        booleanParam(name: 'BuildForAllEnvironments', defaultValue: false,
-            description: 'Builds APKs for all staging environments.')
-        booleanParam(name: 'UploadToAppCenter', defaultValue: false,
-            description: 'Build a QS APK and upload it to MS AppCenter for testing.')
+        booleanParam(
+            name: 'RunTests',
+            defaultValue: true,
+            description: 'Runs the tests and generates a test report.'
+        )
+        booleanParam(
+            name: 'RunStaticCodeAnalysis',
+            defaultValue: true,
+            description: 'Runs the static code analysis steps, i.e. linting and Sonarqube.'
+        )
+        booleanParam(
+            name: 'BuildForAllEnvironments',
+            defaultValue: false,
+            description: 'Builds APKs for all staging environments.'
+        )
+        booleanParam(
+            name: 'UploadToAppCenter',
+            defaultValue: false,
+            description: 'Build a QS APK and upload it to MS AppCenter for testing.'
+        )
+        booleanParam(
+            name: 'UploadToGooglePlay',
+            defaultValue: false,
+            description: 'Release the bundle to internal testing track on Google Play Store. This only works on master or release/* branches.'
+        )
     }
 
     stages {
@@ -55,7 +74,8 @@ pipeline {
                 '''
             }
         }
-        stage('Unit Tests') {
+        stage('Tests') {
+            when { anyOf { expression { return params.RunTests } } }
             steps {
                 sh '''
                     cd Luca
@@ -64,6 +84,7 @@ pipeline {
             }
         }
         stage('Static code analysis') {
+            when { anyOf { expression { return params.RunStaticCodeAnalysis } } }
             stages {
                 stage('Ktlint') {
                     steps {
@@ -99,10 +120,11 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(credentialsId: "luca-staging-api-basic-auth-user-pw", usernameVariable: 'STAGING_API_USERNAME', passwordVariable: 'STAGING_API_PASSWORD'),
+                    string(credentialsId: 'luca-android-staging-attestation-token', variable: 'SAFETY_NET_API_KEY'),
                 ]) {
                     sh '''
                         cd Luca
-                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE"
+                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE -PSAFETY_NET_API_KEY=$QUOTE$SAFETY_NET_API_KEY$QUOTE"
                         STAGING_PARAMS="-PSTAGING_API_USERNAME=$QUOTE$STAGING_API_USERNAME$QUOTE -PSTAGING_API_PASSWORD=$QUOTE$STAGING_API_PASSWORD$QUOTE"
                         CMD="cd /Luca/app; ./../gradlew :app:assembleDebug $GENERAL_PARAMS $STAGING_PARAMS"
                         docker run --rm -u $(id -u):$(id -g) -v `pwd`:/Luca ${CONTAINER} bash -c "$CMD"
@@ -120,10 +142,11 @@ pipeline {
             steps {
                 withCredentials([
                     usernamePassword(credentialsId: "luca-staging-api-basic-auth-user-pw", usernameVariable: 'STAGING_API_USERNAME', passwordVariable: 'STAGING_API_PASSWORD'),
+                    string(credentialsId: 'luca-android-staging-attestation-token', variable: 'SAFETY_NET_API_KEY'),
                 ]) {
                     sh '''
                         cd Luca
-                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE"
+                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE -PSAFETY_NET_API_KEY=$QUOTE$SAFETY_NET_API_KEY$QUOTE"
                         STAGING_PARAMS="-PSTAGING_API_USERNAME=$QUOTE$STAGING_API_USERNAME$QUOTE -PSTAGING_API_PASSWORD=$QUOTE$STAGING_API_PASSWORD$QUOTE"
                         CMD="cd /Luca/app; ./../gradlew :app:assembleQs :app:assembleAqs :app:assembleHotfix :app:assemblePentest :app:assembleP1 :app:assembleP2 :app:assembleP3 :app:assembleDemo :app:assembleRelease :app:assemblePreprod $GENERAL_PARAMS $STAGING_PARAMS"
                         docker run --rm -u $(id -u):$(id -g) -v `pwd`:/Luca ${CONTAINER} bash -c "$CMD"
@@ -142,6 +165,7 @@ pipeline {
                 withCredentials([
                     usernamePassword(credentialsId: "luca-staging-api-basic-auth-user-pw", usernameVariable: 'STAGING_API_USERNAME', passwordVariable: 'STAGING_API_PASSWORD'),
                     string(credentialsId: 'luca-android-appcenter-token', variable: 'APPCENTER_TOKEN'),
+                    string(credentialsId: 'luca-android-staging-attestation-token', variable: 'SAFETY_NET_API_KEY'),
                 ]) {
                     sh '''#!/bin/bash
                         cd Luca
@@ -152,10 +176,10 @@ pipeline {
                             TASK=":app:assemblePreprod"
                             APP_VARIANT=preprod
                         else
-                            TASK=":app:assembleQs"
-                            APP_VARIANT=qs
+                            TASK=":app:assembleP2"
+                            APP_VARIANT=p2
                         fi
-                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE"
+                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE -PSAFETY_NET_API_KEY=$QUOTE$SAFETY_NET_API_KEY$QUOTE"
                         STAGING_PARAMS="-PSTAGING_API_USERNAME=$QUOTE$STAGING_API_USERNAME$QUOTE -PSTAGING_API_PASSWORD=$QUOTE$STAGING_API_PASSWORD$QUOTE"
                         CMD="cd /Luca/app; ./../gradlew $TASK $GENERAL_PARAMS $STAGING_PARAMS"
                         docker run --rm -u $(id -u):$(id -g) -v `pwd`:/Luca ${CONTAINER} bash -c "$CMD"
@@ -174,10 +198,11 @@ pipeline {
                     file(credentialsId: 'luca-android-keystore', variable: 'KEYSTORE_FILE'),
                     string(credentialsId: 'luca-android-upload-key-pw', variable: 'C4L_SIGNING_KEY_PASSWORD'),
                     string(credentialsId: 'luca-android-keystore-pw', variable: 'C4L_SIGNING_STORE_PASSWORD'),
+                    string(credentialsId: 'luca-android-attestation-token', variable: 'SAFETY_NET_API_KEY'),
                 ]) {
                     sh '''
                         cd Luca
-                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE"
+                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE -PSAFETY_NET_API_KEY=$QUOTE$SAFETY_NET_API_KEY$QUOTE"
                         LOCAL_KEYSTORE_FILE=$(basename $KEYSTORE_FILE)
                         KEYSTORE_PARAMS="-PC4L_SIGNING_STORE_FILE=$LOCAL_KEYSTORE_FILE -PC4L_SIGNING_KEY_PASSWORD=$C4L_SIGNING_KEY_PASSWORD -PC4L_SIGNING_KEY_ALIAS=$C4L_SIGNING_KEY_ALIAS -PC4L_SIGNING_STORE_PASSWORD=$C4L_SIGNING_STORE_PASSWORD"
                         CMD="cd /Luca/app; ./../gradlew dependencyCheckAnalyze :app:assembleProduction $GENERAL_PARAMS $KEYSTORE_PARAMS"
@@ -186,11 +211,11 @@ pipeline {
                 }
             }
         }
-        stage('Upload to PlayStore') {
+        stage('Upload to Google Play') {
             when {
                 allOf {
                     anyOf { branch 'release/*'; branch 'master' }
-                    expression { return params.ReleaseToInternalTesting }
+                    expression { return params.UploadToGooglePlay }
                 }
             }
             steps {
@@ -199,10 +224,11 @@ pipeline {
                     file(credentialsId: 'c4l-play-console-service-account-json', variable: 'SERVICE_ACCOUNT_FILE'),
                     string(credentialsId: 'luca-android-upload-key-pw', variable: 'C4L_SIGNING_KEY_PASSWORD'),
                     string(credentialsId: 'luca-android-keystore-pw', variable: 'C4L_SIGNING_STORE_PASSWORD'),
+                    string(credentialsId: 'luca-android-attestation-token', variable: 'SAFETY_NET_API_KEY'),
                 ]) {
                     sh '''
                         cd Luca
-                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE"
+                        GENERAL_PARAMS="-PCOMMIT_HASH=$QUOTE$COMMIT_HASH$QUOTE -PSAFETY_NET_API_KEY=$QUOTE$SAFETY_NET_API_KEY$QUOTE"
                         LOCAL_KEYSTORE_FILE=$(basename $KEYSTORE_FILE)
                         KEYSTORE_PARAMS="-PC4L_SIGNING_STORE_FILE=$LOCAL_KEYSTORE_FILE -PC4L_SIGNING_KEY_PASSWORD=$C4L_SIGNING_KEY_PASSWORD -PC4L_SIGNING_KEY_ALIAS=$C4L_SIGNING_KEY_ALIAS -PC4L_SIGNING_STORE_PASSWORD=$C4L_SIGNING_STORE_PASSWORD"
                         CMD="cd /Luca/app; ./../gradlew publishProductionBundle $GENERAL_PARAMS $KEYSTORE_PARAMS"
@@ -221,7 +247,7 @@ pipeline {
 
     post {
         always {
-            junit 'Luca/app/build/test-results/**/*.xml'
+            junit testResults: 'Luca/app/build/test-results/**/*.xml', allowEmptyResults: !params.RunTests
             build job: "Operations/Docker-Cleanup", wait: false
             cleanWs()
         }

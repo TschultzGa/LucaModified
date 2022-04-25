@@ -1,7 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Global -->
     <string name="unknown">Unbekannt</string>
-    <string name="feature_unavailable">Demnächst verfügbar</string>
     <string name="url_terms_and_conditions">https://www.luca-app.de/app-terms-and-conditions-2/</string>
     <string name="url_privacy_policy">https://www.luca-app.de/app-privacy-policy/</string>
     <string name="url_imprint">https://luca-app.de/imprint</string>
@@ -9,13 +8,13 @@
     <string name="qr_code">QR Code</string>
     <string name="qr_code_scanner">QR Code Scanner</string>
     <string name="additional_details_content_description">Mehr Details</string>
+    <string name="collapse_indicator_content_description">Dieses List-Item expandieren oder minimieren</string>
 
     <!-- Actions -->
     <string name="action_ok">@android:string/ok</string>
     <string name="action_cancel">@android:string/cancel</string>
     <string name="action_yes">Ja</string>
     <string name="action_no">Nein</string>
-    <string name="action_no_thanks">Nein danke</string>
     <string name="action_stop">Stopp</string>
     <string name="action_retry">Wiederholen</string>
     <string name="action_resolve">Beheben</string>
@@ -31,16 +30,21 @@
     <string name="action_copy">Kopieren</string>
     <string name="action_change">Wechseln</string>
     <string name="action_back">Zurück</string>
-    <string name="action_accept">Einwilligen</string>
     <string name="action_agree">Zustimmen</string>
     <string name="action_check_in">Einchecken</string>
     <string name="action_open">Öffnen</string>
     <string name="action_delete">Löschen</string>
     <string name="action_delete_selected">Auswahl Löschen</string>
 
+    <!-- Clipboard -->
+    <string name="clipboard_success">In die Zwischenablage kopiert</string>
+    <string name="clipboard_failed">Kopieren in die Zwischenablage fehlgeschlagen</string>
+
     <!-- Consent -->
     <string name="consent_title">Einverständnis</string>
-    <string name="consent_accept_action">@string/action_accept</string>
+    <string name="consent_accept_action">@string/action_agree</string>
+    <string name="consent_terms_of_service_title">Neue Nutzungsbedingungen</string>
+    <string name="consent_terms_of_service_description"><![CDATA[Wir haben unsere Nutzungsbedingungen aktualisiert. Damit du die neuen Features von luca nutzen kannst, musst du den <a href="https://www.luca-app.de/changes-terms-of-use-app/">Änderungen der Nutzungsbedingungen</a> zustimmen.<br/><br/>Klicke auf zustimmen um die <a href="https://www.luca-app.de/app-terms-and-conditions-2/">aktualisierten Nutzungsbedingungen</a> zu akzeptieren.]]></string>
     <string name="consent_enable_camera_title">Kamera aktivieren</string>
     <string name="consent_enable_camera_description">luca benötigt Zugriff auf deine Kamera, um QR-Codes von Testergebnissen, Locations oder Privaten Meetings scannen zu können. Nur die Daten im QR-Code werden verarbeitet und keine anderen Daten werden gespeichert.</string>
     <string name="consent_import_document_description">Hiermit erkläre ich mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO zur Verarbeitung meiner Daten im Zuge der lokalen Hinterlegung meines COVID-Tests, meines Genesen- oder Impfausweises in der luca App. Die in dem Dokument hinterlegten Daten können mit meinen Angaben zu meinem Vor- und Nachnamen in der luca App abgeglichen werden. Ebenfalls bin ich einverstanden, dass eine pseudonymisierte Kennung auf dem luca Server hinterlegt wird. Dies dient ausschließlich der Vorbeugung von Missbrauch, sodass ein Dokument nicht durch unterschiedliche Personen genutzt werden kann. Die individuelle Kennung des Dokuments wird nach 72 Stunden ab Hinterlegung automatisch aus dem luca System gelöscht.</string>
@@ -55,7 +59,6 @@
     <string name="error_specific_title">Fehler: <xliff:g example="HttpException" id="exceptionType">%1$s</xliff:g></string>
     <string name="error_specific_description">Ein unerwarteter Fehler ist aufgetreten:\n\n<xliff:g example="Request not authorized, status code 401" id="exceptionMessage">%1$s</xliff:g>\n\nBitte kontaktiere uns, sollte das Problem bestehen bleiben.</string>
     <string name="error_request_failed_title">Anfrage fehlgeschlagen</string>
-    <string name="error_no_network_connection">Keine Netzwerkverbindung</string>
     <string name="error_check_in_failed">Check-in fehlgeschlagen</string>
     <string name="error_location_not_found">Ein Check-in ist hier nicht mehr möglich.</string>
     <string name="error_certificate_pinning_title">Unerwartete Server Zertifikate</string>
@@ -64,6 +67,11 @@
     <string name="error_no_internet_connection_description">Der Vorgang konnte nicht durchgeführt werden. Bitte verbinde dich mit dem Internet und versuche es erneut.</string>
     <string name="error_no_daily_key_available_title">Check-in nicht möglich</string>
     <string name="error_no_daily_key_available_description">Du kannst aktuell nicht einchecken. Überprüfe deine Internetverbindung und versuche es erneut. Bitte kontaktiere uns, sollte der Check-in weiterhin nicht funktionieren.</string>
+    <string name="error_rollout_title">Noch nicht verfügbar</string>
+    <string name="error_rollout_description">Die Funktion, die du gerade nutzen wolltest, ist auf deinem Gerät noch nicht verfügbar. Bitte versuche es später erneut.</string>
+    <string name="error_http_server_error_title">Service nicht verfügbar</string>
+    <string name="error_http_server_error_description">Der luca-Service ist im Moment nicht verfügbar, bitte versuche es später erneut.</string>
+    <string name="error_feature_unavailable">Die Funktion, die du gerade nutzen wolltest, ist auf deinem Gerät nicht verfügbar:\n\n<xliff:g example="Request not authorized, status code 401" id="exceptionMessage">%1$s</xliff:g></string>
 
     <!-- Statuses -->
     <string name="status_check_out_in_progress">Du wirst ausgecheckt…</string>
@@ -88,7 +96,6 @@
     <string name="notification_checked_in_at_description">Du bist zur Zeit eingecheckt. Bitte vergiss nicht dich auszuchecken, sobald du die Location verlässt.</string>
     <string name="notification_meeting_host_title">Privates Treffen</string>
     <string name="notification_meeting_host_description">Du hast ein privates Treffen aktiv. Bitte beende es, sobald deine Gäste gegangen sind.</string>
-    <string name="notification_service_error_title">luca hat Probleme</string>
     <string name="notification_data_accessed_title">@string/accessed_data_dialog_title</string>
     <string name="notification_data_accessed_description">Ein Gesundheitsamt hat im Rahmen einer Datenauskunft deine Kontaktdaten erhalten.</string>
     <string name="notification_auto_checkout_triggered_title">@string/auto_checkout_info_title</string>
@@ -103,6 +110,14 @@
     <string name="notification_action_enroll_connect">@string/luca_connect_intro_action</string>
     <string name="notification_postal_code_matching_title">Aktiviere den Postleitzahl-Abgleich</string>
     <string name="notification_postal_code_matching_description">Aktivierst du den Postleitzahl-Abgleich erhältst du Informationen zu standortabhängigen Features und Funktionen. Diese Einstellung kannst du jederzeit in deinem Account-Tab widerrufen.</string>
+    <string name="notification_luca_id_enrollment_token_title">@string/luca_id_enrollment_token_message_title_sub</string>
+    <string name="notification_luca_id_enrollment_token_description">@string/luca_id_enrollment_token_message_description</string>
+    <string name="notification_luca_id_enrollment_error_title">@string/luca_id_enrollment_error_message_title_sub</string>
+    <string name="notification_luca_id_enrollment_error_description">@string/luca_id_enrollment_error_message_description</string>
+    <string name="notification_luca_id_verification_success_title">@string/luca_id_verification_success_title_sub</string>
+    <string name="notification_luca_id_verification_success_description">@string/luca_id_verification_success_description_my_luca</string>
+    <string name="notification_terms_update_title">Neue Nutzungsbedingungen</string>
+    <string name="notification_terms_update_description">Wir haben unsere Nutzungsbedingungen aktualisiert. Hier kannst du die Änderungen einsehen und diesen zustimmen.</string>
 
     <!-- Welcome -->
     <string name="welcome_app_slogan">Gemeinsam erleben.</string>
@@ -173,6 +188,7 @@
     <string name="what_is_new_series_luca_2_0">luca 2.0</string>
     <string name="what_is_new_series_check_in">Check-In</string>
     <string name="what_is_new_series_notification_tab">Meldungen Tab</string>
+    <string name="what_is_new_series_luca_id">luca ID</string>
 
     <string name="what_is_new_back">Zurück</string>
     <string name="what_is_new_next">Weiter</string>
@@ -202,8 +218,8 @@
     <string name="what_is_new_7_description">Betreiber:innen haben nun die Möglichkeit, Speisekarten, Lagepläne, Programme, ihre Webseite oder weitere Infos zu hinterlegen. Du findest sie nach dem Einchecken hinter dem jeweiligen Button.</string>
     <string name="what_is_new_8_heading">Der neue Meldungen-Tab</string>
     <string name="what_is_new_8_description">Im neuen Meldungen-Tab werden dir Mitteilungen von Gesundheitsämtern und dem luca-System angezeigt.</string>
-    <string name="what_is_new_9_heading">luca Connect</string>
-    <string name="what_is_new_9_description">Mit luca Connect kannst du freiwillig deine Kontaktdaten und deinen Impf-oder Genensenstatus mit deinem zuständigen Gesundheitsamt teilen. Mit diesen Informationen können Gesundheitsämter schnellere Risikoeinschätzung vornehmen und dich individuell über die luca App über z.B. Handlungsanweisungen informieren.</string>
+    <string name="what_is_new_9_heading">Erstelle jetzt deine luca ID!</string>
+    <string name="what_is_new_9_description">Lästiges Wühlen und volle Hände adé!\nDu kannst bald in der luca App deine Identität mit deinem Personalausweis verifizieren und so deine luca ID erstellen.\n\nDie luca ID ist lokal auf deinem Telefon gespeichert und kann zum Nachweis deiner Identität verwendet werden.</string>
 
     <!-- Navigation -->
     <string name="navigation_check_in">Einchecken</string>
@@ -281,7 +297,7 @@
     <string name="meeting_information_title">Information</string>
 
     <string name="meeting_join_heading">Check-in privates Treffen</string>
-    <string name="meeting_join_description">Wenn du fortfährst, checkst du dich bei einem privaten Treffen ein. Dabei wird dein Vor- und dein Nachname übermittelt.\n\nPrivate Treffen sind als Gedächtnisstütze für kleine Zusammenkünfte mit Freunden und Familie gedacht. Deshalb sehen Gastgeber:innen die Vor- und Nachnamen ihrer Gäste (und andersrum sehen Gäste die Vor- und Nachnamen ihrer Gastgeber:innen). Diese Daten stehen zwar in der Historie, können aber nicht mit Gesundheitsämtern geteilt werden.</string>
+    <string name="meeting_join_description">Wenn du fortfährst, checkst du dich bei einem privaten Treffen ein. Dabei wird dein Vor- und dein Nachname übermittelt.\n\nPrivate Treffen sind als Gedächtnisstütze für kleine Zusammenkünfte mit Freunden und Familie gedacht. Deshalb sehen Gastgeber:innen die Vor- und Nachnamen ihrer Gäste (und andersherum sehen Gäste die Vor- und Nachnamen ihrer Gastgeber:innen). Diese Daten stehen zwar in der Historie, können aber nicht mit Gesundheitsämtern geteilt werden.</string>
 
     <string name="meeting_details_title">Details</string>
     <string name="meeting_details_start_time">Start</string>
@@ -371,6 +387,7 @@
     <string name="messages_empty_title">Du hast noch keine Meldungen erhalten</string>
     <string name="messages_empty_description">Hier erscheinen Meldungen, sobald auf deine Daten zugegriffen worden ist oder dein Gesundheitsamt dir wichtige Informationen zukommen lassen will.\nMögliche Meldungen: Systeminformationen, Informationen über mögliches / erhöhtes Infektionsrisiko &amp; Datenzugriffe.</string>
     <string name="messages_luca_connect_action">Luca Connect</string>
+    <string name="message_item_arrow_content_description">Meldung öffnen</string>
 
     <!-- Luca connect -->
     <string name="luca_connect_intro_title">Aktiviere luca Connect</string>
@@ -424,10 +441,57 @@
 
     <string name="luca_connect_activation_error_title">luca Connect Aktivierung fehlgeschlagen</string>
 
+    <!-- luca id -->
+    <string name="luca_id_explanation_title">luca ID erstellen</string>
+    <string name="luca_id_explanation_description">Du kannst jetzt in der luca App deine Identität – mit deinem Personalausweis oder anderen Identitätsnachweisen – verifizieren und so deine luca ID erstellen. Damit können wir dir zukünftig tolle zusätzliche Funktionen anbieten, die dir beispielsweise den Einlass in luca Locations erleichtern.\n\nUm deine luca ID lokal auf deinem Smartphone zu speichern, musst du deine Identität in der kostenlosen IDnow App verifizieren.</string>
+    <string name="luca_id_explanation_action">Jetzt starten</string>
+    <string name="luca_id_consent_title">@string/consent_title</string>
+    <string name="luca_id_consent_description">Ich erkläre mein Einverständnis gemäß Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO zur Verarbeitung meiner Daten im Zuge der lokalen Hinterlegung einer verifizierten digitalen Identität („luca ID“) in der luca App. Die Identitätsprüfung ermöglicht es dem Nutzer, notwendige Nachweise beim Betreiber durch Nutzung der luca App zu erbringen.\n\nIm Zuge der Identitätsverifizierung bin ich einverstanden, Fotos und Aufnahmen von meinem Ausweisdokument/Identitätsnachweis zu erstellen sowie mich mittels Autoident-Verfahren zu verifizieren und diese Daten über die IDnow-App an IDnow zu übermitteln. Dabei werden all meine Daten, die in dem Dokument enthalten sind (Kennzeichen des Identitätsnachweis (z. B. Nummer des Personalausweises), Vorname, Nachname, Adresse, Geburtsdatum, Geburtsort, Staatsangehörigkeit, Gültigkeitsdatum, Augenfarbe, Größe), verarbeitet. Nähere Informationen zur Verarbeitung können in der Datenschutzerklärung eingesehen werden./n/nMein Einverständnis kann ich jederzeit in meiner luca App widerrufen. Dies geschieht für die Zukunft durch Löschen der hinterlegten digitalen Identität („luca ID“) oder Abbrechen des Identifizierungsversuches.</string>
+    <string name="luca_id_consent_action">@string/action_agree</string>
+    <string name="luca_id_success_title">IDnow Ident-ID angefragt</string>
+    <string name="luca_id_success_description">Um deine Identität mit der IDnow App zu verifizieren, benötigst du eine IDnow Ident-ID. luca fragt diese jetzt für dich an. Du erhältst eine Mitteilung, wenn wir deine IDnow Ident-ID erhalten haben.\n\nDu kannst dir jetzt die IDnow App herunterladen.</string>
+    <string name="luca_id_success_action">IDnow App herunterladen</string>
+    <string name="luca_id_enrollment_token_message_title">IDnow Ident-ID</string>
+    <string name="luca_id_enrollment_token_message_title_sub">Deine IDnow Ident-ID ist da!</string>
+    <string name="luca_id_enrollment_token_message_description">Du kannst deine luca ID erstellen, indem du deine Identität in der IDnow App mit dieser ID verifizierst.</string>
+    <string name="luca_id_enrollment_token_message_your_token">Das ist deine persönliche IDnow Ident-ID:</string>
+    <string name="luca_id_enrollment_token_message_token_copied">Die Ident-ID wurde in die Zwischenablage kopiert.</string>
+    <string name="luca_id_enrollment_token_message_action_copy">Kopiert den IDnow Token in die Zwischenablage.</string>
+    <string name="luca_id_enrollment_token_message_action_open">IDnow App</string>
+    <string name="luca_id_enrollment_error_message_title">@string/luca_id_enrollment_token_message_title</string>
+    <string name="luca_id_enrollment_error_message_title_sub">IDnow Ident-ID konnte nicht angefragt werden.</string>
+    <string name="luca_id_enrollment_error_message_description">Wir können leider gerade keine IDnow Ident-ID für dich anfragen. Vielleicht möchten gerade zu viele Leute gleichzeitig ihre Identität verifizieren.\n\nBitte versuche es später erneut.</string>
+    <string name="luca_id_verification_title">Deine luca ID</string>
+    <string name="luca_id_verification_success_title_sub">Deine luca ID wurde erstellt!</string>
+    <string name="luca_id_verification_success_description_my_luca">Deine luca ID wurde erfolgreich in deiner luca App erstellt – du findest sie ab sofort in deinem Mein luca Tab.</string>
+    <string name="luca_id_verification_success_description_lock_advice">Bitte notiere dir dieses Sperrpasswort an einer sicheren Stelle. Du solltest darauf zugreifen können, wenn du dein Handy verlieren solltest:</string>
+    <string name="luca_id_verification_success_description_lock_explanation">Du benötigst dein Sperrpasswort, damit wir deine luca ID sperren können und sie nicht von jemand anderem benutzt werden kann. Ohne dein Sperrpasswort können wir deine luca ID nicht sperren, da diese nur lokal auf deinem Gerät gespeichert wird.</string>
+    <string name="luca_id_verification_message_action_copy">Kopiert das Sperrpasswort in die Zwischenablage.</string>
+    <string name="luca_id_enrollment_token_label">@string/luca_id_enrollment_token_message_title</string>
+    <string name="luca_id_revocation_code_label">luca ID Sperrpasswort</string>
+    <string name="luca_id_revocation_code_copied">Das Sperrpasswort wurde in die Zwischenablage kopiert.</string>
+    <string name="luca_id_deletion_dialog_title">luca ID löschen</string>
+    <string name="luca_id_deletion_dialog_description">Möchtest du wirklich deine luca ID löschen?</string>
+    <string name="luca_id_empty_item_title">Erstelle jetzt deine luca ID</string>
+    <string name="luca_id_empty_item_description">Klicke hier, um loszulegen.</string>
+    <string name="luca_id_request_queued_item_title">Eine IDnow Ident-ID wurde angefragt</string>
+    <string name="luca_id_request_queued_item_description">Du erhältst eine Mitteilung, wenn wir sie erhalten haben.</string>
+    <string name="luca_id_requested_item_title">luca ID hinzufügen</string>
+    <string name="luca_id_requested_item_description">Deine IDnow Ident-ID:</string>
+    <string name="luca_id_card_picture_content_description">Dein Portrait Foto auf deiner luca ID</string>
+
+    <!-- Authentication -->
+    <string name="authentication_title">Authentifizierung erforderlich</string>
+    <string name="authentication_luca_id_enrollment_subtitle">Authentifiziere dich, um deine luca ID zu erstellen</string>
+    <string name="authentication_luca_id_enrollment_description">Um sicherzustellen, dass nur du eine luca ID anlegen kannst, benötigen wir eine Authentifizierung. Bitte authentifiziere dich über die Methode deiner Wahl.</string>
+    <string name="authentication_luca_id_ident_subtitle">Authentifiziere dich, um deine luca ID anzuzeigen</string>
+    <string name="authentication_luca_id_ident_description">Um sicherzustellen, dass nur du deine luca ID anzeigen kannst, benötigen wir eine Authentifizierung. Bitte authentifiziere dich über die Methode deiner Wahl.</string>
+    <string name="authentication_error_not_activated_title">Fehlende Authentifizierung</string>
+    <string name="authentication_error_not_activated_description">Die Aktion konnte nicht ausgeführt werden, weil du auf deinem Gerät keine Authentifizierung aktiviert hast (Passcode, Face ID, Touch ID).</string>
+
     <!-- History -->
     <string name="history_empty_title">Keine Einträge</string>
     <string name="history_empty_description">Deine Historie sammelt alle Aktivitäten der letzten <xliff:g example="28" id="count">%1$d</xliff:g>&#160;Tage. Im Moment hast du keine Einträge aus diesem Zeitraum.</string>
-    <string name="history_requests"><xliff:g example="0" id="count">%1$d</xliff:g> Datenzugriffe</string>
     <string name="history_time"><xliff:g example="18.08.2020 – 19:23" id="time">%1$s</xliff:g> Uhr</string>
     <string name="history_share">Daten freigeben</string>
     <string name="history_share_selection_title">Zeitraum festlegen</string>
@@ -493,13 +557,12 @@
     <string name="accessed_data_level_4_detailed_description">Bitte handle verantwortungsvoll, reduziere deine Kontakte und melde dich gegebenenfalls beim für dich zuständigen Gesundheitsamt – vor allem, wenn bei dir Symptome auftreten. Vielleicht hast du auch die Möglichkeit, einen Test zu machen.\n\nDieser Hinweis wurde automatisiert von luca ausgelöst.</string>
     <string name="accessed_data_level_4_banner_text">Achtung! Du warst in einen luca-Standort eingecheckt, in dem mehr als ein Gesundheitsamt Daten entschlüsselt hat.</string>
 
-    <!-- My Luca -->
+    <!-- My luca -->
     <string name="my_luca_heading">Mein luca</string>
     <string name="my_luca_empty_title">Willkommen bei „Mein luca“</string>
     <string name="my_luca_empty_description">Das ist dein persönlicher Bereich. Hier kannst du Dokumente <b>hinzufügen</b>, die dir den <b>Check-in</b> erleichtern.\n\nÜber das Kalender-Icon oben rechts kannst du Termine für Tests buchen.</string>
-    <string name="time_error_description">Die von dir eingestellte Zeit entspricht nicht der aktuellen Zeit.</string>
-    <string name="time_error_action">Zu den Einstellungen</string>
-    <string name="appointment_action">Termin buchen</string>
+    <string name="my_luca_book_appointment_action">Termin buchen</string>
+
     <string name="document_import_action">Dokument Hinzufügen</string>
     <string name="document_import_anyway_action">Trotzdem importieren</string>
     <string name="document_import_success_message">Das Dokument wurde importiert</string>
@@ -521,46 +584,64 @@
     <string name="document_import_check_in_redirect_description">Hey, du scannst gerade den QR-Code eines luca-Standorts und keinen Dokument-QR-Code. Klicke „WEITER“ um eingecheckt zu werden.</string>
     <string name="document_import_error_different_birth_dates_title">Vorgang fehlgeschlagen</string>
     <string name="document_import_error_different_birth_dates_description">Das Dokument konnte nicht hinzugefügt werden, da die Geburtsdaten nicht übereinstimmen.</string>
-    <string name="document_outcome">Testergebnis <xliff:g example="Positiv" id="outcome">%1$s</xliff:g></string>
-    <string name="document_outcome_negative">Negativ</string>
-    <string name="document_outcome_positive">Positiv</string>
-    <string name="document_outcome_unknown">Unbekannt</string>
-    <string name="document_type_fast">Schnelltest</string>
-    <string name="document_type_pcr">PCR Test</string>
-    <string name="document_type_vaccination">IMPFNACHWEIS %1$s</string>
-    <string name="document_type_recovery">GENESENENNACHWEIS</string>
-    <string name="document_type_unknown">@string/document_outcome_unknown</string>
-    <string name="document_type_of_document_label">Testart:</string>
-    <string name="document_issued">Ausgestellt:</string>
-    <string name="vaccination_valid_from_date_label">Gültig ab:</string>
-    <string name="vaccination_done_before_label">Geimpft vor:</string>
-    <string name="recovery_done_before_label">Genesen vor:</string>
-    <string name="testing_done_before_label">Getestet vor:</string>
-    <string name="document_issued_at">Datum:</string>
-    <string name="document_valid_until">Gültig bis:</string>
-    <string name="document_lab_issuer">Aussteller:</string>
-    <string name="document_lab_tester">Tester:</string>
-    <string name="item_delete_action">Löschen</string>
-    <string name="delete_test_action">Test löschen</string>
-    <string name="delete_appointment_action">Termin löschen</string>
-    <string name="delete_certificate_action">Nachweis löschen</string>
+
+    <string name="time_error_description">Die von dir eingestellte Zeit entspricht nicht der aktuellen Zeit.</string>
+    <string name="time_error_action">Zu den Einstellungen</string>
+
+    <!-- My luca list items -->
+    <string name="document_delete_action">Löschen</string>
     <string name="document_delete_confirmation_message">Soll das Dokument wirklich aus der App gelöscht werden?</string>
-    <string name="document_not_verified_dialog_title">Zertifikat konnte nicht verifiziert werden</string>
-    <string name="document_not_verified_dialog_description">Wir konnten dein Zertifikat nicht verifizieren. Prüfe bitte, ob dein Zertifikat von einer dazu befähigten Stelle ausgestellt wurde und lasse dir im Zweifel ein neues Zertifikat ausstellen. Den Status dieses Zertifikats kannst du nicht in Check-ins teilen.</string>
-    <string name="document_vaccination_procedure">%1$s. Impfung:</string>
-    <string name="document_recovery_procedure">Infektion %1$s - %2$s</string>
-    <string name="vaccine_comirnaty">BioNTech/Pfizer</string>
-    <string name="vaccine_jannsen">Johnson &amp; Johnson</string>
-    <string name="vaccine_moderna">Moderna</string>
-    <string name="vaccine_vaxzevria">AstraZeneca</string>
-    <string name="vaccine_sputnik">Sputnik V</string>
-    <string name="procedure_recovery">Genesung</string>
-    <string name="em_green_pass_valid">Gültig am:</string>
-    <string name="em_green_pass_status">Status:</string>
+
+    <!-- ID card list item -->
+    <string name="luca_id_card_title">luca ID</string>
+    <string name="luca_id_card_collapsed_subtitle">Verifizierter Identitätsnachweis</string>
+    <string name="luca_id_card_name_blurry_placeholder">Vorname Nachname</string>
+    <string name="luca_id_card_name_label">Vollständiger Name</string>
+    <string name="luca_id_card_birthday_label">Geburtsdatum</string>
+    <string name="luca_id_card_button">@string/document_delete_action</string>
+    <string name="luca_id_card_icon_tooltip">Diese Identität wurde von IDnow verifiziert</string>
+
+    <!-- Appointment list items-->
     <string name="appointment_title">TERMIN: <xliff:g example="Rapid Test" id="type">%1$s</xliff:g></string>
     <string name="appointment_address">Adresse:</string>
-    <string name="birthday_label">Geburtsdatum:</string>
-    <string name="provider_name_eu_dcc">Digitales COVID-Zertifikat der EU</string>
+    <string name="appointment_date">Datum:</string>
+    <string name="appointment_delete_action">Termin löschen</string>
+
+    <!-- COVID certificate list items -->
+    <string name="certificate_type_test_fast">Schnelltest</string>
+    <string name="certificate_type_test_pcr">PCR Test</string>
+    <string name="certificate_type_vaccination">IMPFNACHWEIS %1$s</string>
+    <string name="certificate_type_recovery">GENESENENNACHWEIS</string>
+    <string name="certificate_type_unknown">@string/certificate_test_outcome_unknown</string>
+
+    <string name="certificate_test_outcome">Testergebnis <xliff:g example="Positiv" id="outcome">%1$s</xliff:g></string>
+    <string name="certificate_test_outcome_negative">Negativ</string>
+    <string name="certificate_test_outcome_positive">Positiv</string>
+    <string name="certificate_test_outcome_unknown">Unbekannt</string>
+
+    <string name="certificate_tester">Tester:</string>
+    <string name="certificate_issuer">Aussteller:</string>
+    <string name="certificate_issued">Ausgestellt:</string>
+    <string name="certificate_vaccination_valid_from">Gültig ab:</string>
+    <string name="certificate_vaccinated_before">Geimpft vor:</string>
+    <string name="certificate_recovered_before">Genesen vor:</string>
+    <string name="certificate_testing_done_before">Getestet vor:</string>
+    <string name="certificate_valid_until">Gültig bis:</string>
+    <string name="certificate_birthday">Geburtsdatum:</string>
+
+    <string name="certificate_procedure_vaccination">%1$s. Impfung:</string>
+    <string name="certificate_procedure_vaccine_comirnaty">BioNTech/Pfizer</string>
+    <string name="certificate_procedure_vaccine_jannsen">Johnson &amp; Johnson</string>
+    <string name="certificate_procedure_vaccine_moderna">Moderna</string>
+    <string name="certificate_procedure_vaccine_vaxzevria">AstraZeneca</string>
+    <string name="certificate_procedure_vaccine_sputnik">Sputnik V</string>
+    <string name="certificate_procedure_recovery">Genesung</string>
+
+    <string name="certificate_delete_test_action">Test löschen</string>
+    <string name="certificate_delete_certificate_action">Nachweis löschen</string>
+
+    <string name="certificate_not_verified_dialog_title">Zertifikat konnte nicht verifiziert werden</string>
+    <string name="certificate_not_verified_dialog_description">Wir konnten dein Zertifikat nicht verifizieren. Prüfe bitte, ob dein Zertifikat von einer dazu befähigten Stelle ausgestellt wurde und lasse dir im Zweifel ein neues Zertifikat ausstellen. Den Status dieses Zertifikats kannst du nicht in Check-ins teilen.</string>
 
     <!-- Phone Number Verification -->
     <string name="verification_request_new_tan_action">TAN anfordern</string>
@@ -570,6 +651,7 @@
     <string name="verification_enter_tan_title">@string/verification_explanation_title</string>
     <string name="verification_enter_tan_description">Wir haben dir eine Nachricht mit einer TAN geschickt. Gib die TAN hier ein, um deine Telefonnummer zu bestätigen.</string>
     <string name="verification_enter_tan_error">Die eingegebene TAN war nicht korrekt. Bitte versuche es erneut.</string>
+    <string name="verification_tan_input_hint">TAN</string>
     <string name="verification_tan_delayed_action">Ich habe keine TAN erhalten</string>
     <string name="verification_tan_delayed_title">@string/verification_explanation_title</string>
     <string name="verification_tan_delayed_description">Es kann ein paar Minuten dauern, bis die TAN ankommt. Warte einen Moment, bevor du eine neue anforderst. Wenn du innerhalb der nächsten Minuten keine SMS bekommst, dann überprüfe zunächst, ob du die Nummer richtig eingegeben hast und versuche es dann noch einmal.</string>
@@ -578,8 +660,6 @@
     <string name="verification_timeout_action_use_last">Vorherige TAN eingeben</string>
     <string name="verification_rate_limit_title">Anfragelimit erreicht</string>
     <string name="verification_rate_limit_description">In diesem Netzwerk wurde das Limit der zulässigen TAN-Anfragen erreicht. Teste bitte, ob du das Netzwerk wechseln kannst. Versuche es sonst zu einem späteren Zeitpunkt erneut.</string>
-    <string name="verification_bad_gateway_title">Service nicht verfügbar</string>
-    <string name="verification_bad_gateway_description">Der luca-Service ist im Moment nicht verfügbar, bitte versuche es später erneut.</string>
 
     <!-- Update -->
     <string name="update_required_title">Update benötigt</string>
@@ -641,6 +721,7 @@
     <string name="account_tab_item_direct_check_in">Direkter Check-in</string>
     <string name="account_tab_item_entry_policy">2G/3G-Status</string>
     <string name="account_tab_item_voluntary_check_in">Freiwilliger Check-in</string>
+    <string name="account_tab_item_arrow_content_description">Account Item öffnen</string>
 
     <string name="account_tab_item_delete_account">Account löschen</string>
 
@@ -684,15 +765,17 @@
     <!-- Account deletion -->
     <string name="delete_account_dialog_title">Möchtest du deinen Account wirklich löschen?</string>
     <string name="delete_account_dialog_message">Löschst du deinen Account, kannst du keine neuen Check-ins vornehmen und auf deine Historie zugreifen.\n\nDaten, die durch einen Check-in bei einem Betreiber verschlüsselt hinterlegt wurden, werden gemäß der Corona/COVID-19 Infektionsschutzverordnung nach 4 Wochen gelöscht.\n\nNach der Löschung des Accounts kannst du noch bis zu 4 Wochen nach dem letzten Check-in von dem Gesundheitsamt benachrichtigt werden.</string>
-    <string name="delete_account_dialog_action">Löschen</string>
+    <string name="delete_account_dialog_action">@string/action_delete</string>
 
     <!-- Data report -->
+    <string name="data_request_privacy_policy_prefix">Alle Informationen über die Verarbeitungen, Zwecke, Rechtsgrundlagen und Löschfristen findest du in unserer Datenschutzerklärung: https://www.luca–app.de/app–privacy-policy/. Deine Daten werden nicht in Drittländer übermittelt. Automatisierte Entscheidungsfindungen sowie Profiling gemäß Art. 22 DSGVO werden von uns sowie den Auftragnehmern des luca Systems nicht getätigt.</string>
+    <string name="data_request_privacy_policy_infix">Möchtest du eine Auskunft über deine Daten erhalten, die wir durch deine eigene Kontaktaufnahme (z. B. bei Supportanfragen) bei uns als Klardaten von dir erhalten haben, wende dich bitte an unser Privacy Team unter privacy@culture4life.de. Bitte teile uns auch weitere Hinweise mit, die uns ermöglichen, dich zu identifizieren und dazugehörige Daten bei uns zu recherchieren. Wenn du mit uns über Social Media in Kontakt warst, sind weitere Hinweise wie deine E-Mail-Adresse oder dein Pseudonym, das du in den Social-Media-Kanälen verwendest, wichtig um dir die Auskunft erteilen zu können.</string>
+    <string name="data_request_privacy_policy_suffix" tools:ignore="TypographyDashes">Du hast gemäß Art. 77 DSGVO das Recht, dich bei der Aufsichtsbehörde zu beschweren, wenn du der Ansicht bist, dass die Verarbeitung deiner personenbezogenen Daten nicht rechtmäßig erfolgt. Die Anschrift der für unser Unternehmen zuständigen Aufsichtsbehörde lautet: Berliner Beauftragte für Datenschutz und Informationsfreiheit, Friedrichstr. 219, 10969 Berlin, Tel.: 030/13889-0, E-Mail: mailbox@datenschutz-berlin.de.</string>
+
     <string name="data_request_tracing_title">Kontaktnachverfolgung</string>
-    <string name="data_request_tracing_content_prefix">Deine Daten, die für die Kontaktnachverfolgung erhoben und verarbeitet wurden, sind lokal in deiner App und verschlüsselt auf dem luca-Server gespeichert. Der luca-Server wird von der Deutschen Telekom AG gehostet. Zertifizierung zu dieser finden Sie unter: https://open-telekom-cloud.com/de/sicherheit/datenschutz-compliance. Ebenfalls stellt die Bundesdruckerei Gruppe GmbH weitere IT-Infrastrukturleistungen, die eine sichere Übermittlung deiner Daten an die Gesundheitsämter ermöglichen. Unser Unterauftragnehmer neXenio GmbH übernimmt die Softwareentwicklung, Softwarewartungs- und Softwarebetriebsleistungen. Sowohl wir als auch die nexenio GmbH können zu keinem Zeitpunkt deine Daten entschlüsseln und in der Klarform einsehen. Bei der Registrierung verifizieren wir deine Telefonnummer durch automatisierten SMS-Versand. Hierfür erfolgt die Übermittlung der Telefonnummer an unsere SMS-Versanddienstleister:innen. Die aktuellen Empfänger kannst du unserer aktuellen Datenschutzerklärung entnehmen: https://www.luca-app.de/app-privacy-policy/\n\nNur du kannst deine Daten innerhalb deiner App einsehen, bearbeiten und löschen. Wenn du bereits bei einer luca Location eingecheckt und ein Gesundheitsamt diese bei der Betreiber:in angefragt hat, werden die zweifach verschlüsselten Daten von der Betreiber:in und anschließend von dem Gesundheitsamt entschlüsselt. Nur das Gesundheitsamt kann auf die entschlüsselten Daten im Zuge der Kontaktnachverfolgung zugreifen und deine Daten einsehen. Deine Daten geben wir mit Ausnahme der Gesundheitsämter (Rechtsgrundlage Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit der jeweiligen Landesverordnung zur Bekämpfung von COVID-19 Infektionen, Infektionsschutzgesetz) grundsätzlich nicht an Dritte weiter.</string>
-    <string name="data_request_tracing_content_suffix" tools:ignore="TypographyDashes">Alle Informationen über die Verarbeitungen, Zwecke, Rechtsgrundlagen und Löschfristen findest du in unserer Datenschutzerklärung: https://www.luca–app.de/app–privacy-policy/. Deine Daten werden nicht in Drittländer übermittelt. Automatisierte Entscheidungsfindungen sowie Profiling gemäß Art. 22 DSGVO werden von uns sowie den Auftragnehmern des luca Systems nicht getätigt.\n\nMöchtest du eine Auskunft über deine Daten erhalten, die wir durch deine eigene Kontaktaufnahme (z. B. bei Supportanfragen) bei uns als Klardaten von dir erhalten haben, wende dich bitte an unser Privacy Team unter privacy@culture4life.de. Bitte teile uns auch weitere Hinweise mit, die uns ermöglichen, dich zu identifizieren und dazugehörige Daten bei uns zu recherchieren. Wenn du mit uns über Social Media in Kontakt warst, sind weitere Hinweise wie deine E-Mail-Adresse oder dein Pseudonym, das du in den Social-Media-Kanälen verwendest, wichtig um dir die Auskunft erteilen zu können.\n\nDu hast gemäß Art. 77 DSGVO das Recht, dich bei der Aufsichtsbehörde zu beschweren, wenn du der Ansicht bist, dass die Verarbeitung deiner personenbezogenen Daten nicht rechtmäßig erfolgt. Die Anschrift der für unser Unternehmen zuständigen Aufsichtsbehörde lautet: Berliner Beauftragte für Datenschutz und Informationsfreiheit, Friedrichstr. 219, 10969 Berlin, Tel.: 030/13889-0, E-Mail: mailbox@datenschutz-berlin.de.</string>
+    <string name="data_request_tracing_content_prefix">Kontaktnachverfolgung:\nDeine Daten, die für die Kontaktnachverfolgung erhoben und verarbeitet wurden, sind lokal in deiner App und verschlüsselt auf dem luca-Server gespeichert. Der luca-Server wird von der Deutschen Telekom AG gehostet. Zertifizierung zu dieser finden Sie unter: https://open-telekom-cloud.com/de/sicherheit/datenschutz-compliance. Ebenfalls stellt die Bundesdruckerei Gruppe GmbH weitere IT-Infrastrukturleistungen, die eine sichere Übermittlung deiner Daten an die Gesundheitsämter ermöglichen. Unser Unterauftragnehmer neXenio GmbH übernimmt die Softwareentwicklung, Softwarewartungs- und Softwarebetriebsleistungen. Sowohl wir als auch die nexenio GmbH können zu keinem Zeitpunkt deine Daten entschlüsseln und in der Klarform einsehen. Bei der Registrierung verifizieren wir deine Telefonnummer durch automatisierten SMS-Versand. Hierfür erfolgt die Übermittlung der Telefonnummer an unsere SMS-Versanddienstleister:innen. Die aktuellen Empfänger kannst du unserer aktuellen Datenschutzerklärung entnehmen: https://www.luca-app.de/app-privacy-policy/\nNur du kannst deine Daten innerhalb deiner App einsehen, bearbeiten und löschen. Wenn du bereits bei einer luca Location eingecheckt und ein Gesundheitsamt diese bei der Betreiber:in angefragt hat, werden die zweifach verschlüsselten Daten von der Betreiber:in und anschließend von dem Gesundheitsamt entschlüsselt. Nur das Gesundheitsamt kann auf die entschlüsselten Daten im Zuge der Kontaktnachverfolgung zugreifen und deine Daten einsehen. Deine Daten geben wir mit Ausnahme der Gesundheitsämter (Rechtsgrundlage Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit der jeweiligen Landesverordnung zur Bekämpfung von COVID-19 Infektionen, Infektionsschutzgesetz) grundsätzlich nicht an Dritte weiter.</string>
     <string name="data_request_documents_title">COVID Zertifikate</string>
-    <string name="data_request_documents_content_prefix">Innerhalb deiner luca App hast du die Möglichkeit ein Testergebnis, ein Impf- oder Genesenausweis zu hinterlegen. Deine dort hinterlegten und an die luca App übertragenen Daten verlassen dein Smartphone nicht. Deine Daten sind nur lokal in deiner App auf deinem Smartphone gespeichert. Eine Übermittlung an unsere Server, an den Betreiber oder an die Gesundheitsämter findet nicht statt. Deine Daten werden nicht an Dritte weitergegeben.\n\nIn der App werden nur die notwendigen Informationen zum Identitätsabgleich (Vor- und Nachname, Geburtsdatum, Impfdatum, Aussteller und Impfstoff) angezeigt. Weitere Daten können in dem Test oder Ausweisdokument enthalten sein, werden dir innerhalb der App jedoch nicht angezeigt. Alle in dem QR Code enthaltene Daten sind hier gelistet. Zur Vorbeugung von Missbrauch, sodass das Dokument nicht mehrfach von unterschiedlichen Personen in der luca App hinterlegt werden kann, wird von deiner luca App eine pseudonymisierte Kennung erstellt und an das luca System übertragen. Nur diese Kennung wird im luca System gespeichert. Diese können wir dir nicht zuordnen.</string>
-    <string name="data_request_documents_content_suffix">@string/data_request_tracing_content_suffix</string>
+    <string name="data_request_documents_content_prefix">COVID Zertifikate:\nInnerhalb deiner luca App hast du die Möglichkeit ein Testergebnis, ein Impf- oder Genesenausweis zu hinterlegen. Deine dort hinterlegten und an die luca App übertragenen Daten verlassen dein Smartphone nicht. Deine Daten sind nur lokal in deiner App auf deinem Smartphone gespeichert. Eine Übermittlung an unsere Server, an den Betreiber oder an die Gesundheitsämter findet nicht statt. Deine Daten werden nicht an Dritte weitergegeben.\nIn der App werden nur die notwendigen Informationen zum Identitätsabgleich (Vor- und Nachname, Geburtsdatum, Impfdatum, Aussteller und Impfstoff) angezeigt. Weitere Daten können in dem Test oder Ausweisdokument enthalten sein, werden dir innerhalb der App jedoch nicht angezeigt. Alle in dem QR Code enthaltene Daten sind hier gelistet. Zur Vorbeugung von Missbrauch, sodass das Dokument nicht mehrfach von unterschiedlichen Personen in der luca App hinterlegt werden kann, wird von deiner luca App eine pseudonymisierte Kennung erstellt und an das luca System übertragen. Nur diese Kennung wird im luca System gespeichert. Diese können wir dir nicht zuordnen.</string>
     <string name="data_request_storage_location">Speicherort</string>
     <string name="data_request_storage_location_local">Lokales Gerät</string>
     <string name="data_request_storage_location_server">luca Server</string>
@@ -701,15 +784,19 @@
     <string name="data_request_storage_period_contact_data">Löschung erfolgt 28 Tage nach der Löschung des Accounts oder jährlich am Ende jedes Jahres</string>
     <string name="data_request_storage_period_location_data">28 Tage</string>
     <string name="data_request_storage_period_document_data">Löschung erfolgt durch Löschung in der App oder sobald Gültigkeit überschritten ist</string>
+    <string name="data_request_storage_period_meeting_data">Löschung erfolgt durch Löschung in der App</string>
+    <string name="data_request_luca_id_title">Luca ID</string>
+    <string name="data_request_luca_id_content_prefix">Luca ID:\nSofern du nach Artikel Art. 9 (2) a) in Verbindung mit Art. 6 (1) 1 a) DSGVO ausdrücklich eingewilligt und dein Ausweisdokument in deiner Luca App hinterlegt hast, wurden deine personenbezogenen Daten verarbeitet.\nIm Rahmen des Identifikationsprozesses werden Fotos und Aufnahmen deiner Person und der verwendeten Ausweisdokumente sowie alle personenbezogenen Daten, die auf dem Ausweisdokument enthalten sind an unseren Unterauftragnehmer übermittelt und von diesen verarbeitet. Der Serverstandort liegt in Deutschland.\nNach erfolgreicher Identifizierung werden deine von IDnow signierten Daten über das luca System verschlüsselt an deine eigene luca App übertragen. Der luca-Server wird von der Deutschen Telekom AG gehostet. Zertifizierung zu dieser findest du unter: https://open-telekom-cloud.com/de/sicherheit/datenschutz-compliance. Unser Unterauftragnehmer neXenio übernimmt die Softwareentwicklung, Softwarewartungs- und Softwarebetriebsleistungen. Sowohl wir als auch die neXenio GmbH können zu keinem Zeitpunkt deine Daten entschlüsseln und in der Klarform einsehen.</string>
 
-    <string name="data_request_contact_data_title">Kontaktdaten</string>
+    <string name="data_request_contact_data_title">Kontaktdaten:</string>
     <string name="data_request_contact_data_name">Name</string>
     <string name="data_request_contact_data_address">Adresse</string>
     <string name="data_request_contact_data_phone_number">Telefonnummer</string>
     <string name="data_request_contact_data_mail">E-Mail Adresse</string>
 
-    <string name="data_request_location_data_title">Aufenthaltsdaten</string>
+    <string name="data_request_location_data_title">Aufenthaltsdaten:</string>
     <string name="data_request_check_in_name">Location</string>
+    <string name="data_request_check_in_host">Gastgeber</string>
     <string name="data_request_check_in_time">Check-in Zeit</string>
     <string name="data_request_check_in_duration">Dauer</string>
     <string name="data_request_check_in_trace_id">Trace ID</string>
@@ -717,11 +804,12 @@
     <string name="data_request_check_in_guests">@string/meeting_guests_label</string>
     <string name="data_request_check_in_additional_data">Extra Daten (<xliff:g example="Table number" id="additionalDataKey">%1$s</xliff:g>)</string>
     <string name="data_request_check_in_data_accessed">Anfragen von Gesundheitsämtern</string>
+    <string name="data_request_check_in_private">Privates Treffen</string>
 
-    <string name="data_request_document_name">Name</string>
+    <string name="data_request_document_first_name">Vorname</string>
+    <string name="data_request_document_last_name">Nachname</string>
     <string name="data_request_document_birthdate">Geburtsdatum</string>
     <string name="data_request_document_type">Zertifikatstyp</string>
-    <string name="data_request_document_type_green_certificate">Green Certificate</string>
     <string name="data_request_document_type_vaccination">Impfzertifikat</string>
     <string name="data_request_document_type_test">Testzertifikat</string>
     <string name="data_request_document_type_recovery">Genesenenzertifikat</string>
@@ -771,13 +859,30 @@
     <string name="data_request_appointment_address">Adresse</string>
     <string name="data_request_appointment_qr_code">QR-Code</string>
 
+    <string name="data_request_idnow_encrypted_data">Encrypted Data (auf dem IDNow-Server max. 7 Tage, in der luca app bis zur manuellen Löschung):</string>
+    <string name="data_request_idnow_encrypted_data_face">faceJWE</string>
+    <string name="data_request_idnow_encrypted_data_identity">identityJWE</string>
+    <string name="data_request_idnow_encrypted_data_minimal_dentity">minimalIdentityJwe</string>
+    <string name="data_request_idnow_decrypted_data">Decrypted Data (auf dem IDNow-Server max. 7 Tage, in der luca app bis zur manuellen Löschung):</string>
+    <string name="data_request_idnow_decrypted_data_first_name">firstName</string>
+    <string name="data_request_idnow_decrypted_data_last_name">lastName</string>
+    <string name="data_request_idnow_decrypted_data_birthday_timestamp">birthdayTimestamp</string>
+    <string name="data_request_idnow_signed_data">Signed Data (auf dem luca Server, in der luca app bis zur manuellen Löschung):</string>
+    <string name="data_request_idnow_signed_data_revocation">revocationCode</string>
+    <string name="data_request_idnow_signed_data_enrollment">enrollmentToken</string>
+    <string name="data_request_idnow_signed_data_verification">verificationStatus</string>
+    <string name="data_request_idnow_code_content">Möchtest du Auskunft erlangen, ob deine Daten bei unserem Auftragsnehmer IDnow gespeichert sind, teile uns bitte deinen IDnow-Identcode mit. Mit Hilfe dieser Codes können wir für dich ermitteln, ob deine personenbezogenen Daten bei unserem Auftragsnehmer Idnow vorliegen.</string>
+    <string name="data_request_idnow_code_identity">IDnow identity code</string>
+    <string name="data_request_idnow_code_revocation">Revocation code</string>
+
     <!-- Key for health departments -->
     <string name="daily_key_title">Tagesschlüssel</string>
     <string name="daily_key_description">Jeden Tag wird von einem der Gesundheitsämter, die luca nutzen, ein neuer Tagesschlüssel erstellt. Diesen Schlüssel benötigen alle Gesundheitsämter für die Entschlüsselung von Check-in-Datensätzen. Hier kannst du sehen, welches Gesundheitsamt den aktuellen Schlüssel erstellt hat.</string>
-    <string name="daily_key_date">@string/document_issued_at</string>
+    <string name="daily_key_date">@string/appointment_date</string>
     <string name="daily_key_issuer">Aussteller:</string>
     <string name="daily_key_signed">Signiert:</string>
     <string name="daily_key_download_action">Zertifikatskette herunterladen</string>
+    <string name="daily_key_no_data">-</string>
     <string name="daily_key_update_error_title">Tagesschlüssel Aktualisierung fehlgeschlagen</string>
 
     <!-- Updated terms -->
@@ -789,5 +894,4 @@
     <!-- Notification Settings -->
     <string name="notification_setting_activation_title">luca möchte dir Benachrichtigungen senden</string>
     <string name="notification_setting_activation_description">Aktiviere Benachrichtigungen in deinen Einstellungen, damit du keine wichtigen luca Connect Meldungen verpasst.</string>
-
 </resources>

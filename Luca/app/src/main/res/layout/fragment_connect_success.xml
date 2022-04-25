@@ -40,6 +40,7 @@
             android:layout_width="0dp"
             android:layout_height="180dp"
             android:layout_marginTop="@dimen/spacing_large"
+            android:importantForAccessibility="no"
             android:scaleType="fitCenter"
             android:src="@drawable/g_connect_thank_you"
             app:layout_constraintEnd_toEndOf="parent"

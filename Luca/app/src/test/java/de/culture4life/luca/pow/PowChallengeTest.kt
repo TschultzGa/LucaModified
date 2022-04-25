@@ -1,17 +1,12 @@
 package de.culture4life.luca.pow
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.network.pojo.PowChallengeResponseData
 import de.culture4life.luca.util.TimeUtil
 import junit.framework.Assert.assertEquals
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.math.BigInteger
 import java.util.concurrent.TimeUnit
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class PowChallengeTest {
 
     private val powChallengeResponse = PowChallengeResponseData(

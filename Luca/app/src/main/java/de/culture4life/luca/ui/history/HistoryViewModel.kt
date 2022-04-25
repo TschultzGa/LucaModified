@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import de.culture4life.luca.R
 import de.culture4life.luca.checkin.CheckInManager
+import de.culture4life.luca.crypto.CryptoManager
 import de.culture4life.luca.dataaccess.AccessedTraceData
 import de.culture4life.luca.dataaccess.DataAccessManager
 import de.culture4life.luca.history.*
@@ -33,15 +34,16 @@ import java.util.stream.Collectors
 
 class HistoryViewModel(application: Application) : BaseViewModel(application) {
 
-    private var historyManager: HistoryManager = this.application.historyManager
+    private val historyManager: HistoryManager = this.application.historyManager
     private val dataAccessManager: DataAccessManager = this.application.dataAccessManager
-    private var checkInManager: CheckInManager = this.application.checkInManager
+    private val checkInManager: CheckInManager = this.application.checkInManager
+    private val cryptoManager: CryptoManager = this.application.cryptoManager
 
     private val tracingTanEvent = MutableLiveData<ViewEvent<String>>()
     private val newAccessedData = MutableLiveData<ViewEvent<List<AccessedTraceData>>>()
-    private var dataSharingError: ViewError? = null
-
     private val historyItems = MutableLiveData<List<HistoryListItem>>()
+    private val historyCanBeShared = MutableLiveData<Boolean>()
+    private var dataSharingError: ViewError? = null
 
     override fun initialize(): Completable {
         return super.initialize()
@@ -84,7 +86,16 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
     private fun updateHistoryItems(): Completable {
         return loadHistoryItems()
             .toList()
-            .flatMapCompletable { items: List<HistoryListItem> -> update(historyItems, items) }
+            .flatMapCompletable { items: List<HistoryListItem> ->
+                updateAsSideEffect(historyItems, items)
+                if (items.isEmpty()) {
+                    update(historyCanBeShared, false)
+                } else {
+                    cryptoManager.initialize(application)
+                        .andThen(cryptoManager.hasDailyPublicKey())
+                        .flatMapCompletable { hasDailyPublicKey -> update(historyCanBeShared, hasDailyPublicKey) }
+                }
+            }
     }
 
     private fun loadHistoryItems(): Observable<HistoryListItem> {
@@ -147,7 +158,7 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
 
     private fun createHistoryViewItem(historyItemPair: Pair<HistoryItem, HistoryItem>): Maybe<HistoryListItem> {
         return Maybe.zip(createHistoryViewItem(historyItemPair.first), createHistoryViewItem(historyItemPair.second)) { start, end ->
-            end.time = TimeUtil.getReadableDateTimeDifference(application, start.timestamp.toDateTime(), end.timestamp.toDateTime())
+            end.time = TimeUtil.getReadableDurationAsTimeWithPlural(application, start.timestamp.toDateTime(), end.timestamp.toDateTime())
             end.time = application.getString(R.string.history_time_merged, start.time, end.time)
             if (start is CheckInListItem && end is CheckOutListItem) {
                 end.isContactDataMandatory = start.isContactDataMandatory
@@ -324,36 +335,36 @@ class HistoryViewModel(application: Application) : BaseViewModel(application) {
 
     fun getHistoryItems(): LiveData<List<HistoryListItem>> = historyItems
 
+    fun canHistoryBeShared(): LiveData<Boolean> = historyCanBeShared
+
+    private fun filterTraceData(items: List<AccessedTraceData>, warningLevelFilter: Int): List<AccessedTraceData> {
+        return if (warningLevelFilter != HistoryFragment.NO_WARNING_LEVEL_FILTER) {
+            items.stream()
+                .filter { item: AccessedTraceData -> item.warningLevel == warningLevelFilter }
+                .collect(Collectors.toList())
+        } else {
+            items
+        }
+    }
+
     companion object {
 
-        private const val TAN_CHARS_PER_SECTION = 4
-
+        @JvmStatic
         fun filterHistoryListItems(items: List<HistoryListItem>, warningLevelFilter: Int): List<HistoryListItem> {
             return if (warningLevelFilter != HistoryFragment.NO_WARNING_LEVEL_FILTER) {
                 items.stream()
                     .filter { it is CheckOutListItem && it.containsWarningLevel(warningLevelFilter) }
-                    .map { filterAccessedTraceData(it as CheckOutListItem, warningLevelFilter) }
+                    .map { item ->
+                        (item as CheckOutListItem).apply {
+                            accessedTraceData = accessedTraceData.filter { it.warningLevel == warningLevelFilter }
+                        }
+                    }
                     .collect(Collectors.toList())
             } else {
                 items
             }
         }
 
-        private fun filterAccessedTraceData(item: CheckOutListItem, warningLevelFilter: Int): HistoryListItem {
-            item.accessedTraceData = item.accessedTraceData.stream()
-                .filter { traceData: AccessedTraceData -> traceData.warningLevel == warningLevelFilter }
-                .collect(Collectors.toList())
-            return item
-        }
-
-        private fun filterTraceData(items: List<AccessedTraceData>, warningLevelFilter: Int): List<AccessedTraceData> {
-            return if (warningLevelFilter != HistoryFragment.NO_WARNING_LEVEL_FILTER) {
-                items.stream()
-                    .filter { item: AccessedTraceData -> item.warningLevel == warningLevelFilter }
-                    .collect(Collectors.toList())
-            } else {
-                items
-            }
-        }
+        private const val TAN_CHARS_PER_SECTION = 4
     }
 }

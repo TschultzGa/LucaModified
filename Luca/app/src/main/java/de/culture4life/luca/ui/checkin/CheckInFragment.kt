@@ -3,7 +3,9 @@ package de.culture4life.luca.ui.checkin
 import android.content.Intent
 import android.os.Bundle
 import androidx.core.os.bundleOf
+import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.viewbinding.ViewBinding
@@ -15,6 +17,7 @@ import de.culture4life.luca.network.pojo.LocationResponseData
 import de.culture4life.luca.ui.BaseFragment
 import de.culture4life.luca.ui.BaseQrCodeFragment
 import de.culture4life.luca.ui.BaseQrCodeViewModel.Companion.BARCODE_DATA_KEY
+import de.culture4life.luca.ui.SharedViewModelScopeProvider
 import de.culture4life.luca.ui.checkin.flow.CheckInFlowBottomSheetFragment
 import de.culture4life.luca.ui.checkin.flow.CheckInFlowViewModel
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
@@ -24,7 +27,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Completable
 import java.util.concurrent.TimeUnit
 
-class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestinationChangedListener {
+class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestinationChangedListener, SharedViewModelScopeProvider {
 
     private var qrCodeBottomSheet: QrCodeBottomSheetFragment? = null
     private val checkInFlowBottomSheet by lazy { CheckInFlowBottomSheetFragment.newInstance() }
@@ -35,6 +38,9 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
     private lateinit var binding: FragmentCheckInBinding
     private lateinit var cameraFragment: BaseQrCodeFragment
 
+    override val sharedViewModelStoreOwner: ViewModelStoreOwner
+        get() = this
+
     override fun getViewBinding(): ViewBinding {
         binding = FragmentCheckInBinding.inflate(layoutInflater)
         return binding
@@ -44,24 +50,37 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
         return CheckInViewModel::class.java
     }
 
+    override fun getViewModelStoreOwner(): ViewModelStoreOwner {
+        return requireActivity()
+    }
+
     override fun initializeViewModel(): Completable {
         return super.initializeViewModel()
             .observeOn(AndroidSchedulers.mainThread())
             .doOnComplete {
-                viewModel.setupViewModelReference(requireActivity())
-                qrCodeBottomSheetViewModel = ViewModelProvider(requireActivity())
+                qrCodeBottomSheetViewModel = ViewModelProvider(sharedViewModelStoreOwner)
                     .get(QrCodeBottomSheetViewModel::class.java)
-                checkInFlowViewModel = ViewModelProvider(requireActivity())
+                checkInFlowViewModel = ViewModelProvider(sharedViewModelStoreOwner)
                     .get(CheckInFlowViewModel::class.java)
             }
     }
 
     override fun initializeViews() {
         super.initializeViews()
+        initializeCheckInButtons()
         initializeCameraPreview()
         initializeQrCodeBottomSheet()
         initializeCheckInMultiConfirmBottomSheet()
         initializeMiscellaneous()
+    }
+
+    private fun initializeCheckInButtons() {
+        observe(viewModel.isDailyPublicKeyAvailable) { dailyKeyIsAvailable ->
+            binding.showQrCodeButton.isVisible = dailyKeyIsAvailable
+            binding.createMeetingButton.isVisible = dailyKeyIsAvailable
+        }
+        binding.showQrCodeButton.setOnClickListener { showQrCodeBottomSheet() }
+        binding.createMeetingButton.setOnClickListener { showCreatePrivateMeetingDialog() }
     }
 
     private fun initializeCameraPreview() {
@@ -70,21 +89,20 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
     }
 
     private fun initializeQrCodeBottomSheet() {
-        binding.showQrCodeButton.setOnClickListener { showQrCodeBottomSheet() }
         observe(viewModel.qrCode) {
             qrCodeBottomSheet?.setQrCodeBitmap(it)
         }
-        observe(qrCodeBottomSheetViewModel.onBottomSheetClosed) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+        observe(qrCodeBottomSheetViewModel.bottomSheetDismissed) {
+            if (it.isNotHandled) {
+                it.isHandled = true
                 if (isAdded) {
                     cameraFragment.requestShowCameraPreview()
                 }
             }
         }
         observe(qrCodeBottomSheetViewModel.onDebuggingCheckInRequested) {
-            if (!it.hasBeenHandled()) {
-                it.setHandled(true)
+            if (it.isNotHandled) {
+                it.isHandled = true
                 if (BuildConfig.DEBUG) {
                     viewModel.onDebuggingCheckInRequested()
                 }
@@ -94,14 +112,14 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
 
     private fun initializeCheckInMultiConfirmBottomSheet() {
         observe(viewModel.checkInMultiConfirm) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 val urlAndLocationResponseData = it.valueAndMarkAsHandled
                 showCheckInConfirmFlow(urlAndLocationResponseData.first, urlAndLocationResponseData.second)
             }
         }
 
         observe(checkInFlowViewModel.onCheckInRequested) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 val checkInRequest = it.valueAndMarkAsHandled
 
                 viewModel.onCheckInRequested(
@@ -118,9 +136,9 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
     }
 
     private fun initializeMiscellaneous() {
-        observe(viewModel.bundle) { processBundle(it) }
+        observe(viewModel.bundleLiveData) { processBundle(it) }
         observe(viewModel.possibleDocumentData) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 showImportDocumentDialog(it.valueAndMarkAsHandled)
             }
         }
@@ -136,9 +154,8 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
                 showContactDataMissingDialog()
             }
         }
-        binding.createMeetingButton.setOnClickListener { showCreatePrivateMeetingDialog() }
         observe(viewModel.confirmPrivateMeeting) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 showJoinPrivateMeetingDialog(it.valueAndMarkAsHandled)
             }
         }
@@ -146,7 +163,7 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
             safeNavigateFromNavController(R.id.action_checkInFragment_to_history)
         }
         observe(viewModel.showCameraPreview) {
-            if (!it.hasBeenHandled()) {
+            if (it.isNotHandled) {
                 if (it.value) {
                     cameraFragment.requestShowCameraPreview()
                 } else {
@@ -195,7 +212,7 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
 
     private fun showQrCodeBottomSheet() {
         cameraFragment.requestHideCameraPreview()
-        parentFragmentManager.let {
+        childFragmentManager.let {
             qrCodeBottomSheet = QrCodeBottomSheetFragment.newInstance(
                 qrCodeBitmap = viewModel.qrCode.value,
                 isLoading = viewModel.isLoading.value,
@@ -214,7 +231,7 @@ class CheckInFragment : BaseFragment<CheckInViewModel>(), NavController.OnDestin
             Pair(CheckInFlowBottomSheetFragment.KEY_LOCATION_RESPONSE_DATA, locationResponseData)
         )
 
-        checkInFlowBottomSheet.show(parentFragmentManager, CheckInFlowBottomSheetFragment.TAG)
+        checkInFlowBottomSheet.show(childFragmentManager, CheckInFlowBottomSheetFragment.TAG)
     }
 
     private fun showJoinPrivateMeetingDialog(privateMeetingUrl: String) {

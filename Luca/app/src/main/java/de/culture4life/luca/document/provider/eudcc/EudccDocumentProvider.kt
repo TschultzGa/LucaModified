@@ -6,7 +6,6 @@ import com.google.gson.JsonObject
 import com.nexenio.rxkeystore.provider.signature.RxSignatureException
 import de.culture4life.luca.BuildConfig
 import de.culture4life.luca.LucaApplication
-import de.culture4life.luca.R
 import de.culture4life.luca.document.DocumentParsingException
 import de.culture4life.luca.document.DocumentVerificationException
 import de.culture4life.luca.document.DocumentVerificationException.Reason.INVALID_SIGNATURE
@@ -32,7 +31,7 @@ import java.security.spec.X509EncodedKeySpec
 /**
  * Provider for the EU Digital COVID Certificate (EUDCC)
  */
-@kotlin.ExperimentalUnsignedTypes
+@OptIn(ExperimentalUnsignedTypes::class)
 open class EudccDocumentProvider(val context: Context) : DocumentProvider<EudccDocument>() {
 
     private val base45Decoder = Base45Decoder()
@@ -50,7 +49,7 @@ open class EudccDocumentProvider(val context: Context) : DocumentProvider<EudccD
         return Single.fromCallable { EudccDocument(encodedData, decoder.decodeCertificate(encodedData)) }
             .map {
                 it.apply {
-                    document.provider = context.getString(R.string.provider_name_eu_dcc)
+                    document.provider = "EU Digital COVID Certificate"
                     document.isVerified = true
                 }
             }
@@ -123,7 +122,7 @@ open class EudccDocumentProvider(val context: Context) : DocumentProvider<EudccD
         return Single.defer {
             val networkManager = (context as LucaApplication).networkManager
             networkManager.initialize(context)
-                .andThen(networkManager.lucaEndpointsV4)
+                .andThen(networkManager.getLucaEndpointsV4())
                 .flatMap { it.eudccSigningKeys }
                 .map { it.string() }
         }.flatMapObservable {

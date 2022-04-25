@@ -10,8 +10,7 @@ import de.culture4life.luca.R
 import de.culture4life.luca.databinding.ItemMessageBinding
 import de.culture4life.luca.util.getReadableDate
 
-class MessagesListAdapter(context: Context, resource: Int) :
-    ArrayAdapter<MessageListItem>(context, resource) {
+class MessagesListAdapter(context: Context, resource: Int) : ArrayAdapter<MessageListItem>(context, resource) {
 
     private val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE)
         as LayoutInflater

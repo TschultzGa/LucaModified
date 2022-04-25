@@ -1,6 +1,5 @@
 package de.culture4life.luca.health
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.consent.Consent
 import de.culture4life.luca.consent.ConsentManager
@@ -17,14 +16,10 @@ import io.reactivex.rxjava3.core.Single
 import junit.framework.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
-import org.robolectric.annotation.Config
 
-@RunWith(AndroidJUnit4::class)
-@Config(sdk = [28])
 class HealthDepartmentManagerTest : LucaUnitTest() {
 
     @Mock
@@ -62,7 +57,7 @@ class HealthDepartmentManagerTest : LucaUnitTest() {
     }
 
     private fun setupNetworkManager() {
-        whenever(networkManager.lucaEndpointsV4).thenReturn(Single.just(lucaEndpointsV4))
+        whenever(networkManager.getLucaEndpointsV4()).thenReturn(Single.just(lucaEndpointsV4))
     }
 
     private fun setupPreferencesManager() {
@@ -72,7 +67,7 @@ class HealthDepartmentManagerTest : LucaUnitTest() {
                 any<ResponsibleHealthDepartment>()
             )
         ).thenReturn(Completable.complete())
-        whenever(preferencesManager.delete("responsible_health_department"))
+        whenever(preferencesManager.delete("responsible_health_department")) // TODO: Refactor
             .thenReturn(Completable.complete())
         whenever(
             preferencesManager.restoreIfAvailable(

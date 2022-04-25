@@ -1,10 +1,12 @@
 package de.culture4life.luca.testtools.pages.dialogs
 
+import android.content.Context
 import android.view.View
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
 import androidx.test.espresso.action.GeneralClickAction
 import androidx.test.espresso.matcher.ViewMatchers
+import androidx.test.platform.app.InstrumentationRegistry
 import de.culture4life.luca.LucaApplication
 import io.github.kakaocup.kakao.common.views.KBaseView
 import io.github.kakaocup.kakao.dialog.KAlertDialog
@@ -14,6 +16,7 @@ import org.hamcrest.Matchers
 
 abstract class DefaultOkDialog {
 
+    protected val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
     protected val baseDialog = KAlertDialog()
 
     val okButton = baseDialog.positiveButton

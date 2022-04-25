@@ -7,12 +7,11 @@ import de.culture4life.luca.ui.base.BaseBottomSheetViewModel
 
 abstract class BaseFlowViewModel(app: Application) : BaseBottomSheetViewModel(app) {
 
-    var pages = mutableListOf<BaseFlowChildFragment<*, *>>()
+    var pages = mutableListOf<BaseFlowPage>()
 
     val pagerNavigation: MutableLiveData<ViewEvent<PagerNavigate>> = MutableLiveData()
-    val onPagesUpdated: MutableLiveData<ViewEvent<List<BaseFlowChildFragment<*, *>>>> = MutableLiveData()
+    val onPagesUpdated: MutableLiveData<ViewEvent<List<BaseFlowPage>>> = MutableLiveData()
 
-    fun isLastPage(fragment: BaseFlowChildFragment<*, *>): Boolean = pages.indexOf(fragment) == pages.lastIndex
     fun navigateToPrevious() = updateAsSideEffect(pagerNavigation, ViewEvent(PagerNavigate.PREVIOUS))
     fun navigateToNext() = updateAsSideEffect(pagerNavigation, ViewEvent(PagerNavigate.NEXT))
 

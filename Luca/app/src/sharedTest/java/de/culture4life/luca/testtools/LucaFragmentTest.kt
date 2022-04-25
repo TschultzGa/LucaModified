@@ -1,13 +1,19 @@
 package de.culture4life.luca.testtools
 
+import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
+import androidx.navigation.Navigation
+import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso
+import androidx.test.espresso.intent.Intents
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import de.culture4life.luca.LucaApplication
 import de.culture4life.luca.Manager
+import de.culture4life.luca.R
 import de.culture4life.luca.preference.EncryptedSharedPreferencesProvider
+import de.culture4life.luca.testtools.preconditions.MockServerPreconditions
 import de.culture4life.luca.testtools.rules.*
+import de.culture4life.luca.ui.consent.ConsentUiExtension
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import org.junit.After
 import org.junit.Before
@@ -20,6 +26,7 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
     val fragmentScenarioRule: LucaFragmentScenarioRule<FRAGMENT>
 ) {
     val mockWebServerRule = MockWebServerRule()
+    val mockServerPreconditions = MockServerPreconditions(mockWebServerRule)
 
     @get:Rule
     val ruleChain: RuleChain = RuleChain.emptyRuleChain() // Remember: first around() becomes first in @Before and last in @After.
@@ -29,8 +36,9 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
         .around(mockWebServerRule)
         .around(fragmentScenarioRule)
 
-    val applicationContext: LucaApplication = ApplicationProvider.getApplicationContext()
+    val application: LucaApplication = ApplicationProvider.getApplicationContext()
     val testDisposable = CompositeDisposable()
+    lateinit var testNavigationController: TestNavHostController
 
     @Before
     fun setupLucaFragmentTest() {
@@ -45,10 +53,11 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
             // Usually it should be enough to clear the app storage to reset all states. But our Managers
             // has some inMemory Caching and it will not be reset between each instrumentationTest method.
             // The [Application.onTerminate] is called with robolectric only, not for instrumentationTest.
-            applicationContext.invalidateAppState()
+            application.invalidateAppState()
         }
 
         FixRobolectricIdlingResource.apply()
+        Intents.init()
     }
 
     @After
@@ -57,6 +66,26 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
         // left stuff behind which would affect this run. See setup docs for more details.
 
         testDisposable.dispose()
+        Intents.release()
+    }
+
+    /**
+     * Mock [Navigation.findNavController] result and the following [androidx.navigation.NavController.navigate] calls.
+     *
+     * Has to be called after fragment instance is available and before onViewCreated.
+     *
+     * https://developer.android.com/guide/navigation/navigation-testing#test_navigationui_with_fragmentscenario
+     */
+    fun setupTestNavigationController(fragment: Fragment, @IdRes currentDestination: Int) {
+        testNavigationController = TestNavHostController(application)
+        testNavigationController.navigatorProvider = TestNavigatorProvider()
+        fragment.viewLifecycleOwnerLiveData.observeForever { viewLifecycleOwner ->
+            if (viewLifecycleOwner != null) {
+                testNavigationController.setGraph(R.navigation.mobile_navigation)
+                testNavigationController.setCurrentDestination(currentDestination)
+                Navigation.setViewNavController(fragment.requireView(), testNavigationController)
+            }
+        }
     }
 
     private fun clearSharedPreferences() {
@@ -65,12 +94,16 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
         // But that leads after multiple runs to an issue:
         //   java.lang.SecurityException: Could not decrypt key. decryption failed
         //   Caused by: java.security.GeneralSecurityException: decryption failed
-        EncryptedSharedPreferencesProvider(applicationContext).resetSharedPreferences(applicationContext).blockingAwait()
+        EncryptedSharedPreferencesProvider(application).resetSharedPreferences(application).blockingAwait()
     }
 
     protected open fun <ManagerType : Manager> getInitializedManager(manager: ManagerType): ManagerType {
-        manager.initialize(applicationContext).blockingAwait()
+        manager.initialize(application).blockingAwait()
         return manager
+    }
+
+    fun waitForIdle() {
+        FixRobolectricIdlingResource.waitForIdle()
     }
 
     /**
@@ -82,11 +115,20 @@ abstract class LucaFragmentTest<FRAGMENT : Fragment>(
      * https://github.com/square/RxIdler/issues/9
      */
     fun waitFor(milliseconds: Long) {
-        // First let all current task finish to ensure the delay is created.
-        Espresso.onIdle()
-        FixRobolectricIdlingResource.waitForIdle()
+        // We have to add a few milliseconds to avoid race conditions when waiting for delays. It could
+        // happen that we just finish shortly before delayed tasks is executed. Would mean that the app
+        // state is still idle and next test step is performed before the delayed task becomes executed.
+        FixRobolectricIdlingResource.waitForIdle(milliseconds + 10)
+    }
 
-        // Then wait to ensure delay time is over.
-        Thread.sleep(milliseconds)
+    /**
+     * Only by default available when we use our [de.culture4life.luca.ui.BaseActivity]. But for this
+     * test type we try to isolate as much as possible to keep tests simple. For that Espresso enforce
+     * us to use [androidx.fragment.app.testing.FragmentScenario.EmptyFragmentActivity].
+     */
+    fun initializeConsentUiExtension() {
+        fragmentScenarioRule.scenario.onFragment {
+            ConsentUiExtension(it.childFragmentManager, application.consentManager, testDisposable)
+        }
     }
 }

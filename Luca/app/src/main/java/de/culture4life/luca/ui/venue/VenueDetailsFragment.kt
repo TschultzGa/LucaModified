@@ -2,9 +2,6 @@ package de.culture4life.luca.ui.venue
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -27,6 +24,7 @@ import de.culture4life.luca.ui.ViewError
 import de.culture4life.luca.ui.dialog.BaseDialogFragment
 import de.culture4life.luca.ui.venue.VenueDetailsViewModel.UrlType
 import de.culture4life.luca.util.AccessibilityServiceUtil
+import de.culture4life.luca.util.ClipboardUtil
 import de.culture4life.luca.util.addTo
 import five.star.me.FiveStarMe
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -384,11 +382,9 @@ class VenueDetailsFragment : BaseFragment<VenueDetailsViewModel>() {
     private fun copyUrlToClipboard(urlType: UrlType) {
         val locationName = viewModel.checkInData.value?.locationDisplayName
         val readableUrlType = urlTypeToButtonMap[urlType]?.text
-        val url = viewModel.getProvidedUrl(urlType)
         val label = getString(R.string.venue_url_clipboard_label, locationName, readableUrlType)
-        val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText(label, url)
-        clipboard.setPrimaryClip(clip)
+        val url = viewModel.getProvidedUrl(urlType)
+        ClipboardUtil.copy(requireContext(), label, url!!)
         Toast.makeText(requireContext(), R.string.venue_url_clipboard_toast, Toast.LENGTH_SHORT).show()
     }
 

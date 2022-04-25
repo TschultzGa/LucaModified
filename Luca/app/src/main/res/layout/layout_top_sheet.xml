@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/sheetContainerLayout"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/spacing_small"
-    android:background="?attr/colorSurface"
+    android:background="?colorSurface"
     android:padding="@dimen/spacing_default"
-    android:theme="@style/Theme.Luca.DayNight.Light">
+    android:theme="@style/Theme.Luca.DayNight.Light"
+    tools:ignore="Overdraw">
 
     <ImageView
         android:id="@+id/sheetIconImageView"

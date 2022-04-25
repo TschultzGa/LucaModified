@@ -39,7 +39,6 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import timber.log.Timber
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 class VenueDetailsViewModel(application: Application) : BaseViewModel(application) {
 
@@ -234,7 +233,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     private fun updateReadableCheckInDuration(timestamp: Long): Completable {
         return Observable.interval(0, 1, TimeUnit.SECONDS)
             .map { TimeUtil.getCurrentMillis() - timestamp }
-            .map(::getReadableDuration)
+            .map(TimeUtil::getReadableTimeDuration)
             .flatMapCompletable { update(checkInDuration, it) }
     }
 
@@ -381,7 +380,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
                 .removeWhenShown()
                 .canBeShownAsNotification()
             if (!locationManager.isLocationServiceEnabled) {
-                errorBuilder.isExpected
+                errorBuilder.isExpected()
                     .withTitle(R.string.auto_checkout_location_disabled_title)
                     .withDescription(R.string.auto_checkout_location_disabled_description)
             }
@@ -585,7 +584,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     }
 
     private fun fetchProvidedUrls(locationId: String): Observable<Pair<UrlType, String>> {
-        return application.networkManager.lucaEndpointsV3
+        return application.networkManager.getLucaEndpointsV3()
             .flatMap { it.getLocationUrls(locationId) }
             .map { urlsResponseData ->
                 val urls = ArrayList<Pair<UrlType, String>>()
@@ -661,17 +660,7 @@ class VenueDetailsViewModel(application: Application) : BaseViewModel(applicatio
     }
 
     companion object {
-
         const val KEY_LOCATION_CONSENT_GIVEN = "location_consent_given"
         const val KEY_AUTOMATIC_CHECKOUT_ENABLED = "automatic_checkout_enabled"
-
-        @JvmStatic
-        fun getReadableDuration(duration: Long): String {
-            var seconds = abs(duration / 1000)
-            val hours = seconds / 3600
-            val minutes = seconds % 3600 / 60
-            seconds = seconds % 3600 % 60
-            return String.format(Locale.GERMANY, "%02d:%02d:%02d", hours, minutes, seconds)
-        }
     }
 }

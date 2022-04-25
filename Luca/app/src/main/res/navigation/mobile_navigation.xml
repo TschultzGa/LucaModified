@@ -226,6 +226,30 @@
     </fragment>
 
     <fragment
+        android:id="@+id/lucaIdEnrollmentTokenFragment"
+        android:name="de.culture4life.luca.ui.idnow.LucaIdEnrollmentTokenFragment"
+        android:label="@string/luca_id_enrollment_token_message_title"
+        tools:layout="@layout/fragment_luca_id_enrollment_token">
+        <deepLink app:uri="@string/deeplink_id_verification_token" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/lucaIdEnrollmentErrorFragment"
+        android:name="de.culture4life.luca.ui.idnow.LucaIdEnrollmentErrorFragment"
+        android:label="@string/luca_id_enrollment_error_message_title"
+        tools:layout="@layout/fragment_luca_id_enrollment_error">
+        <deepLink app:uri="@string/deeplink_id_verification_error" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/lucaIdVerificationFragment"
+        android:name="de.culture4life.luca.ui.idnow.LucaIdVerificationFragment"
+        android:label="@string/luca_id_verification_title"
+        tools:layout="@layout/fragment_luca_id_verification">
+        <deepLink app:uri="@string/deeplink_id_verification_success" />
+    </fragment>
+
+    <fragment
         android:id="@+id/entryPolicyPreferencesFragment"
         android:name="de.culture4life.luca.ui.account.entrypolicy.EntryPolicyPreferencesFragment"
         android:label="@string/account_tab_item_entry_policy"

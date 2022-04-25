@@ -4,6 +4,7 @@ import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
 import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_ECDH;
 import static com.nexenio.rxkeystore.RxKeyStore.PROVIDER_BOUNCY_CASTLE;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -15,6 +16,7 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jcajce.provider.asymmetric.util.EC5Util;
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.ECPointUtil;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECCurve;
 
@@ -39,7 +41,7 @@ import io.reactivex.rxjava3.core.Single;
  */
 public class AsymmetricCipherProvider extends EcCipherProvider {
 
-    private static final String CURVE_NAME = "secp256r1";
+    protected static final String CURVE_NAME = "secp256r1";
     private static final String KEY_ALGORITHM = "ECDSA";
 
     public AsymmetricCipherProvider(RxKeyStore rxKeyStore) {
@@ -55,9 +57,10 @@ public class AsymmetricCipherProvider extends EcCipherProvider {
         return encode(publicKey, false);
     }
 
+    // ECPublicKey is interpreted as a functional interface and therefore suggested to be moved to the end because it could be a Lambda. Does not really make sense in this case
+    @SuppressLint("LambdaLast")
     public static Single<byte[]> encode(@NonNull ECPublicKey publicKey, boolean compressed) {
-        return Single.just(publicKey)
-                .cast(BCECPublicKey.class)
+        return Single.fromCallable(() -> new BCECPublicKey(publicKey, BouncyCastleProvider.CONFIGURATION))
                 .map(BCECPublicKey::getQ)
                 .map(ecPoint -> ecPoint.getEncoded(compressed));
     }
@@ -122,6 +125,12 @@ public class AsymmetricCipherProvider extends EcCipherProvider {
     @Override
     protected String getKeyAgreementAlgorithm() {
         return KEY_AGREEMENT_ECDH;
+    }
+
+    @NonNull
+    public RxKeyStore getKeyStore() {
+        // TODO: implement in RxKeyStore library
+        return rxKeyStore;
     }
 
 }

@@ -36,6 +36,7 @@
     <ImageView
         android:id="@+id/emptyImageView"
         style="@style/EmptyStateImageView"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@id/emptyDescriptionTextView"
         app:layout_constraintStart_toStartOf="@id/emptyDescriptionTextView"

@@ -3,7 +3,9 @@ package de.culture4life.luca.util;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class StringSanitizeUtilTest {
+import de.culture4life.luca.LucaUnitTest;
+
+public class StringSanitizeUtilTest extends LucaUnitTest {
 
     @Test
     public void sanitize_normalCharacters_unchanged() {

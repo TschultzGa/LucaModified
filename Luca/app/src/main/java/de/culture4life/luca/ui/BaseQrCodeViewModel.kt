@@ -3,20 +3,18 @@ package de.culture4life.luca.ui
 import android.annotation.SuppressLint
 import android.app.Application
 import android.media.Image
-import android.net.Uri
 import androidx.annotation.CallSuper
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import de.culture4life.luca.notification.LucaNotificationManager
 import de.culture4life.luca.ui.BaseQrCodeViewModel.CameraRequest.HidePreview
 import de.culture4life.luca.ui.BaseQrCodeViewModel.CameraRequest.ShowPreviewAndRequestMissingPermissions
+import de.culture4life.luca.ui.common.LucaBarcodeScanner
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
-import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -27,7 +25,7 @@ class BaseQrCodeViewModel(application: Application) :
 
     protected var notificationManager: LucaNotificationManager = this.application.notificationManager
 
-    private val scanner by lazy { BarcodeScanning.getClient() }
+    private val scanner by lazy { LucaBarcodeScanner() }
     private var imageProcessingDisposable: Disposable? = null
     protected val showCameraPreview: MutableLiveData<ViewEvent<CameraRequest>> = MutableLiveData(ViewEvent(HidePreview))
     var pauseCameraImageProcessing = false
@@ -116,33 +114,8 @@ class BaseQrCodeViewModel(application: Application) :
     private fun processCameraImage(imageProxy: ImageProxy): Completable {
         return Maybe.fromCallable<Image> { imageProxy.image }
             .map { image -> InputImage.fromMediaImage(image, imageProxy.imageInfo.rotationDegrees) }
-            .flatMapObservable { image -> detectBarcodes(image) }
+            .flatMapObservable(scanner::detectBarcodes)
             .flatMapCompletable { barcodeData -> processBarcode(barcodeData) }
-    }
-
-    fun detectBarcodes(uri: Uri): Observable<String> {
-        return Single.fromCallable { InputImage.fromFilePath(getApplication(), uri) }
-            .flatMapObservable { image -> detectBarcodes(image) }
-    }
-
-    private fun detectBarcodes(image: InputImage): Observable<String> {
-        return Observable.create<String> { emitter ->
-            scanner.process(image)
-                .addOnSuccessListener { barcodes ->
-                    for (barcode in barcodes) {
-                        val rawBarcode = barcode.rawValue
-                        if (rawBarcode != null) {
-                            emitter.onNext(rawBarcode)
-                        } else {
-                            Timber.d("barcode detected but rawValue not available, perhaps not UTF-8 encoded")
-                        }
-                    }
-                    emitter.onComplete()
-                }
-                .addOnFailureListener { emitter.tryOnError(it) }
-        }
-            // Avoid to emit async events on MainThread which is rarely expected when chaining calls.
-            .observeOn(Schedulers.io())
     }
 
     private fun processBarcode(barcodeData: String): Completable {
@@ -166,6 +139,11 @@ class BaseQrCodeViewModel(application: Application) :
 
     fun shouldShowCameraPreview(): LiveData<ViewEvent<CameraRequest>> {
         return showCameraPreview
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        scanner.dispose()
     }
 
     sealed class CameraRequest(

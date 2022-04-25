@@ -7,13 +7,12 @@
             <solid android:color="?attr/colorOnSurface" />
         </shape>
     </item>
-    <!-- Fix white navigation bar for pre api 23 where <size> is not supported. -->
+    <!--Fix white navigation bar for pre api 23 where <size> is not supported.-->
     <item
         android:gravity="top"
         android:top="2dp">
         <shape android:shape="rectangle">
-            <!-- Usually we would use ?attr/colorSurface but does not
-                 have the desired effect here for pre api 23. -->
+            <!--Usually we would use ?attr/colorSurface but does not have the desired effect here for pre api 23.-->
             <solid android:color="@color/black" />
         </shape>
     </item>

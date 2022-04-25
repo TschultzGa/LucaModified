@@ -31,6 +31,7 @@ import java.util.Set;
 import javax.net.ssl.TrustManagerFactory;
 
 import de.culture4life.luca.LucaApplication;
+import de.culture4life.luca.util.TimeUtil;
 
 class BaercodeCertificate {
 
@@ -104,6 +105,12 @@ class BaercodeCertificate {
         } else {
             parameters.setRevocationEnabled(false);
         }
+
+        if (LucaApplication.isRunningUnitTests() || LucaApplication.isRunningInstrumentationTests()) {
+            // Force specific current date for validity checks. Otherwise sample documents become invalid.
+            parameters.setDate(TimeUtil.getCurrentDate());
+        }
+
         validator.validate(path, parameters);
     }
 

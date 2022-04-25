@@ -1,23 +1,22 @@
 package de.culture4life.luca.util
 
-import androidx.test.runner.AndroidJUnit4
 import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.document.Document
 import de.culture4life.luca.util.TimeUtil.convertToUnixTimestamp
 import de.culture4life.luca.util.TimeUtil.encodeUnixTimestamp
+import de.culture4life.luca.util.TimeUtil.getReadableDurationAsTimeWithPlural
 import de.culture4life.luca.util.TimeUtil.getReadableDurationWithPlural
+import de.culture4life.luca.util.TimeUtil.getReadableTimeDuration
 import de.culture4life.luca.util.TimeUtil.roundUnixTimestampDownToMinute
 import junit.framework.Assert.assertEquals
+import org.joda.time.DateTime
 import org.junit.After
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.nio.ByteBuffer
 import java.time.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-@Config(sdk = [28])
-@RunWith(AndroidJUnit4::class)
 class TimeUtilTest : LucaUnitTest() {
 
     @After
@@ -99,5 +98,74 @@ class TimeUtilTest : LucaUnitTest() {
         // Then
         val parsedDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentMillis), ZoneId.systemDefault())
         assertEquals(fixedDateTime, parsedDateTime)
+    }
+
+    @Test
+    fun `getReadableTimeDuration returns expected value`() {
+        // Given
+        val hours = 2L
+        val minutes = 35L
+        val seconds = 45L
+        val expected = String.format(Locale.GERMANY, "%02d:%02d:%02d", hours, minutes, seconds)
+
+        // When
+        val duration = TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes) + TimeUnit.SECONDS.toMillis(seconds)
+
+        // Then
+        assertEquals(expected, getReadableTimeDuration(duration))
+    }
+
+    @Test
+    fun `getReadableDurationAsTimeWithPlural returns expected value for single values`() {
+        // Given
+        val hours = 1L
+        val minutes = 1L
+        val expected = "$hours hour $minutes minute"
+
+        // When
+        val duration = TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes)
+
+        // Then
+        assertEquals(expected, getReadableDurationAsTimeWithPlural(application, DateTime.now(), DateTime.now().plus(duration)))
+    }
+
+    @Test
+    fun `getReadableDurationAsTimeWithPlural returns expected value for plural values`() {
+        // Given
+        val hours = 2L
+        val minutes = 35L
+        val expected = "$hours hours $minutes minutes"
+
+        // When
+        val duration = TimeUnit.HOURS.toMillis(hours) + TimeUnit.MINUTES.toMillis(minutes)
+
+        // Then
+        assertEquals(expected, getReadableDurationAsTimeWithPlural(application, DateTime.now(), DateTime.now().plus(duration)))
+    }
+
+    @Test
+    fun `getReadableDurationAsTimeWithPlural returns expected value when only hours given`() {
+        // Given
+        val hours = 2L
+        val expected = "$hours hours"
+
+        // When
+        val duration = TimeUnit.HOURS.toMillis(hours)
+
+        // Then
+        assertEquals(expected, getReadableDurationAsTimeWithPlural(application, DateTime.now(), DateTime.now().plus(duration)))
+    }
+
+    @Test
+    fun `getReadableDurationAsTimeWithPlural returns expected value when only minutes given`() {
+        // Given
+        val minutes = 35L
+        val expected = "$minutes minutes"
+
+        // When
+        val duration = TimeUnit.MINUTES.toMillis(minutes)
+
+        // Then
+        assertEquals(expected, getReadableDurationAsTimeWithPlural(application, DateTime.now(), DateTime.now().plus(duration)))
     }
 }

@@ -61,7 +61,7 @@ public class TraceIdWrapper {
         public JsonElement serialize(TraceIdWrapper traceIdWrapper, Type type, JsonSerializationContext context) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.add("ts", context.serialize(traceIdWrapper.getTimestamp()));
-            jsonObject.add("id", context.serialize(SerializationUtil.toBase64(traceIdWrapper.traceId).blockingGet()));
+            jsonObject.add("id", context.serialize(SerializationUtil.toBase64(traceIdWrapper.getTraceId()).blockingGet()));
             return jsonObject;
         }
 

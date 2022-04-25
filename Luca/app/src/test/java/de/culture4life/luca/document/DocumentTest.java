@@ -4,9 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static de.culture4life.luca.document.Document.MAXIMUM_VACCINATION_VAILIDITY;
-import static de.culture4life.luca.document.Document.TIME_UNTIL_VACCINATION_IS_DELETED;
 
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
 import org.junit.Before;
@@ -14,9 +12,10 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import de.culture4life.luca.LucaUnitTest;
 import de.culture4life.luca.util.TimeUtil;
 
-public class DocumentTest {
+public class DocumentTest extends LucaUnitTest {
 
     private Document document;
 
@@ -148,14 +147,4 @@ public class DocumentTest {
         document.setTestingTimestamp(TimeUtil.getCurrentMillis() + TimeUnit.DAYS.toMillis(1));
         assertFalse(document.isValidRecovery());
     }
-
-    @Test
-    public void getDeletionTimestamp_forValidVaccination_isInFuture() {
-        document.setType(Document.TYPE_VACCINATION);
-        DateTime testingTime = DateTime.now();
-        DateTime deletionTime = testingTime.plus(TIME_UNTIL_VACCINATION_IS_DELETED);
-        document.setTestingTimestamp(testingTime.getMillis());
-        assertEquals(deletionTime.getMillis(), document.getDeletionTimestamp());
-    }
-
 }

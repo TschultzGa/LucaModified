@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.descendants
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -31,6 +32,8 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
     }
 
     override fun getViewModelClass(): Class<AccountViewModel> = AccountViewModel::class.java
+
+    override fun getViewModelStoreOwner(): ViewModelStoreOwner = requireActivity()
 
     private lateinit var binding: FragmentAccountBinding
 
@@ -91,6 +94,9 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
             R.id.documentsDataRequestMenuItem -> viewModel.exportDocumentsDataRequest(
                 getFileExportUri("luca-documents-data.txt")
             )
+            R.id.lucaIdDataRequestMenuItem -> viewModel.exportLucaIdDataRequest(
+                getFileExportUri("luca-id-now-data.txt")
+            )
             else -> return super.onMenuItemClick(item)
         }
         return true
@@ -134,6 +140,8 @@ class AccountFragment : BaseFragment<AccountViewModel>() {
         context?.also { context ->
             PopupMenu(context, binding.dataRequestItem).apply {
                 menuInflater.inflate(R.menu.data_request_menu, this.menu)
+                menu.findItem(R.id.lucaIdDataRequestMenuItem).isVisible = viewModel.idNowEnrollmentVerifiedStatus.value ?: false
+                menu.findItem(R.id.documentsDataRequestMenuItem).isVisible = viewModel.documentsAvailableStatus.value ?: false
                 setOnMenuItemClickListener { item -> onMenuItemClick(item) }
                 show()
             }

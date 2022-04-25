@@ -1,15 +1,11 @@
 package de.culture4life.luca.document.provider.baercode;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class BaercodeKeyTest {
+import de.culture4life.luca.LucaUnitTest;
+
+public class BaercodeKeyTest extends LucaUnitTest {
 
     @Test
     public void getKeyId_fromExampleKey_isCorrect() {

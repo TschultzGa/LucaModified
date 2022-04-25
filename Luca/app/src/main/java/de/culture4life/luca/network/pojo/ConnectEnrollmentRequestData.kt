@@ -2,7 +2,7 @@ package de.culture4life.luca.network.pojo
 
 import com.google.gson.annotations.SerializedName
 import de.culture4life.luca.crypto.EciesResult
-import de.culture4life.luca.crypto.toCompressedBase64String
+import de.culture4life.luca.crypto.toBase64String
 import de.culture4life.luca.util.encodeToBase64
 
 data class ConnectEnrollmentRequestData(
@@ -51,7 +51,7 @@ data class EciesData(
 
     constructor(eciesResult: EciesResult) : this(
         encryptedData = eciesResult.encryptedData.encodeToBase64(),
-        ephemeralPublicKey = eciesResult.ephemeralPublicKey.toCompressedBase64String(),
+        ephemeralPublicKey = eciesResult.ephemeralPublicKey.toBase64String(),
         iv = eciesResult.iv.encodeToBase64(),
         mac = eciesResult.mac.encodeToBase64()
     )

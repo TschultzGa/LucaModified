@@ -9,7 +9,9 @@ import org.joda.time.format.DateTimeFormat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.time.Clock
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 object TimeUtil {
 
@@ -26,6 +28,9 @@ object TimeUtil {
      */
     @JvmStatic
     fun getCurrentMillis(): Long = java.time.Instant.now(clock).toEpochMilli()
+
+    @JvmStatic
+    fun getCurrentDate(): Date = getCurrentMillis().toDateTime().toDate()
 
     @JvmStatic
     fun getCurrentUnixTimestamp(): Single<Long> {
@@ -129,6 +134,40 @@ object TimeUtil {
     @JvmStatic
     fun getReadableDurationWithPlural(duration: Long, context: Context): Single<String> {
         return Single.just(getReadableDateTimeDifference(context, DateTime.now(), DateTime.now().plus(duration)))
+    }
+
+    /**
+     * @return The duration in hours and minutes e.g. "2 hours 25 minutes" or "25 minutes"
+     */
+    @JvmStatic
+    fun getReadableDurationAsTimeWithPlural(context: Context, start: DateTime, end: DateTime = DateTime.now(DateTimeZone.getDefault())): String {
+        val duration = Duration(start, end)
+        val durationHours = duration.toStandardHours()
+        val hours = durationHours.hours
+        val minutes = if (hours > 0) {
+            duration.toStandardMinutes().minus(durationHours.toStandardMinutes()).minutes
+        } else {
+            duration.toStandardMinutes().minutes
+        }
+
+        return when {
+            hours > 0 && minutes > 0 -> {
+                val hoursPlural = context.resources.getQuantityString(R.plurals.time_plural_hours, hours, hours)
+                val minutesPlural = context.resources.getQuantityString(R.plurals.time_plural_minutes, minutes, minutes)
+                "$hoursPlural $minutesPlural"
+            }
+            hours > 0 -> context.resources.getQuantityString(R.plurals.time_plural_hours, hours, hours)
+            else -> context.resources.getQuantityString(R.plurals.time_plural_minutes, minutes, minutes)
+        }
+    }
+
+    @JvmStatic
+    fun getReadableTimeDuration(duration: Long): String {
+        var seconds = abs(duration / 1000)
+        val hours = seconds / 3600
+        val minutes = seconds % 3600 / 60
+        seconds = seconds % 3600 % 60
+        return String.format(Locale.GERMANY, "%02d:%02d:%02d", hours, minutes, seconds)
     }
 
     val GERMAN_TIMEZONE: DateTimeZone = DateTimeZone.forID("Europe/Berlin")

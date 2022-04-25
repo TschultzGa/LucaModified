@@ -60,6 +60,7 @@
                 android:layout_marginTop="@dimen/spacing_default"
                 android:layout_marginBottom="@dimen/spacing_default"
                 android:text="@string/check_in_show_your_qr_code_action"
+                android:visibility="gone"
                 app:layout_constraintBottom_toTopOf="@id/createMeetingButton"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -71,6 +72,7 @@
                 android:layout_marginHorizontal="@dimen/spacing_default"
                 android:layout_marginBottom="@dimen/spacing_default"
                 android:text="@string/meeting_create_action"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />

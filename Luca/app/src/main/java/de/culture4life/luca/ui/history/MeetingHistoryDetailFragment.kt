@@ -30,7 +30,8 @@ class MeetingHistoryDetailFragment : BaseFragment<MeetingHistoryDetailViewModel>
             it.guests.forEachIndexed { index, name ->
                 with(ItemGuestBinding.inflate(layoutInflater)) {
                     guestNumberTextView.apply {
-                        text = (index + 1).toString()
+                        val guestNumber = (index + 1).toString()
+                        text = guestNumber
                         setTextColor(Color.WHITE)
                     }
                     guestNameTextView.apply {

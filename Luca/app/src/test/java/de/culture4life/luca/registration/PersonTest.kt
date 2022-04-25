@@ -1,9 +1,10 @@
 package de.culture4life.luca.registration
 
+import de.culture4life.luca.LucaUnitTest
 import org.junit.Assert.*
 import org.junit.Test
 
-class PersonTest {
+class PersonTest : LucaUnitTest() {
 
     @Test
     fun getSimplifiedFullName_nameWithEdgeCases_expectedOutput() {

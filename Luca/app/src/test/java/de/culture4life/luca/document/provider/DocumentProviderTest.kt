@@ -1,5 +1,6 @@
 package de.culture4life.luca.document.provider
 
+import de.culture4life.luca.LucaUnitTest
 import de.culture4life.luca.children.Child
 import de.culture4life.luca.document.DocumentVerificationException
 import de.culture4life.luca.registration.Person
@@ -9,7 +10,7 @@ import io.reactivex.rxjava3.core.Single
 import org.joda.time.DateTime
 import org.junit.Test
 
-class DocumentProviderTest {
+class DocumentProviderTest : LucaUnitTest() {
 
     private val provider = object : DocumentProvider<ProvidedDocument>() {
         var document: ProvidedDocument? = null

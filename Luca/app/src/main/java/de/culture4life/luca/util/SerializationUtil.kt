@@ -10,6 +10,7 @@ object SerializationUtil {
 
     private val GSON = Gson()
     private val BASE_32 = Base32()
+    private val BASE_58 = Base58
 
     @JvmStatic
     fun toJson(data: Any): Single<String> {
@@ -67,6 +68,11 @@ object SerializationUtil {
     fun fromBase32(base32: String): Single<ByteArray> {
         return Single.fromCallable { BASE_32.decode(base32) }
     }
+
+    @JvmStatic
+    fun fromBase58(base58: String): Single<ByteArray> {
+        return Single.fromCallable { BASE_58.decode(base58) }
+    }
 }
 
 fun Any.serializeToJson(): String {
@@ -99,4 +105,8 @@ fun ByteArray.encodeToBase32(): String {
 
 fun String.decodeFromBase32(): ByteArray {
     return SerializationUtil.fromBase32(this).blockingGet()
+}
+
+fun String.decodeFromBase58(): ByteArray {
+    return SerializationUtil.fromBase58(this).blockingGet()
 }

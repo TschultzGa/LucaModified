@@ -1,20 +1,15 @@
 package de.culture4life.luca.document.provider.baercode;
 
-import androidx.test.runner.AndroidJUnit4;
-
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 
+import de.culture4life.luca.LucaUnitTest;
 import de.culture4life.luca.document.Document;
 import de.culture4life.luca.document.DocumentParsingException;
 
-@Config(sdk = 28)
-@RunWith(AndroidJUnit4.class)
-public class BaercodeDocumentTest {
+public class BaercodeDocumentTest extends LucaUnitTest {
 
     @Test(expected = DocumentParsingException.class)
     public void checkProcedures_forEmptyProcedures_fails() throws DocumentParsingException {

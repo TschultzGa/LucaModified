@@ -2,14 +2,13 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <ImageView
         android:id="@+id/actionBarBackButtonImageView"
         style="@style/ActionBarBackButtonImageView"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints, ContentDescription" />
 
     <TextView
         android:id="@+id/actionBarTitleTextView"
@@ -30,15 +29,16 @@
         android:layout_margin="@dimen/spacing_default"
         android:text="@string/venue_children_empty_list_description"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintHeight_max="wrap"
         app:layout_constraintHeight_percent="0.6"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/actionBarSeparatorView" />
 
     <ImageView
         android:id="@+id/emptyImageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:importantForAccessibility="no"
         android:src="@drawable/g_child_light"
         android:visibility="gone"
         app:layout_constrainedHeight="true"
@@ -46,8 +46,7 @@
         app:layout_constraintEnd_toEndOf="@id/childAddingDescriptionTextView"
         app:layout_constraintStart_toStartOf="@id/childAddingDescriptionTextView"
         app:layout_constraintTop_toBottomOf="@id/childAddingDescriptionTextView"
-        app:layout_constraintVertical_bias="0.25"
-        tools:ignore="ContentDescription" />
+        app:layout_constraintVertical_bias="0.25" />
 
     <ListView
         android:id="@+id/childListView"
@@ -55,12 +54,12 @@
         android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_default"
         android:cacheColorHint="@android:color/transparent"
-        android:paddingTop="@dimen/spacing_large"
+        android:descendantFocusability="blocksDescendants"
         android:divider="@null"
         android:fadingEdgeLength="@dimen/spacing_large"
         android:listSelector="@android:color/transparent"
+        android:paddingTop="@dimen/spacing_large"
         android:requiresFadingEdge="vertical"
-        android:descendantFocusability="blocksDescendants"
         app:layout_constraintBottom_toTopOf="@id/primaryActionButton"
         app:layout_constraintTop_toBottomOf="@id/childAddingDescriptionTextView"
         tools:listitem="@layout/item_child" />

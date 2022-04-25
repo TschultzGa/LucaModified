@@ -151,7 +151,7 @@ class HealthDepartmentManager(
     }
 
     fun fetchHealthDepartment(zipCode: String): Maybe<HealthDepartment> {
-        return networkManager.lucaEndpointsV4
+        return networkManager.getLucaEndpointsV4()
             .flatMap { it.responsibleHealthDepartment }
             .flatMapObservable { Observable.fromIterable(it) }
             .filter { zipCode in it.zipCodes }

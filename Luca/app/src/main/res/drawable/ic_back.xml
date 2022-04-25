@@ -4,9 +4,8 @@
     android:viewportWidth="10"
     android:viewportHeight="18">
     <path
-        android:fillColor="#00000000"
         android:fillType="evenOdd"
-        android:pathData="M9,1l-8,8l8,8"
+        android:pathData="M9 1L1 9l8 8"
         android:strokeWidth="2"
         android:strokeColor="#000000"
         android:strokeLineCap="round"

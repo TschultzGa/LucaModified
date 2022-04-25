@@ -6,12 +6,13 @@
     android:layout_height="match_parent"
     android:background="@color/checked_in_background"
     android:theme="@style/Theme.Luca.DayNight.Light"
-    tools:context="de.culture4life.luca.ui.meeting.MeetingDetailFragment">
+    tools:context="de.culture4life.luca.ui.meeting.MeetingDetailFragment"
+    tools:ignore="Overdraw">
 
     <ImageView
         android:id="@+id/actionBarBackButtonImageView"
         style="@style/ActionBarBackButtonImageView"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints,ContentDescription" />
 
     <TextView
         android:id="@+id/actionBarTitleTextView"
