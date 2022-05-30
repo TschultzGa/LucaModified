@@ -114,7 +114,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
             // indeterminate state can only be changed while invisible
             // see: https://github.com/material-components/material-components-android/issues/1921
             int visibility = binding.registrationProgressIndicator.getVisibility();
-            binding.registrationProgressIndicator.setVisibility(View.GONE);
             binding.registrationProgressIndicator.setIndeterminate(loading);
             binding.registrationProgressIndicator.setVisibility(visibility);
         });
@@ -184,8 +183,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
     }
 
     private void initializeContactViews() {
-        binding.contactInfoTextView.setVisibility(View.GONE);
-
         bindToLiveData(binding.phoneNumberLayout, viewModel.getPhoneNumber());
 
         binding.emailLayout.setRequired(false);
@@ -201,8 +198,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
     }
 
     private void initializeAddressViews() {
-        binding.addressInfoTextView.setVisibility(View.GONE);
-
         bindToLiveData(binding.addressLayout.streetLayout, viewModel.getStreet());
         bindToLiveData(binding.addressLayout.houseNumberLayout, viewModel.getHouseNumber());
         bindToLiveData(binding.postalCodeLayout, viewModel.getPostalCode());
@@ -270,9 +265,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
     private void showContactStep() {
         binding.registrationHeading.setText(getString(R.string.registration_heading_contact));
-
-        binding.firstNameLayout.setVisibility(View.GONE);
-        binding.lastNameLayout.setVisibility(View.GONE);
 
         binding.contactInfoTextView.setVisibility(View.VISIBLE);
         binding.phoneNumberLayout.setVisibility(View.VISIBLE);
@@ -457,10 +449,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
     private void showAddressStep() {
         binding.registrationHeading.setText(getString(R.string.registration_heading_address));
-
-        binding.phoneNumberLayout.setVisibility(View.GONE);
-        binding.emailLayout.setVisibility(View.GONE);
-        binding.contactInfoTextView.setVisibility(View.GONE);
 
         binding.addressInfoTextView.setVisibility(View.VISIBLE);
         binding.addressLayout.getRoot().setVisibility(View.VISIBLE);
