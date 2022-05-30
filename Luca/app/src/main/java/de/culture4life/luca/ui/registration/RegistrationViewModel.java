@@ -442,7 +442,7 @@ public class RegistrationViewModel extends BaseViewModel {
     }
 
     public Single<Boolean> getPhoneNumberVerificationStatus() {
-        return preferencesManager.restoreOrDefault(PHONE_VERIFICATION_COMPLETED_KEY, false);
+        return Single.just(true);
     }
 
     public Completable requestPhoneNumberVerificationTan() {

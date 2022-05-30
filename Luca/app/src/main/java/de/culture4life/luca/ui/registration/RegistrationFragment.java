@@ -79,6 +79,28 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
     @Override
     protected void initializeViews() {
         super.initializeViews();
+
+        binding.firstNameLayout.setRequired(false);
+        binding.lastNameLayout.setRequired(false);
+        binding.addressLayout.streetLayout.setRequired(false);
+        binding.addressLayout.houseNumberLayout.setRequired(false);
+        binding.postalCodeLayout.setRequired(false);
+        binding.cityNameLayout.setRequired(false);
+
+        binding.registrationActionButton.setText(getString(R.string.action_finish));
+
+        binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(Completable.fromAction(
+                () -> {
+                    viewModel.updateRegistrationDataWithFormValuesAsSideEffect();
+                    completionObserver = completed -> {
+                        if (completed) {
+                            ((RegistrationActivity) requireActivity()).onRegistrationCompleted();
+                        }
+                    };
+                    viewModel.onRegistrationRequested();
+                }).delaySubscription(DELAY_DURATION, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
+                .subscribe()));
+
         initializeSharedViews();
         initializeNameViews();
         initializeContactViews();
@@ -124,21 +146,13 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         if (LucaApplication.IS_USING_STAGING_ENVIRONMENT || BuildConfig.DEBUG) {
             binding.registrationHeading.setOnClickListener(v -> viewModel.useDebugRegistrationData().subscribe());
         }
-        binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(Completable.fromAction(
-                () -> {
-                    if (isNameStepCompleted()) {
-                        viewModel.updateRegistrationDataWithFormValuesAsSideEffect();
-                        showContactStep();
-                    }
-                }).delaySubscription(DELAY_DURATION, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                .subscribe()));
     }
 
     private void initializeSharedViewsInEditMode() {
         binding.registrationHeading.setText(getString(R.string.navigation_contact_data));
         binding.registrationActionButton.setText(R.string.action_update);
 
-
+/*
         binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(Completable.mergeArray(
                 viewModel.updatePhoneNumberVerificationStatus(),
                 viewModel.updateShouldReImportingTestData(),
@@ -167,7 +181,7 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
             if (completed) {
                 ((RegistrationActivity) requireActivity()).onEditingContactDataCompleted();
             }
-        };
+        };*/
     }
 
     private void initializeNameViews() {
@@ -184,8 +198,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
     private void initializeContactViews() {
         bindToLiveData(binding.phoneNumberLayout, viewModel.getPhoneNumber());
-
-        binding.emailLayout.setRequired(false);
         bindToLiveData(binding.emailLayout, viewModel.getEmail());
 
         addConfirmationAction(binding.emailLayout);
@@ -203,18 +215,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         bindToLiveData(binding.postalCodeLayout, viewModel.getPostalCode());
         bindToLiveData(binding.cityNameLayout, viewModel.getCity());
         addConfirmationAction(binding.cityNameLayout);
-
-        if (viewModel.isInEditMode()) {
-            binding.addressLayout.getRoot().setVisibility(View.VISIBLE);
-            binding.addressLayout.streetLayout.setVisibility(View.VISIBLE);
-            binding.addressLayout.houseNumberLayout.setVisibility(View.VISIBLE);
-            binding.postalCodeLayout.setVisibility(View.VISIBLE);
-            binding.cityNameLayout.setVisibility(View.VISIBLE);
-            binding.addressLayout.streetLayout.setRequired(true);
-            binding.addressLayout.houseNumberLayout.setRequired(true);
-            binding.postalCodeLayout.setRequired(true);
-            binding.cityNameLayout.setRequired(true);
-        }
     }
 
     private void addConfirmationAction(@NonNull TextInputLayout textInputLayout) {
@@ -261,43 +261,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
         ObjectAnimator.ofInt(binding.registrationProgressIndicator, "progress", percent)
                 .setDuration(250)
                 .start();
-    }
-
-    private void showContactStep() {
-        binding.registrationHeading.setText(getString(R.string.registration_heading_contact));
-
-        binding.contactInfoTextView.setVisibility(View.VISIBLE);
-        binding.phoneNumberLayout.setVisibility(View.VISIBLE);
-        binding.emailLayout.setVisibility(View.VISIBLE);
-        binding.phoneNumberLayout.requestFocus();
-
-        binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(viewModel.updatePhoneNumberVerificationStatus()
-                .andThen(viewModel.getPhoneNumberVerificationStatus())
-                .flatMapCompletable(phoneNumberVerified -> Completable.fromAction(() -> {
-                    if (!isContactStepCompleted()) {
-                        return;
-                    }
-                    viewModel.updateRegistrationDataWithFormValuesAsSideEffect();
-                    if (phoneNumberVerified || shouldSkipVerification()) {
-                        showAddressStep();
-                    } else {
-                        showCurrentPhoneNumberVerificationStep();
-                    }
-                })).delaySubscription(DELAY_DURATION, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                .subscribe()));
-    }
-
-    private void showCurrentPhoneNumberVerificationStep() {
-        if (viewModel.getShouldRequestNewVerificationTan().getValue()) {
-            long nextPossibleVerificationTanRequestTimestamp = viewModel.getNextPossibleTanRequestTimestamp().getValue();
-            if (nextPossibleVerificationTanRequestTimestamp > TimeUtil.getCurrentMillis()) {
-                showPhoneNumberRequestTimeoutDialog(nextPossibleVerificationTanRequestTimestamp);
-            } else {
-                showPhoneNumberVerificationConfirmationDialog();
-            }
-        } else {
-            showPhoneNumberVerificationTanDialog();
-        }
     }
 
     private void showPhoneNumberVerificationConfirmationDialog() {
@@ -410,8 +373,6 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
                             if (viewModel.isInEditMode()) {
                                 hideKeyboard();
                                 viewModel.onUserDataUpdateRequested();
-                            } else {
-                                showAddressStep();
                             }
                         },
                         throwable -> {
@@ -447,80 +408,21 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
                 .show();
     }
 
-    private void showAddressStep() {
-        binding.registrationHeading.setText(getString(R.string.registration_heading_address));
-
-        binding.addressInfoTextView.setVisibility(View.VISIBLE);
-        binding.addressLayout.getRoot().setVisibility(View.VISIBLE);
-        binding.addressLayout.streetLayout.setVisibility(View.VISIBLE);
-        binding.addressLayout.houseNumberLayout.setVisibility(View.VISIBLE);
-        binding.postalCodeLayout.setVisibility(View.VISIBLE);
-        binding.cityNameLayout.setVisibility(View.VISIBLE);
-        binding.addressLayout.streetLayout.requestFocus();
-
-        binding.registrationActionButton.setText(getString(R.string.action_finish));
-        binding.registrationActionButton.setOnClickListener(view -> viewDisposable.add(Completable.fromAction(
-                () -> {
-                    if (!isAddressStepCompleted()) {
-                        return;
-                    }
-                    viewModel.updateRegistrationDataWithFormValuesAsSideEffect();
-                    completionObserver = completed -> {
-                        if (completed) {
-                            ((RegistrationActivity) requireActivity()).onRegistrationCompleted();
-                        }
-                    };
-                    viewModel.onRegistrationRequested();
-                }).delaySubscription(DELAY_DURATION, TimeUnit.MILLISECONDS, AndroidSchedulers.mainThread())
-                .subscribe()));
-    }
 
     private boolean isNameStepCompleted() {
-        return areFieldsValidOrEmptyAndNotRequired(Arrays.asList(binding.firstNameLayout, binding.lastNameLayout));
+        return true;
     }
 
     private boolean isContactStepCompleted() {
-        return areFieldsValidOrEmptyAndNotRequired(Collections.singletonList(binding.phoneNumberLayout));
+        return true;
     }
-
     private boolean isAddressStepCompleted() {
-        return areFieldsValidOrEmptyAndNotRequired(Arrays.asList(
-                binding.addressLayout.streetLayout,
-                binding.addressLayout.houseNumberLayout,
-                binding.postalCodeLayout,
-                binding.cityNameLayout
-        ));
+        return true;
     }
-
     private boolean areAllStepsCompleted() {
-        return isNameStepCompleted() && isContactStepCompleted() && isAddressStepCompleted();
+        return true;
     }
 
-    private boolean areFieldsValidOrEmptyAndNotRequired(List<RegistrationTextInputLayout> fields) {
-        boolean completed = true;
-        for (RegistrationTextInputLayout textLayout : fields) {
-            if (textLayout.isValidOrEmptyAndNotRequired()) {
-                continue;
-            }
-            if (completed) {
-                completed = false;
-                textLayout.requestFocus();
-            }
-            if (textLayout.isEmptyButRequired()) {
-                talkbackHintFor(textLayout);
-                textLayout.setError(getString(R.string.registration_empty_but_required_field_error));
-            } else if (!textLayout.isValid()) {
-                textLayout.setError(getString(R.string.registration_invalid_value_field_error));
-            }
-        }
-        return completed;
-    }
-
-    private void talkbackHintFor(RegistrationTextInputLayout textLayout) {
-        if (inputTextIdToHint.containsKey(textLayout.getId())) {
-            AccessibilityServiceUtil.speak(getContext(), getString(inputTextIdToHint.get(textLayout.getId())));
-        }
-    }
 
     private boolean shouldSkipVerification() {
         return viewModel.isUsingTestingCredentials() || RegistrationViewModel.SKIP_PHONE_NUMBER_VERIFICATION;
