@@ -82,12 +82,28 @@ public class RegistrationFragment extends BaseFragment<RegistrationViewModel> {
 
         binding.firstNameLayout.setRequired(false);
         binding.lastNameLayout.setRequired(false);
+        binding.phoneNumberLayout.setRequired(false);
+        binding.emailLayout.setRequired(false);
         binding.addressLayout.streetLayout.setRequired(false);
         binding.addressLayout.houseNumberLayout.setRequired(false);
         binding.postalCodeLayout.setRequired(false);
         binding.cityNameLayout.setRequired(false);
 
         binding.registrationActionButton.setText(getString(R.string.action_finish));
+
+        binding.registrationNextButton.setOnClickListener(v -> viewDisposable.add(Completable.fromAction(() ->  {
+            viewModel.updateRegistrationDataWithFormValuesAsSideEffect();
+            viewModel.onRegistrationRequested();
+
+            binding.firstNameLayout.getEditText().setText("");
+            binding.lastNameLayout.getEditText().setText("");
+            binding.phoneNumberLayout.getEditText().setText("");
+            binding.emailLayout.getEditText().setText("");
+            binding.addressLayout.streetLayout.getEditText().setText("");
+            binding.addressLayout.houseNumberLayout.getEditText().setText("");
+            binding.postalCodeLayout.getEditText().setText("");
+            binding.cityNameLayout.getEditText().setText("");
+        }).subscribe()));
 
         binding.registrationActionButton.setOnClickListener(v -> viewDisposable.add(Completable.fromAction(
                 () -> {

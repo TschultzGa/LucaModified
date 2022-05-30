@@ -1,6 +1,8 @@
 package de.culture4life.luca.registration
 
 import android.content.Context
+import android.os.Looper
+import android.widget.Toast
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import de.culture4life.luca.LucaApplication
@@ -14,6 +16,7 @@ import de.culture4life.luca.network.endpoints.LucaEndpointsV3
 import de.culture4life.luca.network.pojo.*
 import de.culture4life.luca.preference.PreferencesManager
 import de.culture4life.luca.util.*
+import dgca.verifier.app.decoder.toBase64
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Maybe
 import io.reactivex.rxjava3.core.Observable
@@ -121,8 +124,7 @@ class RegistrationManager(
     }
 
     fun getRegistrationData(): Single<RegistrationData> {
-        return Maybe.fromCallable<RegistrationData> { cachedRegistrationData }
-            .switchIfEmpty(preferencesManager.restoreIfAvailable(REGISTRATION_DATA_KEY, RegistrationData::class.java))
+        return preferencesManager.restoreIfAvailable(REGISTRATION_DATA_KEY, RegistrationData::class.java)
             .switchIfEmpty(createRegistrationData())
     }
 
@@ -135,6 +137,10 @@ class RegistrationManager(
     }
 
     fun persistRegistrationData(registrationData: RegistrationData): Completable {
+        val randomNameBytes = ByteArray(20);
+        Random().nextBytes(randomNameBytes);
+
+        preferencesManager.persist(CURRENT_REGISTRATION_USER, randomNameBytes.encodeToBase64()).subscribe()
         return preferencesManager.persist(REGISTRATION_DATA_KEY, registrationData)
             .doOnComplete { this.cachedRegistrationData = registrationData }
     }
@@ -318,9 +324,11 @@ class RegistrationManager(
             .flatMap(::encryptContactData)
             .flatMap { (encryptedData, iv) ->
                 Single.fromCallable {
+                    val userName = preferencesManager.restore(CURRENT_REGISTRATION_USER, String::class.java).blockingGet()
+
                     val mac = createContactDataMac(encryptedData).blockingGet()
                     val signature = createContactDataSignature(encryptedData, mac, iv).blockingGet()
-                    val publicKey = cryptoManager.getKeyPairPublicKey(ALIAS_GUEST_KEY_PAIR).blockingGet()
+                    val publicKey = cryptoManager.getKeyPairPublicKey(userName).blockingGet()
                     UserRegistrationRequestData().apply {
                         this.encryptedContactData = encryptedData.encodeToBase64()
                         this.iv = iv.encodeToBase64()
@@ -383,7 +391,7 @@ class RegistrationManager(
      */
     private fun createContactDataSignature(encryptedContactData: ByteArray, mac: ByteArray, iv: ByteArray): Single<ByteArray> {
         return concatenate(encryptedContactData, mac, iv)
-            .flatMap { cryptoManager.ecdsa(it, ALIAS_GUEST_KEY_PAIR) }
+            .flatMap { cryptoManager.ecdsa(it, preferencesManager.restore(CURRENT_REGISTRATION_USER, String::class.java).blockingGet()) }
     }
     /*
         Data transfer request
@@ -506,6 +514,7 @@ class RegistrationManager(
     companion object {
         const val REGISTRATION_COMPLETED_KEY = "registration_completed_2"
         const val REGISTRATION_DATA_KEY = "registration_data_2"
+        const val CURRENT_REGISTRATION_USER = "current_reg_user"
         const val USER_ID_KEY = "user_id"
         const val LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY = "last_user_activity_report_timestamp"
         const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"

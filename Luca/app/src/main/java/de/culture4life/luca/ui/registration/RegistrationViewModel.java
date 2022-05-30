@@ -276,6 +276,7 @@ public class RegistrationViewModel extends BaseViewModel {
             // prevent multiple calls due to double click
             return;
         }
+
         isRegisteringUser = true;
         modelDisposable.add(updateRegistrationDataWithFormValues()
                 .andThen(registrationManager.registerUser())
