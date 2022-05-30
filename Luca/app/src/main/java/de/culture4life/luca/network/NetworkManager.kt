@@ -1,5 +1,6 @@
 package de.culture4life.luca.network
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -27,7 +28,15 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
+
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.X509TrustManager;
+import javax.net.ssl.SSLContext;
+
 
 class NetworkManager : Manager() {
     private val rxAdapter: RxJava3CallAdapterFactory by lazy { RxJava3CallAdapterFactory.createWithScheduler(Schedulers.io()) }
@@ -81,22 +90,9 @@ class NetworkManager : Manager() {
                     .build()
             )
         }
-        val timeoutInterceptor = Interceptor { chain: Interceptor.Chain ->
-            val timeout = getRequestTimeout(chain.request()).toInt()
-            chain.withConnectTimeout(timeout, TimeUnit.MILLISECONDS)
-                .withReadTimeout(timeout, TimeUnit.MILLISECONDS)
-                .withWriteTimeout(timeout, TimeUnit.MILLISECONDS)
-                .proceed(chain.request())
-        }
-        val cdnInterceptor = Interceptor { chain: Interceptor.Chain -> chain.proceed(replaceHostWithCdnIfRequired(chain.request())) }
-        val certificatePinner: CertificatePinner = CertificatePinner.Builder()
-            .add("**.luca-app.de", "sha256/7KDxgUAs56hlKzG00DbfJH46MLf0GlDZHsT5CwBrQ6E=") // D-TRUST Root Class 3 CA 2 2009
-            .build()
-        val builder: OkHttpClient.Builder = OkHttpClient.Builder()
+        val builder: OkHttpClient.Builder = getUnsafeOkHttpClient()
             .addInterceptor(userAgentInterceptor)
-            .addInterceptor(timeoutInterceptor)
-            .addInterceptor(cdnInterceptor)
-            .cache(Cache(context.cacheDir, CACHE_SIZE.toLong()))
+
         if (BuildConfig.DEBUG) {
             // Interceptor that shows all network requests as a notification in debug builds
             val chuckerInterceptor: ChuckerInterceptor = ChuckerInterceptor.Builder(context).build()
@@ -104,8 +100,6 @@ class NetworkManager : Manager() {
             val loggingInterceptor = HttpLoggingInterceptor()
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
             builder.addInterceptor(loggingInterceptor)
-        } else {
-            builder.certificatePinner(certificatePinner)
         }
         if (LucaApplication.IS_USING_STAGING_ENVIRONMENT) {
             builder.authenticator { _, response: Response ->
@@ -125,6 +119,42 @@ class NetworkManager : Manager() {
             builder.addInterceptor(rateLimitInterceptor)
         }
         return builder.build()
+    }
+
+    private fun getUnsafeOkHttpClient(): OkHttpClient.Builder{
+        return try {
+            // Create a trust manager that does not validate certificate chains
+            val trustAllCerts = arrayOf<TrustManager>(
+                @SuppressLint("CustomX509TrustManager")
+                object:  X509TrustManager {
+
+                    @SuppressLint("TrustAllX509TrustManager")
+                    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
+                    }
+
+
+                    @SuppressLint("TrustAllX509TrustManager")
+                    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
+                    }
+
+                    override fun getAcceptedIssuers(): Array<X509Certificate> {
+                        return arrayOf()
+                    }
+                }
+            )
+
+            // Install the all-trusting trust manager
+            val sslContext = SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, SecureRandom())
+            // Create an ssl socket factory with our all-trusting manager
+            val sslSocketFactory  = sslContext.socketFactory
+            val builder = OkHttpClient.Builder()
+            builder.sslSocketFactory(sslSocketFactory, trustAllCerts[0] as X509TrustManager)
+            builder.hostnameVerifier { _, _ -> true }
+
+        } catch (e: Exception) {
+            throw RuntimeException(e)
+        }
     }
 
     fun getLucaEndpointsV3(): Single<LucaEndpointsV3> {
@@ -198,6 +228,8 @@ class NetworkManager : Manager() {
             context.registerReceiver(connectivityReceiver, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
         }
     }
+
+
 
     private fun unregisterConnectivityReceiver() {
         if (connectivityReceiver != null) {
