@@ -26,6 +26,7 @@ import java.net.HttpURLConnection
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 /**
  * Handles initial registration of a guest, after phone number verification appropriate secrets are
@@ -150,25 +151,7 @@ class RegistrationManager(
     }
 
     fun hasProvidedRequiredContactData(): Single<Boolean> {
-        return getRegistrationData()
-            .doOnSuccess { Timber.v("Checking if required contact data has been provided: %s", it) }
-            .flatMapObservable { registrationData ->
-                with(registrationData) {
-                    Observable.fromIterable(
-                        listOf(
-                            firstName.isNullOrBlank(),
-                            lastName.isNullOrBlank(),
-                            phoneNumber.isNullOrBlank(),
-                            street.isNullOrBlank(),
-                            houseNumber.isNullOrBlank(),
-                            postalCode.isNullOrBlank(),
-                            city.isNullOrBlank()
-                        )
-                    )
-                }
-            }
-            .any { it }
-            .map { !it }
+        return Single.just(true);
     }
 
     /*
@@ -217,6 +200,12 @@ class RegistrationManager(
                     .flatMap { lucaEndpointsV3 -> lucaEndpointsV3.registerUser(registrationRequestData) }
                     .map { it["userId"].asString }
                     .map(UUID::fromString)
+            }
+            // add the UUID to the list of uuid that are currently available
+            .doOnSuccess { userId ->
+                preferencesManager.persist(ALL_REGISTERED_UUIDS,
+                    (preferencesManager.restoreOrDefault(ALL_REGISTERED_UUIDS, ArrayList<UUID>())
+                        .doOnSuccess { l -> l.add(userId) }).blockingGet())
             }
             .doOnSuccess { userId -> Timber.i("Registered user for ID: %s", userId) }
             .flatMapCompletable { userId ->
@@ -515,6 +504,7 @@ class RegistrationManager(
         const val REGISTRATION_COMPLETED_KEY = "registration_completed_2"
         const val REGISTRATION_DATA_KEY = "registration_data_2"
         const val CURRENT_REGISTRATION_USER = "current_reg_user"
+        const val ALL_REGISTERED_UUIDS = "all_reg_user_ids"
         const val USER_ID_KEY = "user_id"
         const val LAST_USER_ACTIVITY_REPORT_TIMESTAMP_KEY = "last_user_activity_report_timestamp"
         const val ALIAS_GUEST_KEY_PAIR = "user_master_key_pair"

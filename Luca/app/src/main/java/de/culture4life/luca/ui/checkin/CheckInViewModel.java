@@ -34,8 +34,10 @@ import java.nio.ByteBuffer;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPublicKey;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import de.culture4life.luca.R;
 import de.culture4life.luca.checkin.CheckInData;
@@ -187,7 +189,7 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
         modelDisposable.add(registrationManager.hasProvidedRequiredContactData()
                 .doOnSuccess(hasProvidedRequiredData -> Timber.v("Has provided required contact data: %b", hasProvidedRequiredData))
                 .subscribeOn(Schedulers.io())
-                .flatMapCompletable(hasProvidedRequiredData -> update(contactDataMissing, !hasProvidedRequiredData))
+                //.flatMapCompletable(hasProvidedRequiredData -> update(contactDataMissing, !hasProvidedRequiredData))
                 .subscribe());
     }
 
@@ -229,14 +231,14 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
 
     private Single<QrCodeData> generateQrCodeData() {
         return preferencesManager.restoreOrDefault(CheckInManager.KEY_INCLUDE_ENTRY_POLICY, false)
-                .flatMap(includeEntryPolicy -> generateQrCodeData(false, includeEntryPolicy));
+                .flatMap(includeEntryPolicy -> generateQrCodeData(this.userId, false, includeEntryPolicy));
     }
 
     @VisibleForTesting
-    protected Single<QrCodeData> generateQrCodeData(boolean isAnonymous, boolean shareEntryPolicy) {
+    protected Single<QrCodeData> generateQrCodeData(UUID actualUserId, boolean isAnonymous, boolean shareEntryPolicy) {
         return cryptoManager.initialize(application)
                 .andThen(Single.just(new QrCodeData()))
-                .flatMap(qrCodeData -> checkInManager.getTraceIdWrapper(userId)
+                .flatMap(qrCodeData -> checkInManager.getTraceIdWrapper(actualUserId)
                         .flatMapCompletable(userTraceIdWrapper -> Completable.mergeArray(
                                 cryptoManager.getDailyPublicKey()
                                         .map(DailyPublicKeyData::getId)
@@ -569,17 +571,21 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
             boolean requirePrivateMeeting,
             boolean isAnonymousCheckIn,
             boolean shareEntryPolicyState) {
-        return generateQrCodeData(isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
-                .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
-                .andThen(Completable.defer(() -> {
-                    if (requirePrivateMeeting) {
-                        return checkInManager.assertCheckedInToPrivateMeeting();
-                    } else {
-                        return Completable.complete();
-                    }
-                }))
-                .andThen(Completable.fromAction(() -> uploadAdditionalDataIfAvailableAsSideEffect(scannerId, additionalData)))
-                .doOnSubscribe(disposable -> updateAsSideEffect(isLoading, true));
+
+            ArrayList<UUID> uuids = preferencesManager.restore(RegistrationManager.ALL_REGISTERED_UUIDS, ArrayList.class).blockingGet();
+            return Completable.concat(uuids.stream().map(uuid ->
+                generateQrCodeData(uuid, isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
+                            .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
+                            .andThen(Completable.defer(() -> {
+                                if (requirePrivateMeeting) {
+                                    return checkInManager.assertCheckedInToPrivateMeeting();
+                                } else {
+                                    return Completable.complete();
+                                }
+                            }))
+                            .andThen(Completable.fromAction(() -> uploadAdditionalDataIfAvailableAsSideEffect(scannerId, additionalData)))
+                            .doOnSubscribe(disposable -> updateAsSideEffect(isLoading, true)))
+                .collect(Collectors.toList()));
     }
 
     private void uploadAdditionalDataIfAvailableAsSideEffect(@NonNull UUID scannerId, @Nullable String additionalData) {

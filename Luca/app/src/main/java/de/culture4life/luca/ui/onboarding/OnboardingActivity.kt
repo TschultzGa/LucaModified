@@ -80,7 +80,7 @@ class OnboardingActivity : BaseActivity() {
                 val availableCountry = viewModel.countryListLiveData
                     .value!!
                     .countryItems
-                    .first { it.countryCode == AVAILABLE_COUNTRY }
+                    .first { it.countryDisplayName == "Germany" }
                 viewModel.setSelectedCountryItem(availableCountry)
                 welcomeBinding.countryAutoCompleteTextView.setText(availableCountry.countryDisplayName, false)
             }
