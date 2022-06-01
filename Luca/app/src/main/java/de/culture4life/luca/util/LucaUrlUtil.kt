@@ -10,17 +10,7 @@ object LucaUrlUtil {
      */
     @JvmStatic
     fun isLucaUrl(url: String): Boolean {
-        val parsedUri = try {
-            Uri.parse(url)
-        } catch (throwable: Throwable) {
-            return false
-        }
-
-        val isCorrectHost = parsedUri.host.orEmpty().let { host -> host == "luca-app.de" || host.endsWith(".luca-app.de") }
-        val isCorrectPath = parsedUri.path.orEmpty().startsWith("/webapp")
-        val isCorrectScheme = parsedUri.scheme.orEmpty().let { scheme -> scheme == "http" || scheme == "https" || scheme == "luca" }
-
-        return isCorrectHost && isCorrectPath && isCorrectScheme
+        return true;
     }
 
     @JvmStatic

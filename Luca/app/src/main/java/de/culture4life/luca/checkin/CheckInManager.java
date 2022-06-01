@@ -312,6 +312,7 @@ public class CheckInManager extends Manager {
      * Overview: Check-In via a Printed QR Code</a>
      */
     public Completable checkIn(@NonNull UUID scannerId, @NonNull QrCodeData qrCodeData) {
+        Timber.i("checkIn %s", scannerId.toString());
         return assertNotCheckedIn()
                 .andThen(generateCheckInData(qrCodeData, scannerId)
                         .flatMapCompletable(checkInRequestData -> networkManager.getLucaEndpointsV3()
@@ -354,6 +355,7 @@ public class CheckInManager extends Manager {
     }
 
     private Single<CheckInRequestData> generateCheckInData(@NonNull QrCodeData qrCodeData, @NonNull UUID scannerId) {
+        Timber.i("GenerateCheckInData for %s", scannerId.toString());
         return getLocationPublicKey(scannerId)
                 .flatMap(locationPublicKey -> generateCheckInData(qrCodeData, locationPublicKey))
                 .doOnSuccess(checkInRequestData -> checkInRequestData.setScannerId(scannerId.toString()));
@@ -367,6 +369,7 @@ public class CheckInManager extends Manager {
      * Overview: Check-In via a Printed QR Code</a>
      */
     private Single<CheckInRequestData> generateCheckInData(@NonNull QrCodeData qrCodeData, @NonNull PublicKey locationPublicKey) {
+        Timber.i("GeneratecheckInData %s", locationPublicKey.toString());
         return cryptoManager.initialize(context)
                 .andThen(Single.fromCallable(() -> {
                     CheckInRequestData requestData = new CheckInRequestData();

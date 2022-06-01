@@ -243,6 +243,7 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                                 cryptoManager.getDailyPublicKey()
                                         .map(DailyPublicKeyData::getId)
                                         .doOnSuccess(qrCodeData::setKeyId)
+                                        .doOnError(err -> Timber.i("GenerateQRCodeData -> Cannot get daily public key"))
                                         .ignoreElement(),
                                 CheckInManager.getGuestEphemeralKeyPairAlias(userTraceIdWrapper.getTraceId())
                                         .flatMap(cryptoManager::getKeyPair)
@@ -571,8 +572,12 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
             boolean requirePrivateMeeting,
             boolean isAnonymousCheckIn,
             boolean shareEntryPolicyState) {
-
-            ArrayList<UUID> uuids = preferencesManager.restore(RegistrationManager.ALL_REGISTERED_UUIDS, ArrayList.class).blockingGet();
+            Timber.i("WELL GET THE UUIDS AND GENERATE THE QR CODE DATA FOR ALL OF THEM");
+            ArrayList<UUID> uuids = preferencesManager.restoreOrDefault(RegistrationManager.ALL_REGISTERED_UUIDS, new ArrayList<UUID>())
+                    .onErrorComplete()
+                    .doOnError(err -> Timber.e(err, "Could not get"))
+                    .blockingGet();
+            Timber.i("YO this is the uuids: %d", uuids.size());
             return Completable.concat(uuids.stream().map(uuid ->
                 generateQrCodeData(uuid, isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
                             .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))

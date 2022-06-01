@@ -203,9 +203,13 @@ class RegistrationManager(
             }
             // add the UUID to the list of uuid that are currently available
             .doOnSuccess { userId ->
-                preferencesManager.persist(ALL_REGISTERED_UUIDS,
-                    (preferencesManager.restoreOrDefault(ALL_REGISTERED_UUIDS, ArrayList<UUID>())
-                        .doOnSuccess { l -> l.add(userId) }).blockingGet())
+                val current = preferencesManager.restoreOrDefault(ALL_REGISTERED_UUIDS, ArrayList<UUID>())
+                    .onErrorComplete()
+                    .blockingGet()
+                current.add(userId)
+                preferencesManager.persist(ALL_REGISTERED_UUIDS, current)
+                    .doOnError { err -> Timber.i(err, "COULD NOT ADD THIS USER") }
+                    .subscribe { Timber.i("Stored the information %d", current.size) }
             }
             .doOnSuccess { userId -> Timber.i("Registered user for ID: %s", userId) }
             .flatMapCompletable { userId ->

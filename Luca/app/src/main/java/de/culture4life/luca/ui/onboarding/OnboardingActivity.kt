@@ -16,6 +16,7 @@ import de.culture4life.luca.ui.BaseActivity
 import de.culture4life.luca.ui.onboarding.OnboardingViewModel.Companion.AVAILABLE_COUNTRY
 import de.culture4life.luca.ui.registration.RegistrationActivity
 import de.culture4life.luca.util.ViewRequiredUtil.showCheckBoxRequiredError
+import timber.log.Timber
 
 class OnboardingActivity : BaseActivity() {
 
@@ -80,7 +81,8 @@ class OnboardingActivity : BaseActivity() {
                 val availableCountry = viewModel.countryListLiveData
                     .value!!
                     .countryItems
-                    .first { it.countryDisplayName == "Germany" }
+                    .first { it.countryDisplayName.equals("Germany", true) }
+                Timber.i("SELECTING %s", availableCountry)
                 viewModel.setSelectedCountryItem(availableCountry)
                 welcomeBinding.countryAutoCompleteTextView.setText(availableCountry.countryDisplayName, false)
             }
