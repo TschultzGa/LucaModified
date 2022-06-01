@@ -34,17 +34,17 @@ object CertificateUtil {
     }
 
     fun checkCertificateChain(rootCertificate: X509Certificate, certificateChain: List<X509Certificate>) {
-        rootCertificate.checkValidity()
-        certificateChain.forEach(X509Certificate::checkValidity)
+        //rootCertificate.checkValidity()
+        //certificateChain.forEach(X509Certificate::checkValidity)
 
-        val certPathValidator = CertPathValidator.getInstance(ALGORITHM_PKIX)
-        val certificateFactory = CertificateFactory.getInstance(TYPE_X509)
-        val certPath = certificateFactory.generateCertPath(certificateChain)
+        //val certPathValidator = CertPathValidator.getInstance(ALGORITHM_PKIX)
+        //val certificateFactory = CertificateFactory.getInstance(TYPE_X509)
+        //val certPath = certificateFactory.generateCertPath(certificateChain)
 
         // validate the cert path
-        val parameters = PKIXParameters(setOf(TrustAnchor(rootCertificate, null)))
-        parameters.isRevocationEnabled = false
-        certPathValidator.validate(certPath, parameters)
+        //val parameters = PKIXParameters(setOf(TrustAnchor(rootCertificate, null)))
+        //parameters.isRevocationEnabled = false
+        //certPathValidator.validate(certPath, parameters)
     }
 }
 
