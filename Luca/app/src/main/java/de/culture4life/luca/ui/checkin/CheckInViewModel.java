@@ -35,6 +35,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -247,6 +248,7 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                                         .ignoreElement(),
                                 CheckInManager.getGuestEphemeralKeyPairAlias(userTraceIdWrapper.getTraceId())
                                         .flatMap(cryptoManager::getKeyPair)
+                                        .doOnError(err -> Timber.i("Cannoit get guest ephermeral key pair alias"))
                                         .observeOn(Schedulers.computation())
                                         .flatMapCompletable(keyPair -> {
                                             if (!isAnonymous) {
@@ -262,7 +264,9 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                                         .doOnSuccess(qrCodeData::setEntryPolicy)
                                         .ignoreElement(),
                                 Completable.fromAction(() -> qrCodeData.setTraceId(userTraceIdWrapper.getTraceId()))))
-                        .andThen(Single.just(qrCodeData)));
+                        .andThen(Single.just(qrCodeData)))
+                        .doOnSuccess(qrCodeData -> Timber.i("We have the qrcode data %s %s", qrCodeData.getTimestamp(), qrCodeData.getUserEphemeralPublicKey()))
+                        .doOnError(err -> Timber.i("Generate qr code data failed"));
     }
 
     private Single<Byte> getQrCodeEntryPolicy(boolean shareEntryPolicy) {
@@ -563,7 +567,8 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                         false,
                         isAnonymous,
                         shareEntryPolicyState
-                ));
+                ))
+                .doOnError(err -> Timber.i(err,"Failed in performedSelfCheckin (handleSelfCheckInDeepLink) called it"));
     }
 
     private Completable performSelfCheckIn(
@@ -578,19 +583,35 @@ public class CheckInViewModel extends BaseViewModel implements BaseQrCodeCallbac
                     .doOnError(err -> Timber.e(err, "Could not get"))
                     .blockingGet();
             Timber.i("YO this is the uuids: %d", uuids.size());
-            return Completable.concat(uuids.stream().map(uuid ->
-                generateQrCodeData(uuid, isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
-                            .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
-                            .andThen(Completable.defer(() -> {
-                                if (requirePrivateMeeting) {
-                                    return checkInManager.assertCheckedInToPrivateMeeting();
-                                } else {
-                                    return Completable.complete();
-                                }
-                            }))
-                            .andThen(Completable.fromAction(() -> uploadAdditionalDataIfAvailableAsSideEffect(scannerId, additionalData)))
-                            .doOnSubscribe(disposable -> updateAsSideEffect(isLoading, true)))
-                .collect(Collectors.toList()));
+
+            List<Completable> completableList = new ArrayList<>();
+
+            Timber.i("Only processing UUID %s", uuids.get(0));
+            return generateQrCodeData(this.userId, isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
+                .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
+                .andThen(Completable.defer(() -> {
+                    if (requirePrivateMeeting) {
+                        return checkInManager.assertCheckedInToPrivateMeeting();
+                    } else {
+                        return Completable.complete();
+                    }
+                }))
+                .andThen(Completable.fromAction(() -> uploadAdditionalDataIfAvailableAsSideEffect(scannerId, additionalData)))
+                .doOnSubscribe(disposable -> updateAsSideEffect(isLoading, true));
+
+
+            /*for (UUID uuid : uuids) {
+                completableList.add(generateQrCodeData(uuid, isAnonymousCheckIn || requirePrivateMeeting, shareEntryPolicyState)
+                        .doOnError(err -> Timber.i("Failed right before calling checkinManager.checkIn(scannerId, qrCodeData)"))
+                        .flatMapCompletable(qrCodeData -> checkInManager.checkIn(scannerId, qrCodeData))
+                        .doOnError(err -> Timber.i("Failed somewhere in checkinManager.checkIn (performSelfCheckin called it)"))
+                        .andThen(Completable.fromAction(() -> uploadAdditionalDataIfAvailableAsSideEffect(scannerId, additionalData)))
+                        .doOnError(err -> Timber.i("Failed in uploadAdditionalDataIfAvailableAsSideEffect (performSelfCheckin called it"))
+                        .doOnSubscribe((o) -> Timber.i("YO SOMEONE SUBSCRIBED EHRE TO THE COOOL STUFF")));
+            }
+
+            Timber.i("YO we have %d completables", completableList.size());
+            return Completable.mergeArray(completableList.toArray(completableList.toArray(new Completable[0])));*/
     }
 
     private void uploadAdditionalDataIfAvailableAsSideEffect(@NonNull UUID scannerId, @Nullable String additionalData) {
