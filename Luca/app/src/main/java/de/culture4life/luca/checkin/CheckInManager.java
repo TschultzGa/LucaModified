@@ -313,10 +313,9 @@ public class CheckInManager extends Manager {
      */
     public Completable checkIn(@NonNull UUID scannerId, @NonNull QrCodeData qrCodeData) {
         Timber.i("checkIn %s", scannerId.toString());
-        return assertNotCheckedIn()
-                .andThen(generateCheckInData(qrCodeData, scannerId)
-                        .flatMapCompletable(checkInRequestData -> networkManager.getLucaEndpointsV3()
-                                .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.checkIn(checkInRequestData))))
+        return generateCheckInData(qrCodeData, scannerId)
+                .flatMapCompletable(checkInRequestData -> networkManager.getLucaEndpointsV3()
+                .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.checkIn(checkInRequestData)))
                 .andThen(updateCheckInData(false));
     }
 
@@ -433,14 +432,8 @@ public class CheckInManager extends Manager {
     }
 
     public Completable assertNotCheckedIn() {
-        return isCheckedIn()
-                .flatMapCompletable(isCheckedIn -> {
-                    if (isCheckedIn) {
-                        return Completable.error(new IllegalStateException("Already checked in, need to checkout first"));
-                    } else {
-                        return Completable.complete();
-                    }
-                });
+        return Completable.complete();
+
     }
 
     public Single<Boolean> isCheckedInToPrivateMeeting() {
