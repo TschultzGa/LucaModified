@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -91,6 +92,8 @@ import timber.log.Timber;
  * Overview: Check-In via a Printed QR Code</a>
  */
 public class CheckInManager extends Manager {
+
+    private static final String ALL_CHECKINS = "all_checkinsssss";
 
     private static final String KEY_CHECK_IN_DATA = "check_in_data_2";
     public static final String KEY_ARCHIVED_CHECK_IN_DATA = "archived_check_in_data";
@@ -249,6 +252,7 @@ public class CheckInManager extends Manager {
      * @see <a href="https://luca-app.de/securityoverview/processes/guest_app_checkin.html#qr-code-scanning-feedback">Security
      * Overview: QR Code Scanning Feedback</a>
      */
+    // TODO: is this interesting???????????????????????
     public Completable updateCheckInDataIfNecessary(long interval, boolean useOlderTraceIds) {
         return Observable.interval(0, interval, TimeUnit.MILLISECONDS, Schedulers.io())
                 .flatMapCompletable(tick -> updateCheckInDataIfNecessary(useOlderTraceIds)
@@ -323,6 +327,13 @@ public class CheckInManager extends Manager {
      * Should be called after a check-in occurred (either triggered by the user or in the backend).
      */
     private Completable processCheckIn(@NonNull CheckInData checkInData) {
+        ArrayList<String> checkins = preferencesManager.restoreOrDefault(ALL_CHECKINS, new ArrayList<String>()).onErrorComplete().blockingGet();
+        checkins.add(checkInData.getTraceId());
+        preferencesManager.persist(ALL_CHECKINS, checkins)
+                .doOnError(err -> Timber.i("Failed persisting the new list with the checkins"))
+                .subscribe();
+        Timber.i("CheckInManager.processCheckin checked in with traceId %s", checkInData.getTraceId());
+
         return Completable.fromAction(() -> this.checkInData = checkInData)
                 .andThen(preferencesManager.containsKey(KEY_CHECK_IN_DATA))
                 .flatMap(oldCheckInDataAvailable -> Single.defer(() -> {
@@ -368,7 +379,7 @@ public class CheckInManager extends Manager {
      * Overview: Check-In via a Printed QR Code</a>
      */
     private Single<CheckInRequestData> generateCheckInData(@NonNull QrCodeData qrCodeData, @NonNull PublicKey locationPublicKey) {
-        Timber.i("GeneratecheckInData %s", locationPublicKey.toString());
+        Timber.i("CheckInManager.generateCheckInData(.., %s)", locationPublicKey.toString());
         return cryptoManager.initialize(context)
                 .andThen(Single.fromCallable(() -> {
                     CheckInRequestData requestData = new CheckInRequestData();
@@ -539,26 +550,41 @@ public class CheckInManager extends Manager {
      */
     @SuppressLint("MissingPermission")
     public Completable checkOut() {
-        return assertCheckedIn()
-                .andThen(assertMinimumCheckInDuration())
-                .andThen(assertMinimumDistanceToLocation())
-                .andThen(networkManager.assertNetworkConnected())
-                .andThen(generateCheckOutData()
-                        .doOnSuccess(checkOutRequestData -> Timber.i("Generated checkout data: %s", checkOutRequestData))
-                        .flatMapCompletable(checkOutRequestData -> networkManager.getLucaEndpointsV3()
-                                .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.checkOut(checkOutRequestData))
-                                .onErrorResumeNext(throwable -> {
-                                    if (NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_NOT_FOUND)) {
-                                        // user is currently not checked-in
-                                        return Completable.complete();
-                                    }
-                                    return Completable.error(throwable);
-                                }))
-                        .onErrorResumeNext(throwable -> removeCheckInDataIfCheckedOut()
-                                .andThen(Completable.error(throwable))))
-                .andThen(processCheckOut())
-                .doOnSubscribe(disposable -> Timber.d("Initiating checkout"))
-                .doOnComplete(() -> Timber.i("Successfully checked out"));
+        Timber.i("CheckInManager.checkOut");
+
+        ArrayList<String> checkins = preferencesManager.restoreOrDefault(ALL_CHECKINS, new ArrayList<String>())
+                .doOnError(err -> Timber.i("Failed getting checkins for checkouting them"))
+                .onErrorComplete()
+                .blockingGet();
+
+        Timber.i("CheckInManager.checkOut we have %d checkins atm", checkins.size());
+
+        List<Completable> completables = new ArrayList<>();
+        for (int i= 0; i < checkins.size(); i++) {
+            String traceId = checkins.get(i);
+
+            completables.add(
+                networkManager.assertNetworkConnected()
+                        .andThen(generateCheckOutData(traceId)
+                                .doOnSuccess(checkOutRequestData -> Timber.i("Generated checkout data: %s", checkOutRequestData))
+                                .flatMapCompletable(checkOutRequestData -> networkManager.getLucaEndpointsV3()
+                                        .flatMapCompletable(lucaEndpointsV3 -> lucaEndpointsV3.checkOut(checkOutRequestData))
+                                        .onErrorResumeNext(throwable -> {
+                                            if (NetworkManager.isHttpException(throwable, HttpURLConnection.HTTP_NOT_FOUND)) {
+                                                // user is currently not checked-in
+                                                return Completable.complete();
+                                            }
+                                            return Completable.error(throwable);
+                                        }))
+                                .onErrorResumeNext(throwable -> removeCheckInDataIfCheckedOut()
+                                        .andThen(Completable.error(throwable))))
+                        .andThen(processCheckOut())
+                        .doOnSubscribe(disposable -> Timber.d("Initiating checkout"))
+                        .doOnComplete(() -> Timber.i("Successfully checked out"))
+            );
+        }
+
+        return Completable.mergeArray(completables.toArray(new Completable[0]));
     }
 
     /**
@@ -580,10 +606,12 @@ public class CheckInManager extends Manager {
      * @see <a href="https://www.luca-app.de/securityoverview/processes/guest_checkout.html#checkout-process">Security
      * Overview: Checkout Process</a>
      */
-    private Single<CheckOutRequestData> generateCheckOutData() {
+    private Single<CheckOutRequestData> generateCheckOutData(String traceIdFromCheckInData) {
+        Timber.i("CheckInManager.generateCheckOutData()");
+
         return Single.just(new CheckOutRequestData())
-                .flatMap(checkOutRequestData -> getCheckedInTraceId()
-                        .toSingle()
+                .flatMap(checkOutRequestData ->
+                    SerializationUtil.fromBase64(traceIdFromCheckInData)
                         .flatMap(traceId -> Completable.mergeArray(
                                 SerializationUtil.toBase64(traceId)
                                         .doOnSuccess(checkOutRequestData::setTraceId)
@@ -1036,6 +1064,7 @@ public class CheckInManager extends Manager {
     private Observable<byte[]> getRecentTraceIds(boolean useOlderTraceIds) {
         return getTraceIdWrappers()
                 .filter(traceIdWrapper -> {
+                    Timber.i("CheckInManger.getRecentTraceIds has traceId %s", SerializationUtil.toBase64(traceIdWrapper.getTraceId()).blockingGet());
                     long creationTimestamp = TimeUtil.convertFromUnixTimestamp(traceIdWrapper.getTimestamp()).blockingGet();
                     long age = TimeUtil.getCurrentMillis() - creationTimestamp;
                     if (useOlderTraceIds) {
@@ -1224,5 +1253,4 @@ public class CheckInManager extends Manager {
     public void setMeetingAdditionalData(@Nullable MeetingAdditionalData meetingAdditionalData) {
         this.meetingAdditionalData = meetingAdditionalData;
     }
-
 }
