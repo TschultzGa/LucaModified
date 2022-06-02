@@ -274,11 +274,14 @@ public class CheckInManager extends Manager {
     }
 
     public Completable updateCheckInData(boolean useOlderTraceIds) {
+        Timber.i("CheckInManager.updateCheckInData(%b)", useOlderTraceIds);
         return fetchCheckInDataFromBackend(useOlderTraceIds)
                 .filter(current -> {
                     if (checkInData != null) {
+                        Timber.i("%s is %s", current.getTraceId(), !checkInData.getTraceId().equals(current.getTraceId()) ? "not allowed": "allowed");
                         return !checkInData.getTraceId().equals(current.getTraceId());
                     } else {
+                        Timber.i("%s is allowed", current.getTraceId());
                         return true;
                     }
                 })
